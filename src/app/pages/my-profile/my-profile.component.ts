@@ -136,17 +136,17 @@ export class MyProfileComponent implements OnInit {
         },
         complete: () => {
           console.log('User Table Updated.');
-
+          this.ToastService.showPositiveToast('User Table Updated.');
           if (this.enrollAttempts >= this.maxEnrollAttempts) {
             this.maxReached = true;
             this.disableEnrollButtons = true; // permanently disabled
           } else {
-            // temporarily disable for 5s
+            // temporarily disable for 1s
             setTimeout(() => {
               if (!this.maxReached) {
                 this.disableEnrollButtons = false;
               }
-            }, 3000);
+            }, 1000);
           }
         }
     });
