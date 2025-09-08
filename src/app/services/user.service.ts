@@ -58,7 +58,7 @@ export class UserService implements OnInit {
         this.refreshToken = this.AuthService.getRefreshToken();
         const url = `${this.xomifyApiUrl}/user/user-table`;
         const body =  {
-          email:  this.user.email,
+          email: this.user.email,
           wrappedEnrolled: wrappedEnrolled,
           releaseRadarEnrolled: releaseRadarEnrolled
         };
