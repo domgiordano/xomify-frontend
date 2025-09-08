@@ -82,8 +82,8 @@ export class MyProfileComponent implements OnInit {
     this.UserService.updateUserTableRefreshToken().pipe(take(1)).subscribe({
       next: xomUser => {
         console.log("Updated Xomify USER Table------", xomUser);
-        this.wrappedEnrolled = xomUser.activeWrapped;
-        this.releaseRadarEnrolled = xomUser.activeReleaseRadar;
+        this.wrappedEnrolled = xomUser.activeWrapped ?? false;
+        this.releaseRadarEnrolled = xomUser.activeReleaseRadar ?? false;
         this.loading = false;
         this.UserService.setReleaseRadarEnrollment(this.releaseRadarEnrolled);
         this.UserService.setWrappedEnrollment(this.wrappedEnrolled);
