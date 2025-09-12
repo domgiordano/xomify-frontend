@@ -45,6 +45,7 @@ export class UserService implements OnInit {
         const url = `${this.xomifyApiUrl}/user/user-table`;
         const body =  {
           email: this.user.email,
+          userId: this.id,
           refreshToken: this.refreshToken
         };
         const headers = new HttpHeaders({
