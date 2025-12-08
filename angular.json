@@ -69,10 +69,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "xomify:build:production"
+              "buildTarget": "xomify:build:production"
             },
             "development": {
-              "browserTarget": "xomify:build:development"
+              "buildTarget": "xomify:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -80,7 +80,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "xomify:build"
+            "buildTarget": "xomify:build"
           }
         },
         "test": {
