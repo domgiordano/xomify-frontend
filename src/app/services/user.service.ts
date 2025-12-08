@@ -4,7 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
-import { environment } from 'src/environments/environment.prod';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -21,10 +21,7 @@ export class UserService implements OnInit {
   private xomifyApiUrl: string = `https://${environment.apiId}.execute-api.us-east-1.amazonaws.com/dev`;
   private readonly apiAuthToken = environment.apiAuthToken;
 
-  constructor(
-      private http: HttpClient,
-      private AuthService: AuthService
-    ) {}
+  constructor(private http: HttpClient, private AuthService: AuthService) {}
 
   ngOnInit() {
     this.accessToken = this.AuthService.getAccessToken();
@@ -34,64 +31,67 @@ export class UserService implements OnInit {
   getUserData(): Observable<any> {
     this.accessToken = this.AuthService.getAccessToken();
     return this.http.get(`${this.baseUrl}/me`, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-        },
-      })
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+    });
   }
 
   updateUserTableRefreshToken(): Observable<any> {
-        this.refreshToken = this.AuthService.getRefreshToken();
-        const url = `${this.xomifyApiUrl}/user/user-table`;
-        const body =  {
-          email: this.user.email,
-          userId: this.id,
-          refreshToken: this.refreshToken
-        };
-        const headers = new HttpHeaders({
-            Authorization: `Bearer ${this.apiAuthToken}`,
-            'Content-Type': 'application/json'
-        });
-        return this.http.post(url, body, { headers });
-    }
+    this.refreshToken = this.AuthService.getRefreshToken();
+    const url = `${this.xomifyApiUrl}/user/user-table`;
+    const body = {
+      email: this.user.email,
+      userId: this.id,
+      refreshToken: this.refreshToken,
+    };
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${this.apiAuthToken}`,
+      'Content-Type': 'application/json',
+    });
+    return this.http.post(url, body, { headers });
+  }
 
-  updateUserTableEnrollments(wrappedEnrolled: boolean, releaseRadarEnrolled: boolean): Observable<any> {
-        this.refreshToken = this.AuthService.getRefreshToken();
-        const url = `${this.xomifyApiUrl}/user/user-table`;
-        const body =  {
-          email: this.user.email,
-          wrappedEnrolled: wrappedEnrolled,
-          releaseRadarEnrolled: releaseRadarEnrolled
-        };
-        const headers = new HttpHeaders({
-            Authorization: `Bearer ${this.apiAuthToken}`,
-            'Content-Type': 'application/json'
-        });
-        return this.http.post(url, body, { headers });
-    }
+  updateUserTableEnrollments(
+    wrappedEnrolled: boolean,
+    releaseRadarEnrolled: boolean
+  ): Observable<any> {
+    this.refreshToken = this.AuthService.getRefreshToken();
+    const url = `${this.xomifyApiUrl}/user/user-table`;
+    const body = {
+      email: this.user.email,
+      wrappedEnrolled: wrappedEnrolled,
+      releaseRadarEnrolled: releaseRadarEnrolled,
+    };
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${this.apiAuthToken}`,
+      'Content-Type': 'application/json',
+    });
+    return this.http.post(url, body, { headers });
+  }
 
-  setUser(data): void{
-      this.userName = data.display_name;
-      this.id = data.id;
-      this.user = data;
+  setUser(data): void {
+    this.userName = data.display_name;
+    this.id = data.id;
+    this.user = data;
   }
   getUser(): any {
-       return this.user;
+    return this.user;
   }
   getProfilePic(): string {
-      return this.user.images[0].url;
+    return this.user.images[0].url;
   }
 
   getUserName(): string {
-      return this.userName;
+    return this.userName;
   }
 
   getEmail(): string {
-      return this.user.email;
+    return this.user.email;
   }
 
   getFollowers(): number {
-      return this.user.followers.total;
+    return this.user.followers.total;
   }
 
   getAccessToken(): string {

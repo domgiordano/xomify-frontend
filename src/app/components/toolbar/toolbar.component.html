@@ -1,6 +1,15 @@
 <div class="toolbar" [ngClass]="{'show-dropdown': dropdownVisible}">
-  <h2 class="app-title">
-    <img class="banner-icon" src="assets/img/banner-logo-x-rework.png" alt="spotify image">
+  <a routerLink="/my-profile" class="app-title" *ngIf="isLoggedIn()">
+    <img 
+      class="logo-image" 
+      src="assets/img/banner-logo-x-rework.png" 
+      alt="XOMIFY">
+  </a>
+  <h2 class="app-title-text" *ngIf="!isLoggedIn()">
+    <img 
+      class="logo-image" 
+      src="assets/img/banner-logo-x-rework.png" 
+      alt="XOMIFY">
   </h2>
 
   <div class="tabs" [ngClass]="{'hidden': dropdownVisible}">
@@ -17,22 +26,25 @@
       <a routerLink="/top-genres" routerLinkActive="active" [ngClass]="{'selected': isSelected('/top-genres')}">
         Top Genres
       </a>
-      <!-- <a routerLink="/wrapped" routerLinkActive="active" [ngClass]="{'selected': isSelected('/wrapped')}">
-        Monthly Wrapped
-      </a> -->
     </div>
   </div>
 
-  <!-- Dropdown Button -->
+  <!-- Logout Button (Desktop) -->
+  <button class="logout-btn desktop-only" *ngIf="isLoggedIn()" (click)="logout()">
+    Logout
+  </button>
+
+  <!-- Dropdown Button (Mobile) -->
   <div class="dropdown-button" *ngIf="isLoggedIn()" (click)="toggleDropdown()">
-    ☰
+    <span class="hamburger">☰</span>
   </div>
 
+  <!-- Mobile Dropdown Menu -->
   <div class="dropdown" *ngIf="dropdownVisible">
     <a routerLink="/my-profile" routerLinkActive="active" (click)="selectItem('/my-profile')">My Profile</a>
     <a routerLink="/top-songs" routerLinkActive="active" (click)="selectItem('/top-songs')">Top Songs</a>
     <a routerLink="/top-artists" routerLinkActive="active" (click)="selectItem('/top-artists')">Top Artists</a>
     <a routerLink="/top-genres" routerLinkActive="active" (click)="selectItem('/top-genres')">Top Genres</a>
-    <!-- <a routerLink="/wrapped" routerLinkActive="active" (click)="selectItem('/wrapped')">Monthly Wrapped</a> -->
+    <a class="logout-link" (click)="logout()">Logout</a>
   </div>
 </div>

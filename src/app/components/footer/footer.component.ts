@@ -5,7 +5,7 @@ import { SongService } from 'src/app/services/song.service';
 import { UserService } from 'src/app/services/user.service';
 import { Observable, take } from 'rxjs';
 import { ToastService } from 'src/app/services/toast.service';
-import { environment } from 'src/environments/environment.prod';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-footer',
@@ -31,7 +31,6 @@ export class FooterComponent implements OnInit {
     this.router.events.subscribe(() => {
       const url = this.router.url;
 
-      // Example logic to show/hide button based on the route
       if (url.includes('/artist')) {
         this.showDynamicButton = true;
         this.footerButtonText = 'Go Back';
@@ -49,8 +48,6 @@ export class FooterComponent implements OnInit {
     base64Image: string
   ): Observable<any> {
     return new Observable((observer) => {
-      // Extract the base64 string if it includes the data URL prefix
-      //const base64String = base64Image.split(',')[1];
       const base64String = base64Image.replace(/\n/g, '');
 
       this.PlaylistService.uploadPlaylistImage(
@@ -74,7 +71,6 @@ export class FooterComponent implements OnInit {
     if (url.includes('/artist')) {
       this.router.navigate(['/top-artists']);
     } else if (url.includes('/top-songs')) {
-      // Get Top Tracks by term
       const currentTerm = this.SongService.getCurrentTerm();
       const today = new Date();
       const formattedDate = today.toISOString().split('T')[0];
@@ -113,7 +109,6 @@ export class FooterComponent implements OnInit {
               .subscribe({
                 next: (data) => {
                   console.log(data);
-                  // Now upload the image
                   this.uploadImage$(
                     playlist.id,
                     environment.logoBase64

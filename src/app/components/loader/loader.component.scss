@@ -1,34 +1,70 @@
-.loader {
+.loader-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #9c0abf, #1bdc6f); /* Gradient from purple to green */
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 9999; /* Ensure it appears on top */
+  z-index: 9999;
+}
+
+.loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
 }
 
 .spinner {
-  border: 8px solid rgba(0, 0, 0, 0.1);
-  border-top-color: #9c0abf; /* Top of spinner in purple */
-  border-right-color: #1bdc6f; /* Right side of spinner in green */
-  border-radius: 50%;
-  width: 50px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
   height: 50px;
-  animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.wave {
+  width: 8px;
+  height: 20px;
+  background: linear-gradient(180deg, #9c0abf 0%, #1bdc6f 100%);
+  border-radius: 4px;
+  animation: wave 1.2s ease-in-out infinite;
+  
+  &:nth-child(1) {
+    animation-delay: 0s;
+  }
+  &:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.2s;
+  }
+  &:nth-child(4) {
+    animation-delay: 0.3s;
+  }
+  &:nth-child(5) {
+    animation-delay: 0.4s;
+  }
 }
 
-p {
-  margin-top: 10px;
-  font-size: 16px;
-  color: white; /* Change text color to white for better visibility */
+@keyframes wave {
+  0%, 100% {
+    height: 20px;
+    opacity: 0.5;
+  }
+  50% {
+    height: 50px;
+    opacity: 1;
+  }
+}
+
+.loader-message {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  margin: 0;
+  opacity: 0.9;
 }

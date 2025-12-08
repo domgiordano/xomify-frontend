@@ -1,30 +1,138 @@
 .login-page {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Align items to the top */
+  justify-content: center;
   align-items: center;
-  height: 100vh; /* Full viewport height */
-  padding-top: 50px; /* Add some padding from the top */
-  background-color: #121212; /* Black background */
-  color: #ffffff; /* White text color */
+  min-height: calc(100vh - 140px);
+  padding: 40px 20px;
+  background: linear-gradient(180deg, #0a0a14 0%, #1a1a2e 100%);
 }
 
-.welcome-message {
-  font-size: 32px; /* Adjust font size for the welcome message */
-  margin-bottom: 20px; /* Space between message and button */
+.login-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 500px;
+  text-align: center;
+}
+
+.logo-container {
+  margin-bottom: 24px;
+  
+  .hero-logo {
+    height: 80px;
+    width: auto;
+    object-fit: contain;
+  }
+}
+
+.welcome-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 12px 0;
+  background: linear-gradient(135deg, #9c0abf 0%, #1bdc6f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.welcome-subtitle {
+  font-size: 1.1rem;
+  color: #8a8a9a;
+  margin: 0 0 32px 0;
+}
+
+.features {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px 20px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  .feature-icon {
+    font-size: 1.2rem;
+  }
+  
+  .feature-text {
+    font-size: 0.9rem;
+    color: #b0b0b0;
+    font-weight: 500;
+  }
 }
 
 .login-button {
-  background-color: #9c0abf; /* New Purp */
-  color: #ffffff; /* White text */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
+  color: #ffffff;
   border: none;
-  border-radius: 25px; /* Rounded button */
-  padding: 10px 20px; /* Button padding */
-  font-size: 18px; /* Font size */
+  border-radius: 30px;
+  padding: 16px 40px;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s; /* Transition for hover effect */
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(29, 185, 84, 0.3);
 
   &:hover {
-    background-color: darken(#9c0abf, 10%); /* Darker purp on hover */
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(29, 185, 84, 0.4);
+  }
+
+  &:active {
+    transform: translateY(-1px);
+  }
+}
+
+.spotify-icon {
+  flex-shrink: 0;
+}
+
+// Mobile Responsive
+@media (max-width: 768px) {
+  .login-page {
+    padding: 24px 16px;
+  }
+
+  .logo-container .hero-logo {
+    height: 60px;
+  }
+
+  .welcome-title {
+    font-size: 1.8rem;
+  }
+
+  .welcome-subtitle {
+    font-size: 1rem;
+  }
+
+  .features {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .feature-item {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 16px;
+  }
+
+  .login-button {
+    padding: 14px 32px;
+    font-size: 1rem;
+    width: 100%;
   }
 }
