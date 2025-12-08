@@ -1,4 +1,4 @@
-name: Deploy Frontend
+name: Deploy Xomify Frontend
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Retrieve SSM Parameters
         run: |
@@ -48,15 +48,13 @@ jobs:
           sed -i "s|apiAuthToken: '---'|apiAuthToken: '$(grep 'API_AUTH_TOKEN' spotify_credentials.env | cut -d'=' -f2)'|g" src/environments/environment.prod.ts
           sed -i "s|apiId: '---'|apiId: '$(grep 'API_ID' spotify_credentials.env | cut -d'=' -f2)'|g" src/environments/environment.prod.ts
 
-
-
       - name: Build the project
-        run: npm run build -- --configuration production
+        run: npm run build:prod
 
       - name: Deploy to S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
+          AWS_REGION: "us-east-1"
         run: |
-          aws s3 sync ./dist/xomify-frontend s3://xomify.com --delete
+          aws s3 sync ./dist/xomify s3://xomify.com --delete
