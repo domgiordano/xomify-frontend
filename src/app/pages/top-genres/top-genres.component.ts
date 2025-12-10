@@ -5,136 +5,128 @@ import { ArtistService } from 'src/app/services/artist.service';
 import { GenresService } from 'src/app/services/genre.service';
 import { ToastService } from 'src/app/services/toast.service';
 
+interface GenreItem {
+  name: string;
+  count: number;
+  percentage: number;
+}
+
 @Component({
   selector: 'app-top-genres-page',
   templateUrl: './top-genres.component.html',
   styleUrls: ['./top-genres.component.scss']
 })
 export class TopGenresComponent implements OnInit {
-  selectedTerm: string = 'short_term'; // Default term
-  displayedGenres: string[] = [];
-  hoveredIndex: number = -1; // To track the hovered genre
-  loading: boolean;
-  private topArtistsShortTerm: any[];
-  private topArtistsMedTerm: any[];
-  private topArtistsLongTerm: any[];
-  private topGenresShortTerm: any;
-  private topGenresMedTerm: any;
-  private topGenresLongTerm: any;
-  accessToken: string;
+  loading = true;
+  transitioning = false;
+  selectedTerm = 'short_term';
+  genreList: GenreItem[] = [];
+  
+  private genresShortTerm: GenreItem[] = [];
+  private genresMedTerm: GenreItem[] = [];
+  private genresLongTerm: GenreItem[] = [];
+  
+  private artistsShortTerm: any[] = [];
+  private artistsMedTerm: any[] = [];
+  private artistsLongTerm: any[] = [];
 
   constructor(
-      private AuthService: AuthService,
-      private ArtistService: ArtistService,
-      private GenreService: GenresService,
-      private ToastService: ToastService
-    ) {}
-  ngOnInit() {
-    this.accessToken = this.AuthService.getAccessToken();
-    this.topArtistsShortTerm = this.ArtistService.getShortTermTopArtists();
-    this.topArtistsMedTerm = this.ArtistService.getMedTermTopArtists();
-    this.topArtistsLongTerm = this.ArtistService.getLongTermTopArtists();
-    this.topGenresShortTerm = this.GenreService.getShortTermTopGenres();
-    this.topGenresMedTerm = this.GenreService.getMedTermTopGenres();
-    this.topGenresLongTerm = this.GenreService.getLongTermTopGenres();
-    if ( this.topArtistsShortTerm.length === 0){
-      console.log("Need Top Artists.");
+    private authService: AuthService,
+    private artistService: ArtistService,
+    private genreService: GenresService,
+    private toastService: ToastService
+  ) {}
+
+  ngOnInit(): void {
+    this.artistsShortTerm = this.artistService.getShortTermTopArtists();
+    
+    if (this.artistsShortTerm.length === 0) {
       this.loadTopArtists();
-    }
-    else if ( Object.entries(this.topGenresShortTerm).length === 0 ){
-      console.log("Need top Genres");
-      this.loading = true;
-      this.loadTopGenres();
-      this.loading = false;
-    }
-    else{
-      console.log("We got dem top genres.");
-      this.updateDisplayedGenres();
-    }
-
-    console.log('shortterm gnere', this.topGenresShortTerm);
-
-  }
-
-  loadTopGenres(){
-    this.topGenresShortTerm = this.sortGenres(this.GenreService.getTopGenres(this.topArtistsShortTerm, 'short_term'));
-    this.topGenresMedTerm = this.sortGenres(this.GenreService.getTopGenres(this.topArtistsMedTerm, 'medium_term'));
-    this.topGenresLongTerm = this.sortGenres(this.GenreService.getTopGenres(this.topArtistsLongTerm, 'long_term'));
-    console.log("TOP Genres FOUND ------");
-    console.log(this.topGenresShortTerm);
-    console.log(this.topGenresMedTerm);
-    console.log(this.topGenresLongTerm);
-
-    console.log('Top Genres Loaded.');
-    this.updateDisplayedGenres();
-  }
-
-  selectTerm(term: string) {
-    this.selectedTerm = term;
-    this.updateDisplayedGenres();
-  }
-
-  updateDisplayedGenres() {
-    switch (this.selectedTerm) {
-      case 'short_term':
-        this.displayedGenres = Object.keys(this.topGenresShortTerm);
-        break;
-      case 'medium_term':
-        this.displayedGenres = Object.keys(this.topGenresMedTerm);
-        break;
-      case 'long_term':
-        this.displayedGenres = Object.keys(this.topGenresLongTerm);
-        break;
+    } else {
+      this.artistsMedTerm = this.artistService.getMedTermTopArtists();
+      this.artistsLongTerm = this.artistService.getLongTermTopArtists();
+      this.processGenres();
     }
   }
-  private sortGenres(genres){
-    let sorted = [];
-    for (let genre in genres) {
-      sorted.push([genre, genres[genre]]);
-    }
 
-    sorted.sort(function(a, b) {
-      return b[1] - a[1];
-    });
-    let genreSorted = {};
-    sorted.forEach(function(item){
-        genreSorted[item[0]]=item[1]
-    });
-    return genreSorted;
-  }
-
-  loadTopArtists() {
+  loadTopArtists(): void {
     this.loading = true;
-    const getArtistsCalls = forkJoin({
-      shortTermResp: this.ArtistService.getTopArtists('short_term'),
-      medTermResp: this.ArtistService.getTopArtists('medium_term'),
-      longTermResp: this.ArtistService.getTopArtists('long_term'),
-    })
-    return getArtistsCalls.pipe(take(1)).subscribe({
-      next: data => {
-        this.updateTopArtists(data.shortTermResp, data.medTermResp, data.longTermResp);
-        this.loading = false;
-        console.log("TOP ARSTISTS FOUND ------");
-        console.log(data);
-        this.loadTopGenres();
+    
+    forkJoin({
+      short: this.artistService.getTopArtists('short_term'),
+      medium: this.artistService.getTopArtists('medium_term'),
+      long: this.artistService.getTopArtists('long_term')
+    }).pipe(take(1)).subscribe({
+      next: (data) => {
+        this.artistsShortTerm = data.short.items;
+        this.artistsMedTerm = data.medium.items;
+        this.artistsLongTerm = data.long.items;
+        
+        this.artistService.setShortTermTopArtists(this.artistsShortTerm);
+        this.artistService.setMedTermTopArtists(this.artistsMedTerm);
+        this.artistService.setLongTermTopArtists(this.artistsLongTerm);
+        
+        this.processGenres();
       },
-      error: err => {
-        console.error('Error fetching user artists', err);
-        this.ToastService.showNegativeToast('Error adding songs to playlist');
+      error: (err) => {
+        console.error('Error fetching artists', err);
+        this.toastService.showNegativeToast('Error loading genres');
         this.loading = false;
-      },
-      complete: () => {
-        console.log('Top Artists Loaded.');
       }
     });
   }
 
-  private updateTopArtists(short: any, med: any, long: any): void {
-    this.topArtistsShortTerm = short.items;
-    this.topArtistsMedTerm = med.items;
-    this.topArtistsLongTerm = long.items;
-    this.ArtistService.setShortTermTopArtists(this.topArtistsShortTerm);
-    this.ArtistService.setMedTermTopArtists(this.topArtistsMedTerm);
-    this.ArtistService.setLongTermTopArtists(this.topArtistsLongTerm);
+  private processGenres(): void {
+    this.genresShortTerm = this.extractGenres(this.artistsShortTerm);
+    this.genresMedTerm = this.extractGenres(this.artistsMedTerm);
+    this.genresLongTerm = this.extractGenres(this.artistsLongTerm);
+    
+    this.genreList = [...this.genresShortTerm];
+    this.loading = false;
+  }
+
+  private extractGenres(artists: any[]): GenreItem[] {
+    const genreMap = new Map<string, number>();
+    
+    artists.forEach(artist => {
+      (artist.genres || []).forEach((genre: string) => {
+        genreMap.set(genre, (genreMap.get(genre) || 0) + 1);
+      });
+    });
+    
+    const sorted = Array.from(genreMap.entries())
+      .sort((a, b) => b[1] - a[1]);
+    
+    const maxCount = sorted.length > 0 ? sorted[0][1] : 1;
+    
+    return sorted.map(([name, count]) => ({
+      name,
+      count,
+      percentage: (count / maxCount) * 100
+    }));
+  }
+
+  selectTerm(term: string): void {
+    if (term === this.selectedTerm) return;
+    
+    this.selectedTerm = term;
+    
+    // Fade transition
+    this.transitioning = true;
+    
+    setTimeout(() => {
+      switch (term) {
+        case 'short_term':
+          this.genreList = [...this.genresShortTerm];
+          break;
+        case 'medium_term':
+          this.genreList = [...this.genresMedTerm];
+          break;
+        case 'long_term':
+          this.genreList = [...this.genresLongTerm];
+          break;
+      }
+      this.transitioning = false;
+    }, 300);
   }
 }

@@ -1,61 +1,117 @@
-<div class="top-songs-page">
-  <app-loader [loading]="loading"></app-loader>
-  <div class="switch-container">
-    <div class="term-buttons">
-      <button
-        class="term-button"
-        [ngClass]="{'selected': selectedTerm === 'short_term'}"
-        (click)="selectedTerm = 'short_term'; onTermChange()">
-        Last Month
-      </button>
-      <button
-        class="term-button"
-        [ngClass]="{'selected': selectedTerm === 'medium_term'}"
-        (click)="selectedTerm = 'medium_term'; onTermChange()">
-        Last 6 Months
-      </button>
-      <button
-        class="term-button"
-        [ngClass]="{'selected': selectedTerm === 'long_term'}"
-        (click)="selectedTerm = 'long_term'; onTermChange()">
-        Last Year
-      </button>
-    </div>
+<app-loader [loading]="loading" message="Loading your top tracks..."></app-loader>
+
+<div class="page-container" *ngIf="!loading">
+  <header class="page-header">
+    <h1 class="page-title">Your Top Songs</h1>
+    <p class="page-subtitle">Discover what you've been listening to the most</p>
+  </header>
+
+  <!-- Term Selector -->
+  <div class="term-selector">
+    <button 
+      class="term-btn" 
+      [class.active]="selectedTerm === 'short_term'"
+      (click)="selectTerm('short_term')">
+      Last Month
+    </button>
+    <button 
+      class="term-btn" 
+      [class.active]="selectedTerm === 'medium_term'"
+      (click)="selectTerm('medium_term')">
+      Last 6 Months
+    </button>
+    <button 
+      class="term-btn" 
+      [class.active]="selectedTerm === 'long_term'"
+      (click)="selectTerm('long_term')">
+      All Time
+    </button>
   </div>
 
-  <div class="songs-grid">
-    <div class="song-card" *ngFor="let song of displayedSongs; let i = index"
-      [ngClass]="{ 'flipped': song.flipped }" (mouseenter)="playSong(song.id)"
-      (mouseleave)="stopSong()"
-    >
-      <div class="card-content">
-        <!-- Front of the card -->
+  <!-- Songs Grid -->
+  <div class="songs-grid" [class.fade-out]="transitioning">
+    <div 
+      class="song-card" 
+      *ngFor="let song of displayedSongs; let i = index"
+      [class.flipped]="song.flipped"
+      (mouseenter)="onSongHover(song)"
+      (mouseleave)="onSongLeave()">
+      
+      <div class="card-inner">
+        <!-- Front of Card -->
         <div class="card-front">
-          <span class="song-ranking">#{{ i + 1 }}</span>
-          <img [src]="song.album.images[0].url" alt="{{ song.name }}" class="song-image">
-          <h2 class="song-title">{{ song.name }}</h2>
-          <p class="song-artists">{{ formatArtists(song.artists) }}</p>
-          <button class="see-more-button" (click)="flipCard(song)">See More</button>
+          <div class="rank-badge">#{{ i + 1 }}</div>
+          <div class="artwork-container">
+            <img [src]="song.album?.images[0]?.url" [alt]="song.name" class="artwork">
+            <div class="play-overlay">
+              <svg viewBox="0 0 24 24" width="40" height="40">
+                <path fill="currentColor" d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="song-info">
+            <h3 class="song-title">{{ song.name }}</h3>
+            <p class="song-artists">{{ formatArtists(song.artists) }}</p>
+          </div>
+          <button class="stats-btn" (click)="flipCard(song, $event)">
+            View Stats
+          </button>
         </div>
 
-        <!-- Back of the card -->
+        <!-- Back of Card -->
         <div class="card-back">
-          <span class="song-ranking">#{{ i + 1 }}</span>
-          <h3 class="song-title">{{ selectedSong.name }}</h3>
-          <p class="song-stats">Duration: {{ selectedSong.duration }}</p>
-          <p class="song-stats">Acousticness: {{ selectedSong.acousticness }}</p>
-          <p class="song-stats">Danceability: {{ selectedSong.danceability }}</p>
-          <p class="song-stats">Energy: {{ selectedSong.energy }}</p>
-          <p class="song-stats">Instrumentalness: {{ selectedSong.instrumentalness }}</p>
-          <p class="song-stats">Liveness: {{ selectedSong.liveness }}</p>
-          <p class="song-stats">Loudness: {{ selectedSong.loudness }}</p>
-          <p class="song-stats">Speechiness: {{ selectedSong.speechiness }}</p>
-          <p class="song-stats">Tempo: {{ selectedSong.tempo }}</p>
-          <p class="song-stats">Valence: {{ selectedSong.valence }}</p>
-          <button class="see-more-button" (click)="flipCardBack(song)">Go Back</button>
+          <div class="rank-badge">#{{ i + 1 }}</div>
+          <h3 class="song-title">{{ song.name }}</h3>
+          
+          <div class="stats-container" *ngIf="selectedSong?.id === song.id">
+            <div class="stat-row">
+              <span class="stat-label">Duration</span>
+              <span class="stat-value">{{ selectedSong.duration }}</span>
+            </div>
+            
+            <div class="stat-bar-row">
+              <span class="stat-label">Energy</span>
+              <div class="stat-bar">
+                <div class="stat-fill energy" [style.width.%]="selectedSong.energy * 100"></div>
+              </div>
+              <span class="stat-percent">{{ (selectedSong.energy * 100) | number:'1.0-0' }}%</span>
+            </div>
+            
+            <div class="stat-bar-row">
+              <span class="stat-label">Danceability</span>
+              <div class="stat-bar">
+                <div class="stat-fill dance" [style.width.%]="selectedSong.danceability * 100"></div>
+              </div>
+              <span class="stat-percent">{{ (selectedSong.danceability * 100) | number:'1.0-0' }}%</span>
+            </div>
+            
+            <div class="stat-bar-row">
+              <span class="stat-label">Acousticness</span>
+              <div class="stat-bar">
+                <div class="stat-fill acoustic" [style.width.%]="selectedSong.acousticness * 100"></div>
+              </div>
+              <span class="stat-percent">{{ (selectedSong.acousticness * 100) | number:'1.0-0' }}%</span>
+            </div>
+            
+            <div class="stat-bar-row">
+              <span class="stat-label">Valence</span>
+              <div class="stat-bar">
+                <div class="stat-fill valence" [style.width.%]="selectedSong.valence * 100"></div>
+              </div>
+              <span class="stat-percent">{{ (selectedSong.valence * 100) | number:'1.0-0' }}%</span>
+            </div>
+            
+            <div class="stat-row">
+              <span class="stat-label">Tempo</span>
+              <span class="stat-value">{{ selectedSong.tempo | number:'1.0-0' }} BPM</span>
+            </div>
+          </div>
+          
+          <button class="stats-btn" (click)="flipCard(song, $event)">
+            Go Back
+          </button>
         </div>
       </div>
     </div>
   </div>
-  <audio #audioPlayer></audio>
 </div>

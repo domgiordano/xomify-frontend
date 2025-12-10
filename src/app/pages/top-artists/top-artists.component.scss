@@ -1,153 +1,225 @@
-.top-artists-page {
-  padding: 20px;
-  background-color: #121212; /* Black background */
-  color: #ffffff; /* White text color */
+.page-container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0a0a14 0%, #121225 100%);
+  padding: 90px 24px 120px;
 }
 
-.switch-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.switch {
-  display: flex;
-  align-items: center;
-  margin: 0 10px;
-  cursor: pointer;
-}
-
-.switch input {
-  display: none; /* Hide the radio button */
-}
-
-.slider {
-  background-color: #9c0abf; /* New Purp */
-  border-radius: 25px;
-  padding: 10px 20px;
-  transition: background-color 0.3s;
-}
-
-.artists-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  transition: opacity 0.5s ease; /* Smooth transition for opacity */
-  max-height: calc(100vh - 150px); /* Adjust based on your toolbar height */
-  overflow-y: auto; /* Enable vertical scrolling */
-  padding-right: 10px; /* Optional: Add padding to avoid clipping scrollbar */
-}
-
-// Class to fade out cards
-.fade-out {
-  opacity: 0; /* Fade out effect */
-}
-
-.fade-in {
-  opacity: 1; /* Fade in effect */
-}
-
-.artist-card {
-  opacity: 1; /* Default opacity */
-  transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
-  flex-direction: column; /* Stack elements vertically */
-  background-color: #282828; /* Dark card background */
-  border-radius: 10px;
-  padding: 10px; /* Padding inside the card */
+.page-header {
   text-align: center;
-  justify-content: space-between;
-  margin: 10px;
-  flex: 0 1 calc(20% - 20px); /* Set width to 20% minus margins for 5 cards */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
-  max-width: calc(20% - 20px); /* Maximum width for each card */
-  box-sizing: border-box; /* Include padding and border in the element's total width and height */
-  &:hover {
-    background-color: #9c0abf; /* Change background on hover */
-    transform: scale(1.05); /* Slightly enlarge the card */
-    cursor: pointer; /* Change cursor to pointer */
-    .artist-ranking {
-      color: white; /* Change rank text color to black on hover */
-    }
-    .see-more-button {
-      background-color: black;
-    }
+  margin-bottom: 32px;
+  
+  .page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 8px 0;
+    background: linear-gradient(135deg, #9c0abf 0%, #1bdc6f 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .page-subtitle {
+    font-size: 1.1rem;
+    color: #8a8a9a;
+    margin: 0;
   }
 }
 
-.artist-image {
-  width: auto; /* Full width of the card */
-  height: auto; /* Maintain aspect ratio */
-  max-width: 150px;
-  max-height: 150px;
-  object-fit: cover; /* Cover the space without distortion */
-  border-radius: 5px; /* Rounded corners for the image */
-  align-self: center;
-}
-
-.artist-title {
-  font-size: 16px; /* Adjust title font size */
-  margin: 5px 0; /* Spacing around title */
-}
-
-.artist-artists {
-  font-size: 12px; /* Adjust artists font size */
-  color: #b3b3b3; /* Light gray color */
-}
-
-.artist-ranking {
-  display: block; /* Make it a block element */
-  font-size: 14px; /* Adjust ranking font size */
-  color: #1bdc6f; /* New Purp color */
-  margin-bottom: 10px; /* Space below the ranking */
-}
-
-.term-buttons {
+// Term Selector
+.term-selector {
   display: flex;
   justify-content: center;
-  margin-bottom: 20px; // Adjust spacing as needed
+  gap: 12px;
+  margin-bottom: 40px;
 }
 
-.term-button {
-  background-color: white; // Default color
-  color: black; // Text color
-  border: none;
-  border-radius: 25px; // More rounded corners
-  padding: 12px 30px; // Increased padding for a longer button
-  margin: 0 10px; // Space between buttons
+.term-btn {
+  padding: 12px 28px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  color: #b0b0b0;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  font-size: 16px; // Adjust font size as needed
-
+  transition: all 0.3s ease;
+  
   &:hover {
-    background-color: #9c0abf; // Highlight on hover
-    color: white;
+    background: rgba(156, 10, 191, 0.15);
+    border-color: rgba(156, 10, 191, 0.3);
+    color: #fff;
+  }
+  
+  &.active {
+    background: linear-gradient(135deg, #1bdc6f 0%, #17b75b 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(27, 220, 111, 0.3);
   }
 }
 
-.selected {
-  background-color: #1bdc6f; // Color for selected button
-  color: white; // Change text color for visibility
-}
-.see-more-button {
-  background-color: #9c0abf; /* New Purp */
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 8px 12px;
-  margin-top: 10px; /* Space from the content above */
-  cursor: pointer;
-  transition: background-color 0.3s;
-
-  &:hover {
-    color: #1bdc6f
+// Artists Grid
+.artists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  transition: opacity 0.3s ease;
+  
+  &.fade-out {
+    opacity: 0;
   }
 }
 
+// Artist Card
+.artist-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  position: relative;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: rgba(156, 10, 191, 0.4);
+    transform: translateY(-8px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    
+    .artist-image {
+      border-color: #1bdc6f;
+    }
+    
+    .image-overlay {
+      opacity: 1;
+    }
+  }
+}
+
+.rank-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: linear-gradient(135deg, #9c0abf 0%, #7a0896 100%);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 20px;
+  z-index: 2;
+}
+
+.artist-image-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 20px;
+  
+  .artist-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid rgba(156, 10, 191, 0.5);
+    transition: border-color 0.3s ease;
+  }
+  
+  .image-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    
+    .view-profile {
+      color: #1bdc6f;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+  }
+}
+
+.artist-info {
+  .artist-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 6px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .artist-genre {
+    font-size: 0.85rem;
+    color: #9c0abf;
+    margin: 0 0 12px 0;
+    text-transform: capitalize;
+  }
+}
+
+.artist-popularity {
+  .popularity-bar {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  
+  .popularity-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #9c0abf 0%, #1bdc6f 100%);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+  
+  .popularity-label {
+    font-size: 0.75rem;
+    color: #6a6a7a;
+  }
+}
+
+// Mobile Responsive
 @media (max-width: 768px) {
+  .page-container {
+    padding: 80px 16px 100px;
+  }
+  
+  .page-header .page-title {
+    font-size: 1.8rem;
+  }
+  
+  .term-selector {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .term-btn {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+  }
+  
+  .artists-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+  }
+  
   .artist-card {
-    flex: 0 1 100%; /* Ensure full width for one card per row */
-    max-width: none; /* Remove maximum width constraints */
-    margin: 10px 0; /* Add some margin for spacing */
+    padding: 16px;
+  }
+  
+  .artist-image-container {
+    width: 100px;
+    height: 100px;
   }
 }
-

@@ -1,135 +1,191 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ArtistService } from 'src/app/services/artist.service';
 import { PlayerService } from 'src/app/services/player.service';
-import { Router } from '@angular/router';
-import { forkJoin, take } from 'rxjs';
 import { ToastService } from 'src/app/services/toast.service';
+import { forkJoin, take, Subscription } from 'rxjs';
+
+interface Artist {
+  id?: string;
+  name?: string;
+  image?: string;
+  images?: any[];
+  genres?: string[];
+  followers?: number;
+  popularity?: number;
+  external_urls?: { spotify?: string };
+  topTracks?: any[];
+  relatedArtists?: any[];
+}
 
 @Component({
   selector: 'app-artist-profile',
   templateUrl: './artist-profile.component.html',
   styleUrls: ['./artist-profile.component.scss']
 })
-export class ArtistProfileComponent implements OnInit {
-  loading: boolean;
-  artistId: string;
-  artist: any = {};
-  topSongs: any[] = [];
-  currentImageIndex: number = 0;
-  audio = new Audio();
-  currentRelatedArtistIndex = 0;
+export class ArtistProfileComponent implements OnInit, OnDestroy {
+  @ViewChild('carouselTrack') carouselTrack!: ElementRef<HTMLDivElement>;
+  
+  artist: Artist = {};
+  topTracks: any[] = [];
+  relatedArtists: any[] = [];
+  
+  isLoading = true;
+  error: string | null = null;
+  
+  carouselPosition = 0;
+  maxCarouselPosition = 0;
+  
+  private routeSub!: Subscription;
 
   constructor(
-    private router: Router,
     private route: ActivatedRoute,
-    private ArtistService: ArtistService,
-    private ToastService: ToastService,
-    private PlayerService: PlayerService
+    private router: Router,
+    private artistService: ArtistService,
+    private playerService: PlayerService,
+    private toastService: ToastService
   ) {}
 
-  ngOnInit() {
-    this.route.queryParams.subscribe(params => {
-      this.artistId = params['id'];
-      this.loadArtistDetails(this.artistId);
-      this.artist.id = this.artistId;
-      this.artist.relatedArtists = [];
+  ngOnInit(): void {
+    // Support both route params (/artist-profile/:id) and query params (/artist?id=xxx)
+    this.routeSub = this.route.params.subscribe(params => {
+      const artistId = params['id'];
+      if (artistId) {
+        this.loadArtistDetails(artistId);
+      } else {
+        // Fallback to query params for backwards compatibility
+        this.route.queryParams.pipe(take(1)).subscribe(queryParams => {
+          const queryId = queryParams['id'];
+          if (queryId) {
+            this.loadArtistDetails(queryId);
+          } else {
+            this.error = 'No artist ID provided';
+            this.isLoading = false;
+          }
+        });
+      }
     });
   }
 
-  loadArtistDetails(artistId: string) {
-    this.loading = true;
-    if (artistId) {
-      const artistCalls = forkJoin({
-        detailsResp: this.ArtistService.getArtistDetails(artistId),
-        albumsResp: this.ArtistService.getArtistAlbums(artistId),
-        tracksResp: this.ArtistService.getArtistTopTracks(artistId)
-      });
+  ngOnDestroy(): void {
+    if (this.routeSub) {
+      this.routeSub.unsubscribe();
+    }
+    this.playerService.stopSong();
+  }
 
-      return artistCalls.pipe(take(1)).subscribe({
-        next: data => {
-          this.buildArtist(data.detailsResp, data.albumsResp, data.tracksResp);
-        },
-        error: err => {
-          console.error('Error fetching artist', err);
-          this.ToastService.showNegativeToast('Error adding songs to playlist');
-          this.loading = false;
-        },
-        complete: () => {
-          this.loading = false;
-          console.log('Artist Loaded.');
-        }
-      });
+  loadArtist(): void {
+    const id = this.route.snapshot.params['id'] || this.route.snapshot.queryParams['id'];
+    if (id) {
+      this.loadArtistDetails(id);
     }
   }
 
-  goBack() {
+  private loadArtistDetails(artistId: string): void {
+    this.isLoading = true;
+    this.error = null;
+    this.artist = { id: artistId, relatedArtists: [] };
+
+    forkJoin({
+      details: this.artistService.getArtistDetails(artistId),
+      tracks: this.artistService.getArtistTopTracks(artistId)
+    }).pipe(take(1)).subscribe({
+      next: (data) => {
+        this.buildArtist(data.details, data.tracks);
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading artist:', err);
+        this.error = 'Failed to load artist. Please try again.';
+        this.toastService.showNegativeToast('Failed to load artist');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private buildArtist(details: any, tracks: any): void {
+    this.artist = {
+      id: details.id,
+      name: details.name,
+      image: details.images?.[0]?.url,
+      images: details.images,
+      genres: details.genres || [],
+      followers: details.followers?.total || 0,
+      popularity: details.popularity || 0,
+      external_urls: details.external_urls,
+      topTracks: [],
+      relatedArtists: []
+    };
+
+    this.topTracks = (tracks.tracks || []).map((track: any) => ({
+      id: track.id,
+      name: track.name,
+      album: track.album,
+      duration_ms: track.duration_ms,
+      popularity: track.popularity,
+      preview_url: track.preview_url,
+      artists: track.artists
+    }));
+    
+    // Note: Related artists would require an additional API endpoint
+    // For now, we'll leave this empty or you can add getRelatedArtists to ArtistService
+    this.relatedArtists = [];
+    this.calculateCarouselMax();
+  }
+
+  goBack(): void {
     this.router.navigate(['/top-artists']);
   }
 
-  goToArtist(relatedArtistId: string) {
-    this.router.navigate(['/artist'], { queryParams: { id: relatedArtistId } });
+  formatNumber(num: number): string {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
   }
 
-  async playSong(trackId: string) {
-    this.PlayerService.playerReady$.pipe(take(1)).subscribe(ready => {
-      if (ready) this.PlayerService.playSong(trackId);
-      else console.warn('Player not ready yet.');
+  formatDuration(ms: number): string {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  onTrackHover(track: any): void {
+    this.playerService.playerReady$.pipe(take(1)).subscribe(ready => {
+      if (ready) {
+        this.playerService.playSong(track.id);
+      }
     });
   }
 
-  async stopSong() {
-    this.PlayerService.playerReady$.pipe(take(1)).subscribe(ready => {
-      if (ready) this.PlayerService.stopSong();
-      else console.warn('Player not ready yet.');
+  onTrackLeave(): void {
+    this.playerService.playerReady$.pipe(take(1)).subscribe(ready => {
+      if (ready) {
+        this.playerService.stopSong();
+      }
     });
   }
 
-  private buildArtist(details: any, albums: any, tracks: any) {
-    this.artist.image = details.images[0]?.url;
-    this.artist.images = details.images;
-    this.artist.name = details.name;
-    this.artist.genres = details.genres;
-    this.artist.followers = details.followers.total;
-    this.artist.popularity = details.popularity;
-    this.artist.albums = albums.items;
-    this.artist.topTracks = tracks.tracks.map(track => ({
-      name: track.name,
-      image: track.album.images[0].url,
-      artists: track.artists,
-      id: track.id
-    }));
-  }
-
-  formatArtists(artists: any[]): string {
-    return artists.map(artist => artist.name).join(', ');
-  }
-
-  get visibleRelatedArtists() {
-    return this.artist.relatedArtists.slice(this.currentRelatedArtistIndex, this.currentRelatedArtistIndex + 3);
-  }
-
-  nextRelatedArtists() {
-    if (this.currentRelatedArtistIndex < this.artist.relatedArtists.length - 3) {
-      this.currentRelatedArtistIndex++;
+  scrollCarousel(direction: 'prev' | 'next'): void {
+    if (!this.carouselTrack) return;
+    
+    const track = this.carouselTrack.nativeElement;
+    const cardWidth = 180; // card width + gap
+    const scrollAmount = cardWidth * 3;
+    
+    if (direction === 'next') {
+      track.scrollLeft += scrollAmount;
+      this.carouselPosition = Math.min(this.carouselPosition + 1, this.maxCarouselPosition);
     } else {
-      this.currentRelatedArtistIndex = 0;
+      track.scrollLeft -= scrollAmount;
+      this.carouselPosition = Math.max(this.carouselPosition - 1, 0);
     }
   }
 
-  previousRelatedArtists() {
-    if (this.currentRelatedArtistIndex > 0) {
-      this.currentRelatedArtistIndex--;
-    } else {
-      this.currentRelatedArtistIndex = this.artist.relatedArtists.length - 3;
-    }
-  }
-
-  isNextDisabled() {
-    return this.artist.relatedArtists.length <= 3;
-  }
-
-  isPreviousDisabled() {
-    return this.artist.relatedArtists.length <= 3;
+  private calculateCarouselMax(): void {
+    const visibleCards = 5;
+    this.maxCarouselPosition = Math.max(0, Math.ceil((this.relatedArtists.length - visibleCards) / 3));
   }
 }

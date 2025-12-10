@@ -1,197 +1,322 @@
-.top-songs-page {
-  padding: 20px;  // Added padding to the outer container
-  background-color: #121212; /* Black background */
-  color: #ffffff; /* White text color */
+.page-container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0a0a14 0%, #121225 100%);
+  padding: 90px 24px 120px;
 }
 
-.switch-container {
+.page-header {
+  text-align: center;
+  margin-bottom: 32px;
+  
+  .page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 8px 0;
+    background: linear-gradient(135deg, #9c0abf 0%, #1bdc6f 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .page-subtitle {
+    font-size: 1.1rem;
+    color: #8a8a9a;
+    margin: 0;
+  }
+}
+
+// Term Selector
+.term-selector {
   display: flex;
   justify-content: center;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 40px;
 }
 
-.term-buttons {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px; // Adjust spacing as needed
-}
-
-.term-button {
-  background-color: white; // Default color
-  color: black; // Text color
-  border: none;
-  border-radius: 25px; // More rounded corners
-  padding: 12px 30px; // Increased padding for a longer button
-  margin: 0 10px; // Space between buttons
+.term-btn {
+  padding: 12px 28px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  color: #b0b0b0;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  font-size: 16px; // Adjust font size as needed
-
+  transition: all 0.3s ease;
+  
   &:hover {
-    background-color: #9c0abf; // Highlight on hover
-    color: white;
+    background: rgba(156, 10, 191, 0.15);
+    border-color: rgba(156, 10, 191, 0.3);
+    color: #fff;
+  }
+  
+  &.active {
+    background: linear-gradient(135deg, #1bdc6f 0%, #17b75b 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(27, 220, 111, 0.3);
   }
 }
 
-.selected {
-  background-color: #1bdc6f; // Color for selected button
-  color: white; // Change text color for visibility
-}
-
+// Songs Grid
 .songs-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  transition: opacity 0.5s ease; /* Smooth transition for opacity */
-  max-height: calc(100vh - 150px); /* Adjust based on your toolbar height */
-  overflow-y: auto; /* Enable vertical scrolling */
-  padding-right: 10px; /* Optional: Add padding to avoid clipping scrollbar */
-}
-
-// Media query for mobile responsiveness
-@media (max-width: 768px) {
-  .song-card {
-    width: calc(100% - 20px); // Show one card per row with padding
-    margin: 10px 0; // Add vertical margin between cards
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  transition: opacity 0.3s ease;
+  
+  &.fade-out {
+    opacity: 0;
   }
 }
 
-// Class to fade out cards
-.fade-out {
-  opacity: 0; /* Fade out effect */
-}
-
-.fade-in {
-  opacity: 1; /* Fade in effect */
-}
-
+// Song Card with 3D Flip
 .song-card {
   perspective: 1000px;
-  width: calc(20% - 20px);  // Show 4 cards per row on larger screens
-  height: 350px;  // Height for content
+  height: 380px;
+}
+
+.card-inner {
   position: relative;
-  opacity: 1;
-  transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.song-card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front,
+.card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: #282828;
-  border-radius: 10px;
-  padding: 10px;
-  text-align: center;
-  justify-content: space-between;
-  margin: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
-  overflow: hidden;  // Prevent content from overflowing outside the card
+}
 
-  .card-content {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.6s;
-    transform-style: preserve-3d;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;  // Ensure even spacing between content and button
-    flex-grow: 1;  // Allow content area to expand and keep button fixed
-  }
-
-  &.flipped .card-content {
-    transform: rotateY(180deg);
-  }
-
-  .card-front,
-  .card-back {
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    position: absolute;
-    top: 0;
-    left: 0;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background-color: #282828;
-    padding: 10px;
-    box-sizing: border-box;
-  }
-
-  .card-back {
-    transform: rotateY(180deg);
-    background-color: #282828;
-  }
-
-  .song-image {
-    max-width: 150px;
-    max-height: 150px;
-    object-fit: cover;
-    border-radius: 5px;
-    align-self: center;
-  }
-  .song-stats {
-    font-size: 12px;  // Smaller font for stats
-    color: white;  // Lighter grey for stats text
-    margin: 2px 0;  // Reduce spacing between stats
-    line-height: 1.2;  // Adjust line height for tighter spacing
-  }
-
-  .song-title {
-    font-size: 16px;
-    margin: 5px 0;
-  }
-
-  .song-artists {
-    font-size: 12px;
-    color: white;
-  }
-
-  .song-ranking {
-    font-size: 14px;
-    color: #1bdc6f;
-    margin-bottom: 10px;
-  }
-
-  .see-more-button {
-    background-color: #9c0abf; // Original color restored
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 8px 12px;
-    cursor: pointer;
-    margin-top: auto;  // Button stays at the bottom
-    transition: background-color 0.3s;
-    align-self: center;  // Center button
-
-    &:hover {
-      background-color: black;
-      color: #1bdc6f;
-    }
-  }
-
+.card-front {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px;
+  transition: all 0.3s ease;
+  
   &:hover {
-    background-color: #9c0abf;
-    transform: scale(1.05);
-
-    .card-front,
-    .card-back {
-      background-color: #9c0abf;
-    }
-
-    .song-ranking {
-      color: white;
-    }
-
-    .see-more-button {
-      background-color: black;
+    border-color: rgba(156, 10, 191, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    
+    .play-overlay {
+      opacity: 1;
     }
   }
 }
 
-@media (max-width: 768px) { /* Adjust the max-width as necessary for your breakpoints */
+.card-back {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid rgba(156, 10, 191, 0.3);
+  padding: 16px;
+  transform: rotateY(180deg);
+}
+
+.rank-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: linear-gradient(135deg, #9c0abf 0%, #7a0896 100%);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 20px;
+  z-index: 2;
+}
+
+.artwork-container {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  
+  .artwork {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .play-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    
+    svg {
+      color: #1bdc6f;
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+    }
+  }
+}
+
+.song-info {
+  flex: 1;
+  min-height: 0;
+  
+  .song-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 6px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .song-artists {
+    font-size: 0.85rem;
+    color: #8a8a9a;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.stats-btn {
+  width: 100%;
+  padding: 10px;
+  background: rgba(156, 10, 191, 0.2);
+  border: 1px solid rgba(156, 10, 191, 0.3);
+  border-radius: 10px;
+  color: #9c0abf;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: auto;
+  
+  &:hover {
+    background: rgba(156, 10, 191, 0.3);
+    color: #fff;
+  }
+}
+
+// Stats Container (Back of Card)
+.stats-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+  overflow-y: auto;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  .stat-label {
+    font-size: 0.85rem;
+    color: #8a8a9a;
+  }
+  
+  .stat-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1bdc6f;
+  }
+}
+
+.stat-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .stat-label {
+    font-size: 0.8rem;
+    color: #8a8a9a;
+    width: 85px;
+    flex-shrink: 0;
+  }
+  
+  .stat-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  
+  .stat-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    
+    &.energy {
+      background: linear-gradient(90deg, #9c0abf, #e94e77);
+    }
+    
+    &.dance {
+      background: linear-gradient(90deg, #1bdc6f, #4ade80);
+    }
+    
+    &.acoustic {
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    }
+    
+    &.valence {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+  }
+  
+  .stat-percent {
+    font-size: 0.75rem;
+    color: #b0b0b0;
+    width: 35px;
+    text-align: right;
+  }
+}
+
+// Mobile Responsive
+@media (max-width: 768px) {
+  .page-container {
+    padding: 80px 16px 100px;
+  }
+  
+  .page-header .page-title {
+    font-size: 1.8rem;
+  }
+  
+  .term-selector {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .term-btn {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+  }
+  
+  .songs-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  
   .song-card {
-    width: 100%; /* Full width for one card per row */
-    max-width: none; /* Remove any maximum width */
-    margin: 10px 0; /* Add some margin for spacing */
+    height: 340px;
   }
 }
