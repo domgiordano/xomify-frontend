@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from 'src/app/services/auth.service';
 import { UserService } from 'src/app/services/user.service';
-import { take } from 'rxjs';
-import { NONE_TYPE } from '@angular/compiler';
+import { forkJoin, take } from 'rxjs';
 import { ToastService } from 'src/app/services/toast.service';
 
 @Component({
@@ -11,13 +10,19 @@ import { ToastService } from 'src/app/services/toast.service';
   styleUrls: ['./my-profile.component.scss']
 })
 export class MyProfileComponent implements OnInit {
-  loading: boolean;
-  profilePicture: string;
-  userName: string;
-  email: string; // Added email variable
-  followersCount: number;
+  loading: boolean = true;
+  profilePicture: string = '';
+  userName: string = '';
+  email: string = '';
+  followersCount: number = 0;
+  followingCount: number = 0;
+  playlistCount: number = 0;
+  country: string = '';
+  product: string = '';
+  userId: string = '';
+  spotifyProfileUrl: string = '';
   user: any;
-  accessToken: string;
+  accessToken: string = '';
   wrappedEnrolled: boolean = false;
   releaseRadarEnrolled: boolean = false;
   maxEnrollAttempts = 5;
@@ -29,41 +34,60 @@ export class MyProfileComponent implements OnInit {
     private AuthService: AuthService,
     private UserService: UserService,
     private ToastService: ToastService
-  ) {
-  }
+  ) {}
 
   ngOnInit(): void {
     this.accessToken = this.AuthService.getAccessToken();
     this.userName = this.UserService.getUserName();
-    if ( this.userName.length === 0 ){
+    
+    if (this.userName.length === 0) {
       console.log("Need User.");
       this.loadUser();
-    }
-    else{
+    } else {
       console.log("We got dat user.");
-      this.user = this.UserService.getUser();
-      this.userName = this.UserService.getUserName();
-      this.profilePicture = this.UserService.getProfilePic();
-      this.email = this.UserService.getEmail();
-      this.followersCount = this.UserService.getFollowers();
-      this.wrappedEnrolled = this.UserService.getWrappedEnrollment();
-      this.releaseRadarEnrolled = this.UserService.getReleaseRadarEnrollment();
+      this.populateUserData();
+      this.loadAdditionalData();
     }
   }
 
-  loadUser() {
+  private populateUserData(): void {
+    this.user = this.UserService.getUser();
+    this.userName = this.UserService.getUserName();
+    this.profilePicture = this.UserService.getProfilePic();
+    this.email = this.UserService.getEmail();
+    this.followersCount = this.UserService.getFollowers();
+    this.wrappedEnrolled = this.UserService.getWrappedEnrollment();
+    this.releaseRadarEnrolled = this.UserService.getReleaseRadarEnrollment();
+    
+    // Check cached counts first
+    const cachedPlaylistCount = this.UserService.getPlaylistCount();
+    const cachedFollowingCount = this.UserService.getFollowingCount();
+    
+    if (cachedPlaylistCount > 0) {
+      this.playlistCount = cachedPlaylistCount;
+    }
+    if (cachedFollowingCount > 0) {
+      this.followingCount = cachedFollowingCount;
+    }
+    
+    // Additional user data
+    if (this.user) {
+      this.country = this.user.country || 'Unknown';
+      this.product = this.user.product || 'free';
+      this.userId = this.user.id || '';
+      this.spotifyProfileUrl = this.user.external_urls?.spotify || 'https://open.spotify.com';
+    }
+  }
+
+  loadUser(): void {
     this.loading = true;
     this.UserService.getUserData().pipe(take(1)).subscribe({
       next: data => {
-        console.log("USER------",data);
+        console.log("USER------", data);
         this.UserService.setUser(data);
-        this.user = this.UserService.getUser();
-        this.userName = this.UserService.getUserName();
-        this.profilePicture = this.UserService.getProfilePic();
-        this.email = this.UserService.getEmail();
-        this.followersCount = this.UserService.getFollowers();
-        // Update User Table
-        this.updateUserTable()
+        this.populateUserData();
+        this.loadAdditionalData();
+        this.updateUserTable();
       },
       error: err => {
         console.error('Error fetching User', err);
@@ -74,51 +98,73 @@ export class MyProfileComponent implements OnInit {
         console.log('User Loaded.');
       }
     });
-
   }
 
-  updateUserTable() {
-    console.log('Updating User Table ...'); 
+  private loadAdditionalData(): void {
+    // Load playlist count and following count in parallel
+    forkJoin({
+      playlists: this.UserService.getUserPlaylists(1),
+      following: this.UserService.getFollowedArtists(1)
+    }).pipe(take(1)).subscribe({
+      next: (data) => {
+        // Playlists total
+        this.playlistCount = data.playlists?.total || 0;
+        this.UserService.setPlaylistCount(this.playlistCount);
+        
+        // Following total (artists)
+        this.followingCount = data.following?.artists?.total || 0;
+        this.UserService.setFollowingCount(this.followingCount);
+        
+        console.log('Playlist count:', this.playlistCount);
+        console.log('Following count:', this.followingCount);
+        
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error fetching additional data', err);
+        this.loading = false;
+      }
+    });
+  }
+
+  updateUserTable(): void {
+    console.log('Updating User Table ...');
     this.UserService.updateUserTableRefreshToken().pipe(take(1)).subscribe({
       next: xomUser => {
         console.log("Updated Xomify USER Table------", xomUser);
         this.wrappedEnrolled = xomUser.activeWrapped ?? false;
         this.releaseRadarEnrolled = xomUser.activeReleaseRadar ?? false;
-        this.loading = false;
         this.UserService.setReleaseRadarEnrollment(this.releaseRadarEnrolled);
         this.UserService.setWrappedEnrollment(this.wrappedEnrolled);
       },
       error: err => {
         console.error('Error Updating User Table', err);
-        this.ToastService.showNegativeToast('Error Updating User Table');
-        this.loading = false;
+        // Don't show toast for this, it's a background operation
       },
       complete: () => {
-        this.loading = false;
         console.log('User Table Updated.');
       }
     });
-
   }
 
-  toggleWrapped() {
-    console.log("Toggling Wrapped Enrollment...")
+  toggleWrapped(): void {
+    console.log("Toggling Wrapped Enrollment...");
     this.wrappedEnrolled = !this.wrappedEnrolled;
-    this.toggleErollments();
+    this.toggleEnrollments();
   }
 
-  toggleReleaseRadar() {
-    console.log("Toggling Release Radar Enrollment...")
+  toggleReleaseRadar(): void {
+    console.log("Toggling Release Radar Enrollment...");
     this.releaseRadarEnrolled = !this.releaseRadarEnrolled;
-    this.toggleErollments();
+    this.toggleEnrollments();
   }
 
-  toggleErollments() {
+  toggleEnrollments(): void {
     if (this.maxReached) {
-      return; // already maxed out
+      return;
     }
 
-    console.log("Updating Enrollments..")
+    console.log("Updating Enrollments..");
     this.disableEnrollButtons = true;
     this.enrollAttempts++;
 
@@ -133,15 +179,22 @@ export class MyProfileComponent implements OnInit {
         error: err => {
           console.error('Error Updating User Table', err);
           this.ToastService.showNegativeToast('Error Updating User Table');
+          // Revert on error
+          if (this.wrappedEnrolled !== this.UserService.getWrappedEnrollment()) {
+            this.wrappedEnrolled = !this.wrappedEnrolled;
+          }
+          if (this.releaseRadarEnrolled !== this.UserService.getReleaseRadarEnrollment()) {
+            this.releaseRadarEnrolled = !this.releaseRadarEnrolled;
+          }
+          this.disableEnrollButtons = false;
         },
         complete: () => {
           console.log('User Table Updated.');
-          this.ToastService.showPositiveToast('User Table Updated.');
+          this.ToastService.showPositiveToast('Preferences updated successfully!');
           if (this.enrollAttempts >= this.maxEnrollAttempts) {
             this.maxReached = true;
-            this.disableEnrollButtons = true; // permanently disabled
+            this.disableEnrollButtons = true;
           } else {
-            // temporarily disable for 1s
             setTimeout(() => {
               if (!this.maxReached) {
                 this.disableEnrollButtons = false;
@@ -149,6 +202,6 @@ export class MyProfileComponent implements OnInit {
             }, 1000);
           }
         }
-    });
+      });
   }
 }

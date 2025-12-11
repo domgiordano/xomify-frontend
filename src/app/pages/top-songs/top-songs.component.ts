@@ -15,7 +15,6 @@ export class TopSongsComponent implements OnInit, OnDestroy {
   transitioning = false;
   selectedTerm = 'short_term';
   displayedSongs: any[] = [];
-  selectedSong: any = null;
   
   private topTracksShortTerm: any[] = [];
   private topTracksMedTerm: any[] = [];
@@ -110,42 +109,42 @@ export class TopSongsComponent implements OnInit, OnDestroy {
     });
     
     song.flipped = !song.flipped;
-    
-    if (song.flipped && !song.duration) {
-      this.loadSongStats(song);
-    }
-    
-    this.selectedSong = song.flipped ? song : null;
   }
 
-  private loadSongStats(song: any): void {
-    this.songService.getSongStats(song.id).pipe(take(1)).subscribe({
-      next: (stats) => {
-        song.duration = this.formatDuration(stats.duration_ms);
-        song.acousticness = stats.acousticness;
-        song.danceability = stats.danceability;
-        song.energy = stats.energy;
-        song.instrumentalness = stats.instrumentalness;
-        song.liveness = stats.liveness;
-        song.loudness = stats.loudness;
-        song.speechiness = stats.speechiness;
-        song.tempo = stats.tempo;
-        song.valence = stats.valence;
-        this.selectedSong = song;
-      },
-      error: (err) => {
-        console.error('Error fetching song stats', err);
-      }
-    });
-  }
-
-  private formatDuration(ms: number): string {
+  formatDuration(ms: number): string {
+    if (!ms) return '--:--';
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
+  formatReleaseDate(dateString: string): string {
+    if (!dateString) return 'Unknown';
+    
+    // Handle different date formats from Spotify API
+    // Could be "2024", "2024-01", or "2024-01-15"
+    const parts = dateString.split('-');
+    
+    if (parts.length === 1) {
+      return parts[0]; // Just year
+    }
+    
+    if (parts.length === 2) {
+      const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+    }
+    
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  }
+
   onSongHover(song: any): void {
+    if (!song.preview_url) return;
+    
     this.playerService.playerReady$.pipe(take(1)).subscribe(ready => {
       if (ready) {
         this.playerService.playSong(song.id);

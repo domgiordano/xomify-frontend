@@ -1,15 +1,8 @@
 <div class="page-container">
   <!-- Back Navigation -->
   <button class="back-btn" (click)="goBack()">
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-    >
-      <path d="M19 12H5M12 19l-7-7 7-7" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
     </svg>
     <span>Back</span>
   </button>
@@ -19,34 +12,28 @@
     <div class="header-banner">
       <div class="banner-gradient"></div>
     </div>
-
+    
     <div class="header-content">
       <div class="artist-image-wrapper">
-        <img
-          [src]="artist.images?.[0]?.url || 'assets/default-artist.png'"
-          [alt]="artist.name"
-          class="artist-image"
-        />
+        <img [src]="artist.images?.[0]?.url || 'assets/default-artist.png'" 
+             [alt]="artist.name" 
+             class="artist-image">
         <div class="image-glow"></div>
       </div>
-
+      
       <div class="artist-details">
         <span class="verified-badge" *ngIf="artist.followers > 100000">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
-            />
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
           </svg>
           Verified Artist
         </span>
-
+        
         <h1 class="artist-name">{{ artist.name }}</h1>
-
+        
         <div class="artist-stats">
           <div class="stat-item">
-            <span class="stat-value">{{
-              formatNumber(artist.followers || 0)
-            }}</span>
+            <span class="stat-value">{{ formatNumber(artist.followers || 0) }}</span>
             <span class="stat-label">Followers</span>
           </div>
           <div class="stat-divider"></div>
@@ -55,28 +42,41 @@
             <span class="stat-label">Popularity</span>
           </div>
         </div>
-
+        
         <div class="artist-genres" *ngIf="artist.genres?.length">
-          <span
-            class="genre-tag"
-            *ngFor="let genre of artist.genres.slice(0, 5)"
-          >
+          <span class="genre-tag" *ngFor="let genre of artist.genres.slice(0, 5)">
             {{ genre }}
           </span>
         </div>
-
-        <a
-          [href]="artist.external_urls?.spotify"
-          target="_blank"
-          class="spotify-btn"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"
-            />
-          </svg>
-          Open in Spotify
-        </a>
+        
+        <div class="action-buttons">
+          <button 
+            class="follow-btn" 
+            [class.following]="isFollowing"
+            (click)="toggleFollow()"
+            [disabled]="followLoading"
+          >
+            <svg *ngIf="!isFollowing" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+              <line x1="20" y1="8" x2="20" y2="14"/>
+              <line x1="23" y1="11" x2="17" y2="11"/>
+            </svg>
+            <svg *ngIf="isFollowing" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            {{ isFollowing ? 'Following' : 'Follow' }}
+          </button>
+          
+          <a [href]="artist.external_urls?.spotify" 
+             target="_blank" 
+             class="spotify-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+            </svg>
+            Open in Spotify
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -87,38 +87,34 @@
       <h2 class="section-title">Top Tracks</h2>
       <span class="section-subtitle">Most played songs</span>
     </div>
-
+    
     <div class="tracks-list">
-      <div
-        class="track-item"
-        *ngFor="let track of topTracks; let i = index"
-        (mouseenter)="onTrackHover(track)"
-        (mouseleave)="onTrackLeave()"
-      >
+      <div class="track-item" 
+           *ngFor="let track of topTracks; let i = index"
+           (mouseenter)="onTrackHover(track)"
+           (mouseleave)="onTrackLeave()">
         <span class="track-rank">{{ i + 1 }}</span>
-
+        
         <div class="track-image-container">
-          <img
-            [src]="track.album?.images?.[2]?.url || track.album?.images?.[0]?.url || 'assets/default-album.png'"
-            [alt]="track.name"
-            class="track-image"
-          />
+          <img [src]="track.album?.images?.[2]?.url || track.album?.images?.[0]?.url || 'assets/default-album.png'" 
+               [alt]="track.name"
+               class="track-image">
           <div class="play-overlay">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z" />
+              <path d="M8 5v14l11-7z"/>
             </svg>
           </div>
         </div>
-
+        
         <div class="track-info">
           <span class="track-name">{{ track.name }}</span>
           <span class="track-album">{{ track.album?.name }}</span>
         </div>
-
+        
         <div class="track-duration">
           {{ formatDuration(track.duration_ms) }}
         </div>
-
+        
         <div class="track-popularity">
           <div class="pop-bar">
             <div class="pop-fill" [style.width.%]="track.popularity"></div>
@@ -128,69 +124,44 @@
     </div>
   </div>
 
-  <!-- Related Artists Section -->
+  <!-- Related Artists Carousel Section -->
   <div class="section related-section" *ngIf="relatedArtists?.length">
     <div class="section-header">
       <h2 class="section-title">Related Artists</h2>
       <span class="section-subtitle">Fans also like</span>
     </div>
-
+    
     <div class="carousel-container">
-      <button
-        class="carousel-btn prev"
-        (click)="scrollCarousel('prev')"
-        [disabled]="carouselPosition === 0"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M15 18l-6-6 6-6" />
+      <button class="carousel-btn prev" 
+              (click)="scrollCarousel('prev')"
+              [disabled]="carouselPosition === 0">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
         </svg>
       </button>
-
+      
       <div class="carousel-track" #carouselTrack>
-        <a
-          class="related-card"
-          *ngFor="let related of relatedArtists"
-          [routerLink]="['/artist-profile', related.id]"
-        >
+        <a class="related-card" 
+           *ngFor="let related of relatedArtists"
+           [routerLink]="['/artist-profile', related.id]">
           <div class="related-image-container">
-            <img
-              [src]="related.images?.[1]?.url || related.images?.[0]?.url || 'assets/default-artist.png'"
-              [alt]="related.name"
-              class="related-image"
-            />
+            <img [src]="related.images?.[1]?.url || related.images?.[0]?.url || 'assets/default-artist.png'" 
+                 [alt]="related.name"
+                 class="related-image">
             <div class="related-overlay">
               <span class="view-text">View Profile</span>
             </div>
           </div>
           <span class="related-name">{{ related.name }}</span>
-          <span
-            class="related-genre"
-            >{{ related.genres?.[0] || 'Artist' }}</span
-          >
+          <span class="related-genre">{{ related.genres?.[0] || 'Artist' }}</span>
         </a>
       </div>
-
-      <button
-        class="carousel-btn next"
-        (click)="scrollCarousel('next')"
-        [disabled]="carouselPosition >= maxCarouselPosition"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M9 18l6-6-6-6" />
+      
+      <button class="carousel-btn next" 
+              (click)="scrollCarousel('next')"
+              [disabled]="carouselPosition >= maxCarouselPosition">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6"/>
         </svg>
       </button>
     </div>
@@ -210,19 +181,58 @@
 
   <!-- Error State -->
   <div class="error-container" *ngIf="error">
-    <svg
-      width="48"
-      height="48"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#ff4757"
-      stroke-width="2"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
     </svg>
     <p class="error-text">{{ error }}</p>
     <button class="retry-btn" (click)="loadArtist()">Try Again</button>
+  </div>
+</div>
+
+<!-- Scrolling Ticker for Similar Artists - Fixed at bottom -->
+<div class="similar-ticker" *ngIf="relatedArtists?.length && !isLoading">
+  <div class="ticker-label">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+    </svg>
+    Similar Artists
+  </div>
+  <div class="ticker-wrapper">
+    <div class="ticker-track" [class.paused]="tickerPaused">
+      <!-- First set of artists -->
+      <a 
+        class="ticker-item" 
+        *ngFor="let related of relatedArtists"
+        [routerLink]="['/artist-profile', related.id]"
+        (mouseenter)="tickerPaused = true"
+        (mouseleave)="tickerPaused = false"
+      >
+        <img 
+          [src]="related.images?.[2]?.url || related.images?.[0]?.url || 'assets/default-artist.png'" 
+          [alt]="related.name"
+          class="ticker-image"
+        />
+        <span class="ticker-name">{{ related.name }}</span>
+        <span class="ticker-divider">•</span>
+      </a>
+      <!-- Duplicate for seamless loop -->
+      <a 
+        class="ticker-item" 
+        *ngFor="let related of relatedArtists"
+        [routerLink]="['/artist-profile', related.id]"
+        (mouseenter)="tickerPaused = true"
+        (mouseleave)="tickerPaused = false"
+      >
+        <img 
+          [src]="related.images?.[2]?.url || related.images?.[0]?.url || 'assets/default-artist.png'" 
+          [alt]="related.name"
+          class="ticker-image"
+        />
+        <span class="ticker-name">{{ related.name }}</span>
+        <span class="ticker-divider">•</span>
+      </a>
+    </div>
   </div>
 </div>

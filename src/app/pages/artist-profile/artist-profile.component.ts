@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ArtistService } from 'src/app/services/artist.service';
+import { UserService } from 'src/app/services/user.service';
 import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { forkJoin, take, Subscription } from 'rxjs';
@@ -33,6 +34,14 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
   isLoading = true;
   error: string | null = null;
   
+  // Follow state
+  isFollowing = false;
+  followLoading = false;
+  
+  // Ticker
+  tickerPaused = false;
+  
+  // Carousel
   carouselPosition = 0;
   maxCarouselPosition = 0;
   
@@ -42,12 +51,13 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private artistService: ArtistService,
+    private userService: UserService,
     private playerService: PlayerService,
     private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
-    // Support both route params (/artist-profile/:id) and query params (/artist?id=xxx)
+    // Support both route params (/artist/:id) and query params (/artist?id=xxx)
     this.routeSub = this.route.params.subscribe(params => {
       const artistId = params['id'];
       if (artistId) {
@@ -88,10 +98,12 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
 
     forkJoin({
       details: this.artistService.getArtistDetails(artistId),
-      tracks: this.artistService.getArtistTopTracks(artistId)
+      tracks: this.artistService.getArtistTopTracks(artistId),
+      related: this.artistService.getRelatedArtists(artistId)
     }).pipe(take(1)).subscribe({
       next: (data) => {
-        this.buildArtist(data.details, data.tracks);
+        this.buildArtist(data.details, data.tracks, data.related);
+        this.checkFollowStatus(artistId);
         this.isLoading = false;
       },
       error: (err) => {
@@ -103,7 +115,7 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     });
   }
 
-  private buildArtist(details: any, tracks: any): void {
+  private buildArtist(details: any, tracks: any, related: any): void {
     this.artist = {
       id: details.id,
       name: details.name,
@@ -127,10 +139,54 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
       artists: track.artists
     }));
     
-    // Note: Related artists would require an additional API endpoint
-    // For now, we'll leave this empty or you can add getRelatedArtists to ArtistService
-    this.relatedArtists = [];
+    // Related artists from API
+    this.relatedArtists = (related.artists || []).map((artist: any) => ({
+      id: artist.id,
+      name: artist.name,
+      images: artist.images,
+      genres: artist.genres,
+      followers: artist.followers,
+      popularity: artist.popularity
+    }));
+    
     this.calculateCarouselMax();
+  }
+
+  private checkFollowStatus(artistId: string): void {
+    this.userService.checkFollowingArtists([artistId]).pipe(take(1)).subscribe({
+      next: (result) => {
+        // Result is an array of booleans
+        this.isFollowing = result[0] === true;
+      },
+      error: (err) => {
+        console.error('Error checking follow status:', err);
+      }
+    });
+  }
+
+  toggleFollow(): void {
+    if (!this.artist.id || this.followLoading) return;
+    
+    this.followLoading = true;
+    
+    const action = this.isFollowing 
+      ? this.userService.unfollowArtist(this.artist.id)
+      : this.userService.followArtist(this.artist.id);
+    
+    action.pipe(take(1)).subscribe({
+      next: () => {
+        this.isFollowing = !this.isFollowing;
+        this.toastService.showPositiveToast(
+          this.isFollowing ? `Following ${this.artist.name}` : `Unfollowed ${this.artist.name}`
+        );
+        this.followLoading = false;
+      },
+      error: (err) => {
+        console.error('Error toggling follow:', err);
+        this.toastService.showNegativeToast('Failed to update follow status');
+        this.followLoading = false;
+      }
+    });
   }
 
   goBack(): void {

@@ -76,7 +76,7 @@
 // Song Card with 3D Flip
 .song-card {
   perspective: 1000px;
-  height: 380px;
+  height: 400px;
 }
 
 .card-inner {
@@ -214,46 +214,71 @@
   }
 }
 
-// Stats Container (Back of Card)
-.stats-container {
+// Back of Card - Details
+.song-title-back {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 8px 0 16px 0;
+  padding-top: 24px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.details-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin: 16px 0;
+  gap: 12px;
+  margin-bottom: 16px;
   overflow-y: auto;
 }
 
-.stat-row {
+.detail-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
   
-  .stat-label {
-    font-size: 0.85rem;
-    color: #8a8a9a;
+  .detail-label {
+    font-size: 0.75rem;
+    color: #6a6a7a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
   
-  .stat-value {
+  .detail-value {
     font-size: 0.9rem;
-    font-weight: 600;
-    color: #1bdc6f;
+    font-weight: 500;
+    color: #fff;
+    
+    &.album-name {
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    &.explicit-badge {
+      display: inline-block;
+      background: rgba(255, 71, 87, 0.2);
+      color: #ff4757;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
   }
 }
 
-.stat-bar-row {
+.popularity-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   
-  .stat-label {
-    font-size: 0.8rem;
-    color: #8a8a9a;
-    width: 85px;
-    flex-shrink: 0;
-  }
-  
-  .stat-bar {
+  .popularity-bar {
     flex: 1;
     height: 6px;
     background: rgba(255, 255, 255, 0.1);
@@ -261,33 +286,41 @@
     overflow: hidden;
   }
   
-  .stat-fill {
+  .popularity-fill {
     height: 100%;
+    background: linear-gradient(90deg, #9c0abf 0%, #1bdc6f 100%);
     border-radius: 3px;
     transition: width 0.5s ease;
-    
-    &.energy {
-      background: linear-gradient(90deg, #9c0abf, #e94e77);
-    }
-    
-    &.dance {
-      background: linear-gradient(90deg, #1bdc6f, #4ade80);
-    }
-    
-    &.acoustic {
-      background: linear-gradient(90deg, #3b82f6, #60a5fa);
-    }
-    
-    &.valence {
-      background: linear-gradient(90deg, #f59e0b, #fbbf24);
-    }
   }
   
-  .stat-percent {
-    font-size: 0.75rem;
-    color: #b0b0b0;
-    width: 35px;
+  .popularity-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1bdc6f;
+    min-width: 40px;
     text-align: right;
+  }
+}
+
+.spotify-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(29, 185, 84, 0.15);
+  border: 1px solid rgba(29, 185, 84, 0.3);
+  border-radius: 8px;
+  color: #1DB954;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  margin-top: auto;
+  
+  &:hover {
+    background: rgba(29, 185, 84, 0.25);
+    color: #1ed760;
   }
 }
 
@@ -317,6 +350,6 @@
   }
   
   .song-card {
-    height: 340px;
+    height: 360px;
   }
 }

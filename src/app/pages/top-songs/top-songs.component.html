@@ -43,7 +43,7 @@
           <div class="rank-badge">#{{ i + 1 }}</div>
           <div class="artwork-container">
             <img [src]="song.album?.images[0]?.url" [alt]="song.name" class="artwork">
-            <div class="play-overlay">
+            <div class="play-overlay" *ngIf="song.preview_url">
               <svg viewBox="0 0 24 24" width="40" height="40">
                 <path fill="currentColor" d="M8 5v14l11-7z"/>
               </svg>
@@ -54,57 +54,57 @@
             <p class="song-artists">{{ formatArtists(song.artists) }}</p>
           </div>
           <button class="stats-btn" (click)="flipCard(song, $event)">
-            View Stats
+            View Details
           </button>
         </div>
 
         <!-- Back of Card -->
         <div class="card-back">
           <div class="rank-badge">#{{ i + 1 }}</div>
-          <h3 class="song-title">{{ song.name }}</h3>
+          <h3 class="song-title-back">{{ song.name }}</h3>
           
-          <div class="stats-container" *ngIf="selectedSong?.id === song.id">
-            <div class="stat-row">
-              <span class="stat-label">Duration</span>
-              <span class="stat-value">{{ selectedSong.duration }}</span>
+          <div class="details-container">
+            <div class="detail-row">
+              <span class="detail-label">Album</span>
+              <span class="detail-value album-name">{{ song.album?.name }}</span>
             </div>
             
-            <div class="stat-bar-row">
-              <span class="stat-label">Energy</span>
-              <div class="stat-bar">
-                <div class="stat-fill energy" [style.width.%]="selectedSong.energy * 100"></div>
+            <div class="detail-row">
+              <span class="detail-label">Duration</span>
+              <span class="detail-value">{{ formatDuration(song.duration_ms) }}</span>
+            </div>
+            
+            <div class="detail-row">
+              <span class="detail-label">Release Date</span>
+              <span class="detail-value">{{ formatReleaseDate(song.album?.release_date) }}</span>
+            </div>
+            
+            <div class="detail-row">
+              <span class="detail-label">Popularity</span>
+              <div class="popularity-container">
+                <div class="popularity-bar">
+                  <div class="popularity-fill" [style.width.%]="song.popularity"></div>
+                </div>
+                <span class="popularity-value">{{ song.popularity }}%</span>
               </div>
-              <span class="stat-percent">{{ (selectedSong.energy * 100) | number:'1.0-0' }}%</span>
+            </div>
+
+            <div class="detail-row" *ngIf="song.explicit">
+              <span class="detail-label">Content</span>
+              <span class="detail-value explicit-badge">Explicit</span>
             </div>
             
-            <div class="stat-bar-row">
-              <span class="stat-label">Danceability</span>
-              <div class="stat-bar">
-                <div class="stat-fill dance" [style.width.%]="selectedSong.danceability * 100"></div>
-              </div>
-              <span class="stat-percent">{{ (selectedSong.danceability * 100) | number:'1.0-0' }}%</span>
-            </div>
-            
-            <div class="stat-bar-row">
-              <span class="stat-label">Acousticness</span>
-              <div class="stat-bar">
-                <div class="stat-fill acoustic" [style.width.%]="selectedSong.acousticness * 100"></div>
-              </div>
-              <span class="stat-percent">{{ (selectedSong.acousticness * 100) | number:'1.0-0' }}%</span>
-            </div>
-            
-            <div class="stat-bar-row">
-              <span class="stat-label">Valence</span>
-              <div class="stat-bar">
-                <div class="stat-fill valence" [style.width.%]="selectedSong.valence * 100"></div>
-              </div>
-              <span class="stat-percent">{{ (selectedSong.valence * 100) | number:'1.0-0' }}%</span>
-            </div>
-            
-            <div class="stat-row">
-              <span class="stat-label">Tempo</span>
-              <span class="stat-value">{{ selectedSong.tempo | number:'1.0-0' }} BPM</span>
-            </div>
+            <a 
+              [href]="song.external_urls?.spotify" 
+              target="_blank" 
+              class="spotify-link"
+              (click)="$event.stopPropagation()"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+              </svg>
+              Open in Spotify
+            </a>
           </div>
           
           <button class="stats-btn" (click)="flipCard(song, $event)">

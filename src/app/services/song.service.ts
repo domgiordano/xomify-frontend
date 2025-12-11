@@ -31,10 +31,10 @@ export class SongService implements OnInit {
         limit: "50",
         offset: offset.toString(),
       },
-    })
+    });
   }
 
-  getTracksByIds(ids: string): Observable<any>{
+  getTracksByIds(ids: string): Observable<any> {
     this.accessToken = this.AuthService.getAccessToken();
     const headers = new HttpHeaders({
       Authorization: `Bearer ${this.accessToken}`,
@@ -73,16 +73,27 @@ export class SongService implements OnInit {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
       }
-    })
+    });
   }
 
-  getSongStats(songId: string): Observable<any> {
+  // Note: The audio-features endpoint was deprecated by Spotify in November 2024
+  // This method is kept for reference but should not be used
+  // getSongStats(songId: string): Observable<any> {
+  //   this.accessToken = this.AuthService.getAccessToken();
+  //   return this.http.get(`${this.baseUrl}/audio-features/${songId}`, {
+  //     headers: {
+  //       Authorization: `Bearer ${this.accessToken}`,
+  //     }
+  //   });
+  // }
+
+  getTrackDetails(trackId: string): Observable<any> {
     this.accessToken = this.AuthService.getAccessToken();
-    return this.http.get(`${this.baseUrl}/audio-features/${songId}`, {
+    return this.http.get(`${this.baseUrl}/tracks/${trackId}`, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
       }
-    })
+    });
   }
 
   setTopTracks(short: any[], med: any[], long: any[]): void {
@@ -96,29 +107,33 @@ export class SongService implements OnInit {
       short_term: this.topTracksShortTerm.map(item => item.id),
       medium_term: this.topTracksMedTerm.map(item => item.id),
       long_term: this.topTracksLongTerm.map(item => item.id),
-    }
+    };
   }
+
   getShortTermTopTracks(): any[] {
-    return this.topTracksShortTerm;  // Return a copy
+    return this.topTracksShortTerm;
   }
 
   getMedTermTopTracks(): any[] {
-    return this.topTracksMedTerm;    // Return a copy
+    return this.topTracksMedTerm;
   }
 
   getLongTermTopTracks(): any[] {
-    return this.topTracksLongTerm;   // Return a copy
+    return this.topTracksLongTerm;
   }
+
   getTracks(): any[] {
     return this.tracks;
   }
-  setTracks(tracks: any[]){
+
+  setTracks(tracks: any[]): void {
     this.tracks = tracks;
   }
 
-  setCurrentTerm(term: string){
+  setCurrentTerm(term: string): void {
     this.currentTerm = term;
   }
+
   getCurrentTerm(): string {
     return this.currentTerm;
   }

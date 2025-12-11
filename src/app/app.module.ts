@@ -19,6 +19,7 @@ import { ToastComponent } from './components/toast/toast.component';
 import { CallbackComponent } from './components/callback/callback.component';
 import { HomeComponent } from './pages/home/home.component';
 import { ArtistProfileComponent } from './pages/artist-profile/artist-profile.component';
+import { FollowingComponent } from './pages/following/following.component';
 import { SwiperModule } from 'swiper/angular';
 import { FooterComponent } from './components/footer/footer.component';
 
@@ -37,7 +38,8 @@ import { FooterComponent } from './components/footer/footer.component';
     CallbackComponent,
     HomeComponent,
     ArtistProfileComponent,
-    FooterComponent,
+    FollowingComponent,
+    FooterComponent
   ],
   imports: [
     BrowserModule,
@@ -45,9 +47,9 @@ import { FooterComponent } from './components/footer/footer.component';
     FormsModule,
     HttpClientModule,
     SwiperModule,
-    BrowserAnimationsModule,
+    BrowserAnimationsModule
   ],
   providers: [AuthService],
-  bootstrap: [AppComponent],
+  bootstrap: [AppComponent]
 })
-export class AppModule {}
+export class AppModule { }

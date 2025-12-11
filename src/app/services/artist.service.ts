@@ -1,110 +1,133 @@
-// song.service.ts
-import { Injectable, OnInit } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { catchError, concatMap, expand, takeWhile } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class ArtistService implements OnInit {
-  accessToken: string;
-  artists = [];
-  topArtistsShortTerm = [];
-  topArtistsMedTerm = [];
-  topArtistsLongTerm = [];
+export class ArtistService {
   private baseUrl = 'https://api.spotify.com/v1';
 
-  constructor(
-      private http: HttpClient,
-      private AuthService: AuthService
-    ) {}
-  ngOnInit() {
-    this.accessToken = this.AuthService.getAccessToken();
-  }
+  // Cached top artists by term
+  private topArtistsShortTerm: any[] = [];
+  private topArtistsMedTerm: any[] = [];
+  private topArtistsLongTerm: any[] = [];
 
-  getArtistsByIds(ids: string): Observable<any>{
-    this.accessToken = this.AuthService.getAccessToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${this.accessToken}`,
+  constructor(private http: HttpClient, private authService: AuthService) {}
+
+  private getAuthHeaders(): HttpHeaders {
+    const accessToken = this.authService.getAccessToken();
+    return new HttpHeaders({
+      Authorization: `Bearer ${accessToken}`,
     });
-    return this.http.get(`${this.baseUrl}/artists?ids=${ids}`, { headers });
   }
 
-  getTopArtists(term: string): Observable<any> {
-    this.accessToken = this.AuthService.getAccessToken();
-    return this.http.get(`${this.baseUrl}/me/top/artists?limit=50&time_range=${term}`, {
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      }
-    })
+  // ============================================
+  // TOP ARTISTS - API CALLS
+  // ============================================
+
+  // Get user's top artists by time range
+  getTopArtists(term: string, limit: number = 50): Observable<any> {
+    return this.http.get(`${this.baseUrl}/me/top/artists`, {
+      headers: this.getAuthHeaders(),
+      params: {
+        time_range: term,
+        limit: limit.toString(),
+      },
+    });
   }
 
-  getArtistDetails(artistId: string): Observable<any> {
-    this.accessToken = this.AuthService.getAccessToken();
-    return this.http.get(`${this.baseUrl}/artists/${artistId}`, {
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      }
-    })
-  }
+  // ============================================
+  // TOP ARTISTS - CACHE GETTERS/SETTERS
+  // ============================================
 
-  getArtistAlbums(artistId: string): Observable<any> {
-    this.accessToken = this.AuthService.getAccessToken();
-    return this.http.get(`${this.baseUrl}/artists/${artistId}/albums`, {
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      }
-    })
-  }
-
-  getArtistTopTracks(artistId: string): Observable<any> {
-    this.accessToken = this.AuthService.getAccessToken();
-    return this.http.get(`${this.baseUrl}/artists/${artistId}/top-tracks`, {
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      }
-    })
-  }
-
-  getArtistRelatedArtists(artistId: string): Observable<any> {
-    this.accessToken = this.AuthService.getAccessToken();
-    return this.http.get(`${this.baseUrl}/artists/${artistId}/related-artists`, {
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      }
-    })
-  }
-
-  getAllTermsTopArtistsIds(): any {
-    return {
-      short_term: this.topArtistsShortTerm.map(item => item.id),
-      medium_term: this.topArtistsMedTerm.map(item => item.id),
-      long_term: this.topArtistsLongTerm.map(item => item.id),
-    }
-  }
   getShortTermTopArtists(): any[] {
     return this.topArtistsShortTerm;
   }
+
   getMedTermTopArtists(): any[] {
     return this.topArtistsMedTerm;
   }
+
   getLongTermTopArtists(): any[] {
     return this.topArtistsLongTerm;
   }
-  setShortTermTopArtists(Artists: any[]): void {
-    this.topArtistsShortTerm = Artists;
-  }
-  setMedTermTopArtists(Artists: any[]): void {
-    this.topArtistsMedTerm = Artists;
-  }
-  setLongTermTopArtists(Artists: any[]): void {
-    this.topArtistsLongTerm = Artists;
+
+  setShortTermTopArtists(artists: any[]): void {
+    this.topArtistsShortTerm = artists;
   }
 
-  getArtists(): any[] {
-    return this.artists;
+  setMedTermTopArtists(artists: any[]): void {
+    this.topArtistsMedTerm = artists;
   }
 
+  setLongTermTopArtists(artists: any[]): void {
+    this.topArtistsLongTerm = artists;
+  }
+
+  // ============================================
+  // ARTIST DETAILS
+  // ============================================
+
+  // Get artist details by ID
+  getArtistDetails(artistId: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/artists/${artistId}`, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  // Get multiple artists by IDs (comma-separated)
+  getArtistsByIds(ids: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/artists`, {
+      headers: this.getAuthHeaders(),
+      params: { ids },
+    });
+  }
+
+  // Get artist's top tracks
+  getArtistTopTracks(artistId: string, market: string = 'US'): Observable<any> {
+    return this.http.get(`${this.baseUrl}/artists/${artistId}/top-tracks`, {
+      headers: this.getAuthHeaders(),
+      params: { market },
+    });
+  }
+
+  // Get related artists
+  getRelatedArtists(artistId: string): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/artists/${artistId}/related-artists`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+  }
+
+  // Get artist's albums
+  getArtistAlbums(
+    artistId: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Observable<any> {
+    return this.http.get(`${this.baseUrl}/artists/${artistId}/albums`, {
+      headers: this.getAuthHeaders(),
+      params: {
+        limit: limit.toString(),
+        offset: offset.toString(),
+        include_groups: 'album,single',
+      },
+    });
+  }
+
+  // Search for artists
+  searchArtists(query: string, limit: number = 20): Observable<any> {
+    return this.http.get(`${this.baseUrl}/search`, {
+      headers: this.getAuthHeaders(),
+      params: {
+        q: query,
+        type: 'artist',
+        limit: limit.toString(),
+      },
+    });
+  }
 }
