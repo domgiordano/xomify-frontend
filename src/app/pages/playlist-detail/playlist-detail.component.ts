@@ -1,15 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PlaylistService } from 'src/app/services/playlist.service';
 import { ToastService } from 'src/app/services/toast.service';
-import { LoaderComponent } from 'src/app/components/loader/loader.component';
 import { take } from 'rxjs';
 
 @Component({
   selector: 'app-playlist-detail',
-  standalone: true,
-  imports: [CommonModule, RouterModule, LoaderComponent],
   templateUrl: './playlist-detail.component.html',
   styleUrls: ['./playlist-detail.component.scss'],
 })

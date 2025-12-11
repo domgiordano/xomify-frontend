@@ -8,6 +8,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ToolbarComponent } from './components/toolbar/toolbar.component';
 import { FormsModule } from '@angular/forms';
 import { MyProfileComponent } from './pages/my-profile/my-profile.component';
+import { MyPlaylistsComponent } from './pages/my-playlists/my-playlists.component';
+import { PlaylistDetailComponent } from './pages/playlist-detail/playlist-detail.component';
 import { TopSongsComponent } from './pages/top-songs/top-songs.component';
 import { TopArtistsComponent } from './pages/top-artists/top-artists.component';
 import { TopGenresComponent } from './pages/top-genres/top-genres.component';
@@ -28,6 +30,8 @@ import { FooterComponent } from './components/footer/footer.component';
     AppComponent,
     ToolbarComponent,
     MyProfileComponent,
+    MyPlaylistsComponent,
+    PlaylistDetailComponent,
     TopSongsComponent,
     TopArtistsComponent,
     TopGenresComponent,
@@ -39,7 +43,7 @@ import { FooterComponent } from './components/footer/footer.component';
     HomeComponent,
     ArtistProfileComponent,
     FollowingComponent,
-    FooterComponent
+    FooterComponent,
   ],
   imports: [
     BrowserModule,
@@ -47,9 +51,10 @@ import { FooterComponent } from './components/footer/footer.component';
     FormsModule,
     HttpClientModule,
     SwiperModule,
-    BrowserAnimationsModule
+    BrowserAnimationsModule,
+    FormsModule,
   ],
   providers: [AuthService],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}
