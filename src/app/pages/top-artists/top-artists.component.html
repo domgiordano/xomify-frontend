@@ -1,4 +1,7 @@
-<app-loader [loading]="loading" message="Loading your top artists..."></app-loader>
+<app-loader
+  [loading]="loading"
+  message="Loading your top artists..."
+></app-loader>
 
 <div class="page-container" *ngIf="!loading">
   <header class="page-header">
@@ -8,49 +11,60 @@
 
   <!-- Term Selector -->
   <div class="term-selector">
-    <button 
-      class="term-btn" 
+    <button
+      class="term-btn"
       [class.active]="selectedTerm === 'short_term'"
-      (click)="selectTerm('short_term')">
+      (click)="selectTerm('short_term')"
+    >
       Last Month
     </button>
-    <button 
-      class="term-btn" 
+    <button
+      class="term-btn"
       [class.active]="selectedTerm === 'medium_term'"
-      (click)="selectTerm('medium_term')">
+      (click)="selectTerm('medium_term')"
+    >
       Last 6 Months
     </button>
-    <button 
-      class="term-btn" 
+    <button
+      class="term-btn"
       [class.active]="selectedTerm === 'long_term'"
-      (click)="selectTerm('long_term')">
+      (click)="selectTerm('long_term')"
+    >
       All Time
     </button>
   </div>
 
   <!-- Artists Grid -->
   <div class="artists-grid" [class.fade-out]="transitioning">
-    <div 
-      class="artist-card" 
+    <div
+      class="artist-card"
       *ngFor="let artist of displayedArtists; let i = index"
-      [routerLink]="['/artist']" 
-      [queryParams]="{ id: artist.id }">
-      
+      [routerLink]="['/artist-profile', artist.id]"
+    >
       <div class="rank-badge">#{{ i + 1 }}</div>
-      
+
       <div class="artist-image-container">
-        <img [src]="artist.images[0]?.url" [alt]="artist.name" class="artist-image">
+        <img
+          [src]="artist.images[0]?.url"
+          [alt]="artist.name"
+          class="artist-image"
+        />
         <div class="image-overlay">
           <span class="view-profile">View Profile →</span>
         </div>
       </div>
-      
+
       <div class="artist-info">
         <h3 class="artist-name">{{ artist.name }}</h3>
-        <p class="artist-genre" *ngIf="artist.genres?.length">{{ artist.genres[0] }}</p>
+        <p class="artist-genre" *ngIf="artist.genres?.length">
+          {{ artist.genres[0] }}
+        </p>
         <div class="artist-popularity">
           <div class="popularity-bar">
-            <div class="popularity-fill" [style.width.%]="artist.popularity"></div>
+            <div
+              class="popularity-fill"
+              [style.width.%]="artist.popularity"
+            ></div>
           </div>
           <span class="popularity-label">{{ artist.popularity }}% popular</span>
         </div>
