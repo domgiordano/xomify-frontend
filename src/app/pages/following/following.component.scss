@@ -183,17 +183,12 @@
       border-color: rgba(255, 71, 87, 0.4);
       color: #ff4757;
       
-      span {
-        &:first-child {
-          display: none;
-        }
-        &:last-child {
-          display: inline;
-        }
+      .follow-text {
+        display: none;
       }
       
-      &::after {
-        content: 'Unfollow';
+      .unfollow-text {
+        display: inline;
       }
     }
   }
@@ -304,12 +299,14 @@
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
-  
-  &::after {
-    content: '';
+  min-width: 90px;
+  text-align: center;
+
+  .follow-text {
+    display: inline;
   }
   
-  span:last-child {
+  .unfollow-text {
     display: none;
   }
   

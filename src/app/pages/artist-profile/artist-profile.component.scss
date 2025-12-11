@@ -258,6 +258,11 @@
   .pop-fill { height: 100%; background: linear-gradient(90deg, #9c0abf 0%, #1bdc6f 100%); border-radius: 2px; transition: width 0.5s ease; }
 }
 
+// Albums Section
+.albums-section {
+  margin-bottom: 48px;
+}
+
 .carousel-container { position: relative; display: flex; align-items: center; gap: 16px; }
 
 .carousel-btn {
@@ -287,47 +292,90 @@
   &::-webkit-scrollbar { display: none; }
 }
 
-.related-card {
+.album-card {
   flex-shrink: 0;
-  width: 160px;
+  width: 180px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  padding: 16px;
-  text-align: center;
-  text-decoration: none;
+  overflow: hidden;
+  cursor: pointer;
   transition: all 0.3s ease;
+  
   &:hover {
     border-color: rgba(156, 10, 191, 0.4);
     transform: translateY(-6px);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
-    .related-image { border-color: #1bdc6f; }
-    .related-overlay { opacity: 1; }
+    
+    .album-overlay { opacity: 1; }
+    .album-image { transform: scale(1.05); }
   }
 }
 
-.related-image-container {
+.album-image-container {
   position: relative;
-  width: 100px;
-  height: 100px;
-  margin: 0 auto 12px;
-  .related-image { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid rgba(156, 10, 191, 0.4); transition: border-color 0.3s ease; }
-  .related-overlay {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  
+  .album-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  
+  .album-overlay {
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     transition: opacity 0.3s ease;
-    .view-text { color: #1bdc6f; font-size: 0.75rem; font-weight: 500; }
+    
+    svg { color: #1bdc6f; }
+  }
+  
+  .album-type-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(156, 10, 191, 0.9);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    
+    &.single {
+      background: rgba(27, 220, 111, 0.9);
+    }
   }
 }
 
-.related-name { display: block; font-size: 0.9rem; font-weight: 600; color: #fff; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.related-genre { font-size: 0.75rem; color: #9c0abf; text-transform: capitalize; }
+.album-info {
+  padding: 14px;
+  
+  .album-name {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .album-year {
+    font-size: 0.75rem;
+    color: #8a8a9a;
+  }
+}
 
 // Loading & Error States
 .loading-container {
@@ -382,11 +430,11 @@
 }
 
 // ========================================
-// SCROLLING TICKER - NEWS TICKER STYLE
+// ALBUMS TICKER - NEWS TICKER STYLE
 // ========================================
-.similar-ticker {
+.albums-ticker {
   position: fixed;
-  bottom: 60px; // Above footer
+  bottom: 60px;
   left: 0;
   right: 0;
   height: 60px;
@@ -418,7 +466,6 @@
   overflow: hidden;
   position: relative;
   
-  // Fade edges
   &::before,
   &::after {
     content: '';
@@ -444,7 +491,7 @@
 .ticker-track {
   display: flex;
   align-items: center;
-  animation: ticker-scroll 30s linear infinite;
+  animation: ticker-scroll 40s linear infinite;
   width: max-content;
   
   &.paused {
@@ -469,6 +516,7 @@
   text-decoration: none;
   transition: all 0.3s ease;
   border-radius: 8px;
+  cursor: pointer;
   
   &:hover {
     background: rgba(156, 10, 191, 0.2);
@@ -482,7 +530,7 @@
 .ticker-image {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 4px;
   object-fit: cover;
   border: 2px solid rgba(156, 10, 191, 0.4);
   transition: border-color 0.3s ease;
@@ -498,6 +546,15 @@
   font-weight: 500;
   white-space: nowrap;
   transition: color 0.3s ease;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ticker-year {
+  color: #8a8a9a;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .ticker-divider {
@@ -524,13 +581,12 @@
   }
   .carousel-btn { display: none; }
   .carousel-track { padding: 8px 4px; }
-  .related-card { width: 140px; padding: 12px; }
-  .related-image-container { width: 80px; height: 80px; }
+  .album-card { width: 150px; }
   
-  .similar-ticker { bottom: 50px; height: 50px; }
+  .albums-ticker { bottom: 50px; height: 50px; }
   .ticker-label { padding: 0 12px; font-size: 0.75rem; }
   .ticker-image { width: 28px; height: 28px; }
-  .ticker-name { font-size: 0.8rem; }
+  .ticker-name { font-size: 0.8rem; max-width: 100px; }
 }
 
 @media (max-width: 480px) {

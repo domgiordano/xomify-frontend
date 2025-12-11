@@ -22,7 +22,7 @@
       </div>
       
       <div class="artist-details">
-        <span class="verified-badge" *ngIf="artist.followers > 100000">
+        <span class="verified-badge" *ngIf="artist.followers && artist.followers > 100000">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
           </svg>
@@ -40,6 +40,11 @@
           <div class="stat-item">
             <span class="stat-value">{{ artist.popularity }}%</span>
             <span class="stat-label">Popularity</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-value">{{ albums.length }}</span>
+            <span class="stat-label">Releases</span>
           </div>
         </div>
         
@@ -124,11 +129,11 @@
     </div>
   </div>
 
-  <!-- Related Artists Carousel Section -->
-  <div class="section related-section" *ngIf="relatedArtists?.length">
+  <!-- Albums Carousel Section -->
+  <div class="section albums-section" *ngIf="albums?.length">
     <div class="section-header">
-      <h2 class="section-title">Related Artists</h2>
-      <span class="section-subtitle">Fans also like</span>
+      <h2 class="section-title">Discography</h2>
+      <span class="section-subtitle">Albums & Singles</span>
     </div>
     
     <div class="carousel-container">
@@ -141,20 +146,27 @@
       </button>
       
       <div class="carousel-track" #carouselTrack>
-        <a class="related-card" 
-           *ngFor="let related of relatedArtists"
-           [routerLink]="['/artist-profile', related.id]">
-          <div class="related-image-container">
-            <img [src]="related.images?.[1]?.url || related.images?.[0]?.url || 'assets/default-artist.png'" 
-                 [alt]="related.name"
-                 class="related-image">
-            <div class="related-overlay">
-              <span class="view-text">View Profile</span>
+        <div class="album-card" 
+             *ngFor="let album of albums"
+             (click)="goToAlbum(album.id)">
+          <div class="album-image-container">
+            <img [src]="album.images?.[1]?.url || album.images?.[0]?.url || 'assets/default-album.png'" 
+                 [alt]="album.name"
+                 class="album-image">
+            <div class="album-overlay">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
             </div>
+            <span class="album-type-badge" [class.single]="album.album_type === 'single'">
+              {{ album.album_type === 'single' ? 'Single' : 'Album' }}
+            </span>
           </div>
-          <span class="related-name">{{ related.name }}</span>
-          <span class="related-genre">{{ related.genres?.[0] || 'Artist' }}</span>
-        </a>
+          <div class="album-info">
+            <span class="album-name">{{ album.name }}</span>
+            <span class="album-year">{{ formatReleaseYear(album.release_date) }} · {{ album.total_tracks }} tracks</span>
+          </div>
+        </div>
       </div>
       
       <button class="carousel-btn next" 
@@ -191,46 +203,48 @@
   </div>
 </div>
 
-<!-- Scrolling Ticker for Similar Artists - Fixed at bottom -->
-<div class="similar-ticker" *ngIf="relatedArtists?.length && !isLoading">
+<!-- Scrolling Ticker for Albums - Fixed at bottom -->
+<div class="albums-ticker" *ngIf="albums?.length && !isLoading">
   <div class="ticker-label">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
     </svg>
-    Similar Artists
+    Discography
   </div>
   <div class="ticker-wrapper">
     <div class="ticker-track" [class.paused]="tickerPaused">
-      <!-- First set of artists -->
+      <!-- First set of albums -->
       <a 
         class="ticker-item" 
-        *ngFor="let related of relatedArtists"
-        [routerLink]="['/artist-profile', related.id]"
+        *ngFor="let album of albums"
+        (click)="goToAlbum(album.id)"
         (mouseenter)="tickerPaused = true"
         (mouseleave)="tickerPaused = false"
       >
         <img 
-          [src]="related.images?.[2]?.url || related.images?.[0]?.url || 'assets/default-artist.png'" 
-          [alt]="related.name"
+          [src]="album.images?.[2]?.url || album.images?.[0]?.url || 'assets/default-album.png'" 
+          [alt]="album.name"
           class="ticker-image"
         />
-        <span class="ticker-name">{{ related.name }}</span>
+        <span class="ticker-name">{{ album.name }}</span>
+        <span class="ticker-year">{{ formatReleaseYear(album.release_date) }}</span>
         <span class="ticker-divider">•</span>
       </a>
       <!-- Duplicate for seamless loop -->
       <a 
         class="ticker-item" 
-        *ngFor="let related of relatedArtists"
-        [routerLink]="['/artist-profile', related.id]"
+        *ngFor="let album of albums"
+        (click)="goToAlbum(album.id)"
         (mouseenter)="tickerPaused = true"
         (mouseleave)="tickerPaused = false"
       >
         <img 
-          [src]="related.images?.[2]?.url || related.images?.[0]?.url || 'assets/default-artist.png'" 
-          [alt]="related.name"
+          [src]="album.images?.[2]?.url || album.images?.[0]?.url || 'assets/default-album.png'" 
+          [alt]="album.name"
           class="ticker-image"
         />
-        <span class="ticker-name">{{ related.name }}</span>
+        <span class="ticker-name">{{ album.name }}</span>
+        <span class="ticker-year">{{ formatReleaseYear(album.release_date) }}</span>
         <span class="ticker-divider">•</span>
       </a>
     </div>

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -72,9 +73,20 @@ export class ArtistService {
 
   // Get artist details by ID
   getArtistDetails(artistId: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/artists/${artistId}`, {
-      headers: this.getAuthHeaders(),
-    });
+    console.log('ArtistService: Getting artist details for:', artistId);
+    return this.http
+      .get(`${this.baseUrl}/artists/${artistId}`, {
+        headers: this.getAuthHeaders(),
+      })
+      .pipe(
+        tap((response) =>
+          console.log('ArtistService: Artist details response:', response)
+        ),
+        catchError((error) => {
+          console.error('ArtistService: Error getting artist details:', error);
+          return throwError(() => error);
+        })
+      );
   }
 
   // Get multiple artists by IDs (comma-separated)
@@ -87,20 +99,51 @@ export class ArtistService {
 
   // Get artist's top tracks
   getArtistTopTracks(artistId: string, market: string = 'US'): Observable<any> {
-    return this.http.get(`${this.baseUrl}/artists/${artistId}/top-tracks`, {
-      headers: this.getAuthHeaders(),
-      params: { market },
-    });
+    console.log(
+      'ArtistService: Getting top tracks for:',
+      artistId,
+      'market:',
+      market
+    );
+
+    // Use HttpParams for cleaner parameter handling
+    const params = new HttpParams().set('market', market);
+
+    return this.http
+      .get(`${this.baseUrl}/artists/${artistId}/top-tracks`, {
+        headers: this.getAuthHeaders(),
+        params: params,
+      })
+      .pipe(
+        tap((response) =>
+          console.log('ArtistService: Top tracks response:', response)
+        ),
+        catchError((error) => {
+          console.error('ArtistService: Error getting top tracks:', error);
+          console.error('ArtistService: Error status:', error.status);
+          console.error('ArtistService: Error message:', error.message);
+          return throwError(() => error);
+        })
+      );
   }
 
   // Get related artists
   getRelatedArtists(artistId: string): Observable<any> {
-    return this.http.get(
-      `${this.baseUrl}/artists/${artistId}/related-artists`,
-      {
+    console.log('ArtistService: Getting related artists for:', artistId);
+    return this.http
+      .get(`${this.baseUrl}/artists/${artistId}/related-artists`, {
         headers: this.getAuthHeaders(),
-      }
-    );
+      })
+      .pipe(
+        tap((response) =>
+          console.log('ArtistService: Related artists response:', response)
+        ),
+        catchError((error) => {
+          console.error('ArtistService: Error getting related artists:', error);
+          console.error('ArtistService: Error status:', error.status);
+          return throwError(() => error);
+        })
+      );
   }
 
   // Get artist's albums

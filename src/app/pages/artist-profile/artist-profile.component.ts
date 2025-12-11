@@ -15,8 +15,6 @@ interface Artist {
   followers?: number;
   popularity?: number;
   external_urls?: { spotify?: string };
-  topTracks?: any[];
-  relatedArtists?: any[];
 }
 
 @Component({
@@ -27,9 +25,9 @@ interface Artist {
 export class ArtistProfileComponent implements OnInit, OnDestroy {
   @ViewChild('carouselTrack') carouselTrack!: ElementRef<HTMLDivElement>;
   
-  artist: Artist = {};
+  artist: Artist | null = null;
   topTracks: any[] = [];
-  relatedArtists: any[] = [];
+  albums: any[] = [];
   
   isLoading = true;
   error: string | null = null;
@@ -57,13 +55,11 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Support both route params (/artist/:id) and query params (/artist?id=xxx)
     this.routeSub = this.route.params.subscribe(params => {
       const artistId = params['id'];
       if (artistId) {
         this.loadArtistDetails(artistId);
       } else {
-        // Fallback to query params for backwards compatibility
         this.route.queryParams.pipe(take(1)).subscribe(queryParams => {
           const queryId = queryParams['id'];
           if (queryId) {
@@ -94,15 +90,15 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
   private loadArtistDetails(artistId: string): void {
     this.isLoading = true;
     this.error = null;
-    this.artist = { id: artistId, relatedArtists: [] };
+    this.artist = null;
 
     forkJoin({
       details: this.artistService.getArtistDetails(artistId),
       tracks: this.artistService.getArtistTopTracks(artistId),
-      related: this.artistService.getRelatedArtists(artistId)
+      albums: this.artistService.getArtistAlbums(artistId, 50)
     }).pipe(take(1)).subscribe({
       next: (data) => {
-        this.buildArtist(data.details, data.tracks, data.related);
+        this.buildArtist(data.details, data.tracks, data.albums);
         this.checkFollowStatus(artistId);
         this.isLoading = false;
       },
@@ -115,7 +111,7 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     });
   }
 
-  private buildArtist(details: any, tracks: any, related: any): void {
+  private buildArtist(details: any, tracks: any, albumsData: any): void {
     this.artist = {
       id: details.id,
       name: details.name,
@@ -124,9 +120,7 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
       genres: details.genres || [],
       followers: details.followers?.total || 0,
       popularity: details.popularity || 0,
-      external_urls: details.external_urls,
-      topTracks: [],
-      relatedArtists: []
+      external_urls: details.external_urls
     };
 
     this.topTracks = (tracks.tracks || []).map((track: any) => ({
@@ -139,15 +133,27 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
       artists: track.artists
     }));
     
-    // Related artists from API
-    this.relatedArtists = (related.artists || []).map((artist: any) => ({
-      id: artist.id,
-      name: artist.name,
-      images: artist.images,
-      genres: artist.genres,
-      followers: artist.followers,
-      popularity: artist.popularity
-    }));
+    // Process albums - remove duplicates by name and sort by release date
+    const albumMap = new Map();
+    (albumsData.items || []).forEach((album: any) => {
+      // Use album name as key to avoid duplicates (same album, different versions)
+      const key = album.name.toLowerCase();
+      if (!albumMap.has(key) || album.album_type === 'album') {
+        albumMap.set(key, {
+          id: album.id,
+          name: album.name,
+          images: album.images,
+          release_date: album.release_date,
+          release_date_precision: album.release_date_precision,
+          total_tracks: album.total_tracks,
+          album_type: album.album_type,
+          external_urls: album.external_urls
+        });
+      }
+    });
+    
+    this.albums = Array.from(albumMap.values())
+      .sort((a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime());
     
     this.calculateCarouselMax();
   }
@@ -155,7 +161,6 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
   private checkFollowStatus(artistId: string): void {
     this.userService.checkFollowingArtists([artistId]).pipe(take(1)).subscribe({
       next: (result) => {
-        // Result is an array of booleans
         this.isFollowing = result[0] === true;
       },
       error: (err) => {
@@ -165,7 +170,7 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
   }
 
   toggleFollow(): void {
-    if (!this.artist.id || this.followLoading) return;
+    if (!this.artist?.id || this.followLoading) return;
     
     this.followLoading = true;
     
@@ -177,7 +182,7 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
       next: () => {
         this.isFollowing = !this.isFollowing;
         this.toastService.showPositiveToast(
-          this.isFollowing ? `Following ${this.artist.name}` : `Unfollowed ${this.artist.name}`
+          this.isFollowing ? `Following ${this.artist?.name}` : `Unfollowed ${this.artist?.name}`
         );
         this.followLoading = false;
       },
@@ -187,6 +192,10 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
         this.followLoading = false;
       }
     });
+  }
+
+  goToAlbum(albumId: string): void {
+    this.router.navigate(['/album', albumId]);
   }
 
   goBack(): void {
@@ -206,6 +215,11 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  formatReleaseYear(dateString: string): string {
+    if (!dateString) return '';
+    return dateString.split('-')[0];
   }
 
   onTrackHover(track: any): void {
@@ -228,7 +242,7 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     if (!this.carouselTrack) return;
     
     const track = this.carouselTrack.nativeElement;
-    const cardWidth = 180; // card width + gap
+    const cardWidth = 180;
     const scrollAmount = cardWidth * 3;
     
     if (direction === 'next') {
@@ -242,6 +256,6 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
 
   private calculateCarouselMax(): void {
     const visibleCards = 5;
-    this.maxCarouselPosition = Math.max(0, Math.ceil((this.relatedArtists.length - visibleCards) / 3));
+    this.maxCarouselPosition = Math.max(0, Math.ceil((this.albums.length - visibleCards) / 3));
   }
 }

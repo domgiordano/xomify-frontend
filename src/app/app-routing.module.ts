@@ -5,6 +5,7 @@ import { AuthGuard } from './guards/auth.guard';
 // Pages
 import { HomeComponent } from './pages/home/home.component';
 import { CallbackComponent } from './components/callback/callback.component';
+import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
 import { MyProfileComponent } from './pages/my-profile/my-profile.component';
 import { TopSongsComponent } from './pages/top-songs/top-songs.component';
 import { TopArtistsComponent } from './pages/top-artists/top-artists.component';
@@ -40,6 +41,11 @@ const routes: Routes = [
   {
     path: 'artist-profile/:id',
     component: ArtistProfileComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'album/:id',
+    component: AlbumDetailComponent,
     canActivate: [AuthGuard],
   },
   {
