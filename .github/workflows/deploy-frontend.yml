@@ -66,4 +66,4 @@ jobs:
           AWS_REGION: "us-east-1"
         run: |
           aws s3 cp ./dist/xomify/index.html s3://xomify.com/index.html \
-            --cache-control "no-cache, no-store, must-revalidate" --acl public-read
+            --cache-control "no-cache, no-store, must-revalidate"
