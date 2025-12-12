@@ -26,6 +26,7 @@ import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.compo
 import { PlaybackBarComponent } from './components/playback-bar/playback-bar.component';
 import { SwiperModule } from 'swiper/angular';
 import { FooterComponent } from './components/footer/footer.component';
+import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
 
 @NgModule({
   declarations: [
@@ -42,6 +43,7 @@ import { FooterComponent } from './components/footer/footer.component';
     CallbackComponent,
     HomeComponent,
     ArtistProfileComponent,
+    AlbumDetailComponent,
     FollowingComponent,
     ReleaseCalendarComponent,
     QueueBuilderComponent,

@@ -13,6 +13,7 @@ import { ArtistProfileComponent } from './pages/artist-profile/artist-profile.co
 import { FollowingComponent } from './pages/following/following.component';
 import { ReleaseCalendarComponent } from './pages/release-calendar/release-calendar.component';
 import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.component';
+import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -45,6 +46,11 @@ const routes: Routes = [
   {
     path: 'following',
     component: FollowingComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'album/:id',
+    component: AlbumDetailComponent,
     canActivate: [AuthGuard],
   },
   {
