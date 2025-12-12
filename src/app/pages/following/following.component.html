@@ -101,9 +101,7 @@
           (click)="unfollowArtist(artist, $event)"
           [class.loading]="artist.unfollowing"
         >
-          <span *ngIf="artist.unfollowing">...</span>
-          <span *ngIf="!artist.unfollowing" class="follow-text">Following</span>
-          <span *ngIf="!artist.unfollowing" class="unfollow-text">Unfollow</span>
+          {{ artist.unfollowing ? '...' : 'Following' }}
         </button>
       </div>
     </div>

@@ -1,16 +1,14 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ToolbarComponent } from './components/toolbar/toolbar.component';
 import { FormsModule } from '@angular/forms';
 import { MyProfileComponent } from './pages/my-profile/my-profile.component';
-import { MyPlaylistsComponent } from './pages/my-playlists/my-playlists.component';
-import { PlaylistDetailComponent } from './pages/playlist-detail/playlist-detail.component';
 import { TopSongsComponent } from './pages/top-songs/top-songs.component';
 import { TopArtistsComponent } from './pages/top-artists/top-artists.component';
 import { TopGenresComponent } from './pages/top-genres/top-genres.component';
@@ -23,6 +21,9 @@ import { CallbackComponent } from './components/callback/callback.component';
 import { HomeComponent } from './pages/home/home.component';
 import { ArtistProfileComponent } from './pages/artist-profile/artist-profile.component';
 import { FollowingComponent } from './pages/following/following.component';
+import { ReleaseCalendarComponent } from './pages/release-calendar/release-calendar.component';
+import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.component';
+import { PlaybackBarComponent } from './components/playback-bar/playback-bar.component';
 import { SwiperModule } from 'swiper/angular';
 import { FooterComponent } from './components/footer/footer.component';
 
@@ -31,9 +32,6 @@ import { FooterComponent } from './components/footer/footer.component';
     AppComponent,
     ToolbarComponent,
     MyProfileComponent,
-    MyPlaylistsComponent,
-    PlaylistDetailComponent,
-    AlbumDetailComponent,
     TopSongsComponent,
     TopArtistsComponent,
     TopGenresComponent,
@@ -45,6 +43,9 @@ import { FooterComponent } from './components/footer/footer.component';
     HomeComponent,
     ArtistProfileComponent,
     FollowingComponent,
+    ReleaseCalendarComponent,
+    QueueBuilderComponent,
+    PlaybackBarComponent,
     FooterComponent,
   ],
   imports: [
@@ -52,9 +53,9 @@ import { FooterComponent } from './components/footer/footer.component';
     AppRoutingModule,
     FormsModule,
     HttpClientModule,
+    DragDropModule,
     SwiperModule,
     BrowserAnimationsModule,
-    FormsModule,
   ],
   providers: [AuthService],
   bootstrap: [AppComponent],

@@ -5,15 +5,14 @@ import { AuthGuard } from './guards/auth.guard';
 // Pages
 import { HomeComponent } from './pages/home/home.component';
 import { CallbackComponent } from './components/callback/callback.component';
-import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
 import { MyProfileComponent } from './pages/my-profile/my-profile.component';
 import { TopSongsComponent } from './pages/top-songs/top-songs.component';
 import { TopArtistsComponent } from './pages/top-artists/top-artists.component';
 import { TopGenresComponent } from './pages/top-genres/top-genres.component';
 import { ArtistProfileComponent } from './pages/artist-profile/artist-profile.component';
 import { FollowingComponent } from './pages/following/following.component';
-import { MyPlaylistsComponent } from './pages/my-playlists/my-playlists.component';
-import { PlaylistDetailComponent } from './pages/playlist-detail/playlist-detail.component';
+import { ReleaseCalendarComponent } from './pages/release-calendar/release-calendar.component';
+import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -44,23 +43,18 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
-    path: 'album/:id',
-    component: AlbumDetailComponent,
-    canActivate: [AuthGuard],
-  },
-  {
     path: 'following',
     component: FollowingComponent,
     canActivate: [AuthGuard],
   },
   {
-    path: 'my-playlists',
-    component: MyPlaylistsComponent,
+    path: 'release-calendar',
+    component: ReleaseCalendarComponent,
     canActivate: [AuthGuard],
   },
   {
-    path: 'playlist/:id',
-    component: PlaylistDetailComponent,
+    path: 'playlist-builder',
+    component: QueueBuilderComponent,
     canActivate: [AuthGuard],
   },
   // Catch-all redirect

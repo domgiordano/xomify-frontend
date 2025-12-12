@@ -177,20 +177,6 @@
     .image-overlay {
       opacity: 1;
     }
-    
-    .unfollow-btn {
-      background: rgba(255, 71, 87, 0.15);
-      border-color: rgba(255, 71, 87, 0.4);
-      color: #ff4757;
-      
-      .follow-text {
-        display: none;
-      }
-      
-      .unfollow-text {
-        display: inline;
-      }
-    }
   }
 }
 
@@ -301,13 +287,11 @@
   white-space: nowrap;
   min-width: 90px;
   text-align: center;
-
-  .follow-text {
-    display: inline;
-  }
   
-  .unfollow-text {
-    display: none;
+  &:hover {
+    background: rgba(255, 71, 87, 0.15);
+    border-color: rgba(255, 71, 87, 0.4);
+    color: #ff4757;
   }
   
   &.loading {
