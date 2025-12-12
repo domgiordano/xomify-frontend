@@ -1,5 +1,12 @@
-<div class="loader" *ngIf="loading">
-    <div class="spinner"></div>
-    <p>Loading...</p>
+<div class="loader-overlay" *ngIf="loading">
+  <div class="loader-content">
+    <div class="spinner">
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+    <p class="loader-message">{{ message }}</p>
+  </div>
 </div>
-

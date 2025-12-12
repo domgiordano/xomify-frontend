@@ -1,190 +1,166 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { SongService } from 'src/app/services/song.service';
-import { AuthService } from 'src/app/services/auth.service';
-import { PlayerService } from 'src/app/services/player.service';
-import { forkJoin, take } from 'rxjs';
-import { ToastService } from 'src/app/services/toast.service';
+import { take } from 'rxjs';
+
+interface TopSong {
+  id: string;
+  name: string;
+  artists: { id: string; name: string }[];
+  album: {
+    id: string;
+    name: string;
+    images: { url: string }[];
+    release_date: string;
+  };
+  duration_ms: number;
+  popularity: number;
+  explicit: boolean;
+  preview_url: string | null;
+  external_urls: { spotify: string };
+  flipped?: boolean;
+}
 
 @Component({
-  selector: 'app-top-songs-page',
+  selector: 'app-top-songs',
   templateUrl: './top-songs.component.html',
-  styleUrls: ['./top-songs.component.scss']
+  styleUrls: ['./top-songs.component.scss'],
 })
-export class TopSongsComponent implements OnInit, OnDestroy {
-  @ViewChild('audioPlayer', { static: false }) audioPlayer!: ElementRef<HTMLAudioElement>;
-  selectedTerm = 'short_term';
-  selectedSong: any;
-  currentSong = {
-    flipped: false
-  };
-  loading: boolean;
-  displayedSongs = [];
-  private topTracksShortTerm: any[];
-  private topTracksMedTerm: any[];
-  private topTracksLongTerm: any[];
-  accessToken: string;
+export class TopSongsComponent implements OnInit {
+  topSongs: TopSong[] = [];
+  loading: boolean = true;
+  error: string = '';
+  activeTimeRange: 'short_term' | 'medium_term' | 'long_term' = 'short_term';
 
-  constructor(
-    private AuthService: AuthService,
-    private SongService: SongService,
-    private ToastService: ToastService,
-    private PlayerService: PlayerService
-  ) {}
+  timeRanges = [
+    { value: 'short_term' as const, label: 'Last 4 Weeks' },
+    { value: 'medium_term' as const, label: 'Last 6 Months' },
+    { value: 'long_term' as const, label: 'All Time' },
+  ];
 
-  ngOnInit() {
-    this.accessToken = this.AuthService.getAccessToken();
-    this.topTracksShortTerm = this.SongService.getShortTermTopTracks();
-    this.topTracksMedTerm = this.SongService.getMedTermTopTracks();
-    this.topTracksLongTerm = this.SongService.getLongTermTopTracks();
-    this.displayedSongs = this.topTracksShortTerm;
+  constructor(private songService: SongService, private router: Router) {}
 
-    if (this.topTracksShortTerm.length === 0) {
-      console.log("Need Top Tracks.");
-      this.loadTopTracks();
-    } else {
-      console.log("We got dem top tracks.");
-      this.updateDisplayedSongs();
-      // Auto-play first track if player ready
-      if (this.displayedSongs[0]) this.playSong(this.displayedSongs[0].id, true);
+  ngOnInit(): void {
+    this.loadTopSongs();
+  }
+
+  loadTopSongs(): void {
+    this.loading = true;
+    this.error = '';
+
+    // Check for cached data first
+    const cachedData = this.getCachedSongs();
+    if (cachedData.length > 0) {
+      this.topSongs = cachedData.map((song) => ({ ...song, flipped: false }));
+      this.loading = false;
+      return;
+    }
+
+    this.songService
+      .getTopTracks(this.activeTimeRange, 50)
+      .pipe(take(1))
+      .subscribe({
+        next: (response) => {
+          this.topSongs = (response.items || []).map((song: any) => ({
+            ...song,
+            flipped: false,
+          }));
+          this.cacheSongs(this.topSongs);
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('Error loading top songs:', err);
+          this.error = 'Failed to load your top songs. Please try again.';
+          this.loading = false;
+        },
+      });
+  }
+
+  private getCachedSongs(): any[] {
+    switch (this.activeTimeRange) {
+      case 'short_term':
+        return this.songService.getShortTermTopTracks();
+      case 'medium_term':
+        return this.songService.getMediumTermTopTracks();
+      case 'long_term':
+        return this.songService.getLongTermTopTracks();
+      default:
+        return [];
     }
   }
 
-  ngOnDestroy() {
-    this.currentSong.flipped = false;
+  private cacheSongs(songs: any[]): void {
+    const short =
+      this.activeTimeRange === 'short_term'
+        ? songs
+        : this.songService.getShortTermTopTracks();
+    const medium =
+      this.activeTimeRange === 'medium_term'
+        ? songs
+        : this.songService.getMediumTermTopTracks();
+    const long =
+      this.activeTimeRange === 'long_term'
+        ? songs
+        : this.songService.getLongTermTopTracks();
+    this.songService.setTopTracks(short, medium, long);
   }
 
-  flipCard(song) {
-    this.currentSong.flipped = false;
-    this.selectedSong = song;
-    if ('flipped' in this.selectedSong) {
-      this.selectedSong.flipped = !this.selectedSong.flipped;
-    } else {
-      this.selectedSong.flipped = true;
-    }
-
-    this.getSongStats(this.selectedSong);
-    this.currentSong = this.selectedSong;
-  }
-
-  flipCardBack(song) {
-    this.currentSong.flipped = false;
-    this.selectedSong = song;
-    this.selectedSong.flipped = false;
-  }
-
-  onTermChange() {
-    this.SongService.setCurrentTerm(this.selectedTerm);
-    this.updateDisplayedSongs();
-    console.log(this.displayedSongs);
-    console.log('Selected term:', this.selectedTerm);
-  }
-
-  updateDisplayedSongs() {
-    const songsGrid = document.querySelector('.songs-grid');
-    if (songsGrid) {
-      songsGrid.classList.add('fade-out'); 
-      setTimeout(() => {
-        switch (this.selectedTerm) {
-          case 'short_term':
-            this.displayedSongs = this.topTracksShortTerm;
-            break;
-          case 'medium_term':
-            this.displayedSongs = this.topTracksMedTerm;
-            break;
-          case 'long_term':
-            this.displayedSongs = this.topTracksLongTerm;
-            break;
-        }
-        songsGrid.classList.remove('fade-out');
-        // Auto-play first song in the new term
-        if (this.displayedSongs[0]) this.playSong(this.displayedSongs[0].id, true);
-        this.selectedSong = this.displayedSongs[0];
-      }, 500);
+  onTimeRangeChange(range: 'short_term' | 'medium_term' | 'long_term'): void {
+    if (range !== this.activeTimeRange) {
+      this.activeTimeRange = range;
+      this.loadTopSongs();
     }
   }
 
-  playSong(trackId: string, autoPlay = false) {
-    this.PlayerService.playerReady$.pipe(take(1)).subscribe(ready => {
-      if (ready) {
-        this.PlayerService.playSong(trackId, autoPlay);
-      } else {
-        console.warn('Player not ready yet.');
-      }
-    });
+  flipCard(song: TopSong): void {
+    song.flipped = !song.flipped;
   }
 
-  stopSong() {
-    this.PlayerService.playerReady$.pipe(take(1)).subscribe(ready => {
-      if (ready) {
-        this.PlayerService.stopSong();
-      } else {
-        console.warn('Player not ready yet.');
-      }
-    });
+  onCardHover(song: TopSong): void {
+    // Preview functionality can be added later if PlayerService supports it
   }
 
-  getSongStats(song) {
-    this.SongService.getSongStats(song.id).pipe(take(1)).subscribe({
-      next: stats => this.updateSelectedSong(stats),
-      error: err => {
-        console.error('Error fetching song stats', err);
-        this.ToastService.showNegativeToast('Error adding songs to playlist');
-        this.loading = false;
-      },
-      complete: () => console.log('Song Stats Loaded.')
-    });
+  onCardLeave(): void {
+    // Preview functionality can be added later if PlayerService supports it
   }
 
-  private updateSelectedSong(stats): void {
-    this.selectedSong.duration = this.convertMillisecondsToMinutesSeconds(stats.duration_ms);
-    this.selectedSong.acousticness = stats.acousticness;
-    this.selectedSong.danceability = stats.danceability;
-    this.selectedSong.energy = stats.energy;
-    this.selectedSong.instrumentalness = stats.instrumentalness;
-    this.selectedSong.liveness = stats.liveness;
-    this.selectedSong.loudness = stats.loudness;
-    this.selectedSong.speechiness = stats.speechiness;
-    this.selectedSong.tempo = stats.tempo;
-    this.selectedSong.valence = stats.valence;
+  getArtistNames(artists: { id: string; name: string }[]): string {
+    return artists
+      .slice(0, 2)
+      .map((a) => a.name)
+      .join(', ');
   }
 
-  private convertMillisecondsToMinutesSeconds(ms: number): string {
+  goToArtist(artistId: string, event: Event): void {
+    event.stopPropagation();
+    this.router.navigate(['/artist-profile', artistId]);
+  }
+
+  goToAlbum(albumId: string, event: Event): void {
+    event.stopPropagation();
+    this.router.navigate(['/album', albumId]);
+  }
+
+  openInSpotify(url: string, event: Event): void {
+    event.stopPropagation();
+    window.open(url, '_blank');
+  }
+
+  formatDuration(ms: number): string {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  loadTopTracks() {
-    this.loading = true;
-    const getTracksCalls = forkJoin({
-      shortTermResp: this.SongService.getTopTracks('short_term'),
-      medTermResp: this.SongService.getTopTracks('medium_term'),
-      longTermResp: this.SongService.getTopTracks('long_term'),
-    });
-
-    getTracksCalls.pipe(take(1)).subscribe({
-      next: data => {
-        this.SongService.setTopTracks(data.shortTermResp.items, data.medTermResp.items, data.longTermResp.items);
-        this.topTracksShortTerm = data.shortTermResp.items;
-        this.topTracksMedTerm = data.medTermResp.items;
-        this.topTracksLongTerm = data.longTermResp.items;
-        this.updateDisplayedSongs();
-        this.loading = false;
-      },
-      error: err => {
-        console.error('Error fetching user tracks', err);
-        this.ToastService.showNegativeToast('Error adding songs to playlist');
-        this.loading = false;
-      },
-      complete: () => console.log('Top Tracks Loaded.')
-    });
+  formatReleaseYear(date: string): string {
+    return date?.split('-')[0] || '';
   }
 
-  formatArtists(artists: any[]): string {
-    return artists.map(artist => artist.name).join(', ');
-  }
-
-  viewSongDetails(song: any) {
-    console.log('Song', song);
+  getPopularityLabel(popularity: number): string {
+    if (popularity >= 80) return 'Very Popular';
+    if (popularity >= 60) return 'Popular';
+    if (popularity >= 40) return 'Moderate';
+    if (popularity >= 20) return 'Underground';
+    return 'Obscure';
   }
 }

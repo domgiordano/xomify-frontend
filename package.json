@@ -1,10 +1,11 @@
 {
-  "name": "angular-spotify",
-  "version": "0.0.0",
+  "name": "xomify-frontend",
+  "version": "1.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -25,8 +26,8 @@
     "zone.js": "~0.13.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^16.1.4",
-    "@angular/cli": "~16.1.4",
+    "@angular-devkit/build-angular": "^16.1.7",
+    "@angular/cli": "^16.1.7",
     "@angular/compiler-cli": "^16.1.0",
     "@types/jasmine": "~4.3.0",
     "jasmine-core": "~4.6.0",

@@ -1,7 +1,6 @@
-// toolbar.component.ts
 import { Component, HostListener, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service'; // Adjust the path as necessary
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -11,31 +10,28 @@ import { AuthService } from '../../services/auth.service'; // Adjust the path as
 export class ToolbarComponent implements OnInit {
   dropdownVisible = false;
   isMobile: boolean;
+
   constructor(
     private AuthService: AuthService,
     private router: Router
-    ) {
-      this.checkIfMobile();
-      window.addEventListener('resize', this.checkIfMobile.bind(this));
-    }
-
-  ngOnInit(): void {
-    console.log("Toolbar locked n loaded.")
+  ) {
+    this.checkIfMobile();
+    window.addEventListener('resize', this.checkIfMobile.bind(this));
   }
 
-  // Toggle dropdown visibility
+  ngOnInit(): void {
+    console.log("Toolbar initialized.");
+  }
+
   toggleDropdown() {
     this.dropdownVisible = !this.dropdownVisible;
   }
 
-  // Handle item selection and close dropdown
   selectItem(route: string) {
-    this.dropdownVisible = false; // Close the dropdown
-    // Optionally, navigate to the selected route
-    this.router.navigate([route]); // Make sure to import Router
+    this.dropdownVisible = false;
+    this.router.navigate([route]);
   }
 
-  // Close dropdown if clicked outside
   @HostListener('document:click', ['$event'])
   closeDropdown(event: MouseEvent) {
     const target = event.target as HTMLElement;
@@ -45,13 +41,20 @@ export class ToolbarComponent implements OnInit {
   }
 
   checkIfMobile() {
-    this.isMobile = window.innerWidth <= 768; // Adjust this threshold as needed
+    this.isMobile = window.innerWidth <= 768;
   }
 
   isLoggedIn(): boolean {
     return this.AuthService.isLoggedIn();
   }
+
   isSelected(route: string): boolean {
     return this.router.url === route;
+  }
+
+  logout(): void {
+    this.AuthService.logout();
+    this.dropdownVisible = false;
+    this.router.navigate(['/home']);
   }
 }

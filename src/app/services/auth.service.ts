@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { environment } from 'src/environments/environment.prod';
+import { environment } from 'src/environments/environment';
 import { ToastService } from './toast.service';
 
 @Injectable({
@@ -12,7 +12,8 @@ export class AuthService {
   private readonly clientId = environment.spotifyClientId;
   private readonly clientSecret = environment.spotifyClientSecret;
   private readonly redirectUri = `${environment.baseCallbackUrl}/callback`;
-  private readonly scope = 'user-read-private user-read-email user-library-read user-top-read playlist-modify-public playlist-modify-private playlist-read-private playlist-read-collaborative ugc-image-upload user-follow-read user-modify-playback-state user-read-playback-state streaming';
+  private readonly scope =
+    'user-read-private user-read-email user-library-read user-top-read playlist-modify-public playlist-modify-private playlist-read-private playlist-read-collaborative ugc-image-upload user-follow-read user-follow-modify user-modify-playback-state user-read-playback-state streaming';
   accessToken: string = '';
   refreshToken: string = '';
 
@@ -20,10 +21,14 @@ export class AuthService {
     private http: HttpClient,
     private router: Router,
     private ToastService: ToastService
-    ) {}
+  ) {}
 
   login() {
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${this.clientId}&redirect_uri=${encodeURIComponent(this.redirectUri)}&scope=${encodeURIComponent(this.scope)}&response_type=code`;
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${
+      this.clientId
+    }&redirect_uri=${encodeURIComponent(
+      this.redirectUri
+    )}&scope=${encodeURIComponent(this.scope)}&response_type=code`;
     window.location.href = authUrl;
   }
 
@@ -45,22 +50,24 @@ export class AuthService {
     body.set('client_id', this.clientId);
     body.set('client_secret', this.clientSecret); // Sending the Client Secret
 
-    this.http.post(tokenUrl, body.toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    }).subscribe({
-      next: (response: any) => {
-        this.accessToken = response.access_token;
-        this.refreshToken = response.refresh_token;
-        console.log('Tokens saved.');
-        this.router.navigate(['/my-profile']); // Navigate after login
-      },
-      error: (err) => {
-        this.ToastService.showNegativeToast('Token exchange failed.')
-        console.error('Token exchange failed', err);
-      },
-    });
+    this.http
+      .post(tokenUrl, body.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      })
+      .subscribe({
+        next: (response: any) => {
+          this.accessToken = response.access_token;
+          this.refreshToken = response.refresh_token;
+          console.log('Tokens saved.');
+          this.router.navigate(['/my-profile']); // Navigate after login
+        },
+        error: (err) => {
+          this.ToastService.showNegativeToast('Token exchange failed.');
+          console.error('Token exchange failed', err);
+        },
+      });
   }
 
   logout() {
@@ -79,8 +86,7 @@ export class AuthService {
   isLoggedIn(): boolean {
     if (!this.accessToken || this.accessToken.trim() === '') {
       return false;
-    }
-    else{
+    } else {
       return true;
     }
   }

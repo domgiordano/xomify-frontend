@@ -1,0 +1,195 @@
+<div class="page-container">
+  <app-loader [loading]="loading" message="Loading playlist..."></app-loader>
+
+  <div class="playlist-content" *ngIf="!loading && playlist">
+    <!-- Back Navigation -->
+    <button class="back-btn" (click)="goBack()">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      <span>Back to Playlists</span>
+    </button>
+
+    <!-- Playlist Header -->
+    <div class="playlist-header">
+      <div class="header-content">
+        <div class="playlist-image-wrapper">
+          <img
+            [src]="playlist.images?.[0]?.url || 'assets/default-playlist.png'"
+            [alt]="playlist.name"
+            class="playlist-image"
+          />
+        </div>
+
+        <div class="playlist-details">
+          <span class="playlist-type">{{
+            playlist.public ? "Public Playlist" : "Private Playlist"
+          }}</span>
+          <h1 class="playlist-name">{{ playlist.name }}</h1>
+          <p class="playlist-description" *ngIf="playlist.description">
+            {{ playlist.description }}
+          </p>
+
+          <div class="playlist-meta">
+            <span class="owner">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+                />
+              </svg>
+              {{ playlist.owner?.display_name }}
+            </span>
+            <span class="divider">•</span>
+            <span class="track-count"
+              >{{ playlist.tracks?.total || 0 }} songs</span
+            >
+            <span class="divider" *ngIf="totalDuration">•</span>
+            <span class="duration" *ngIf="totalDuration">{{
+              totalDuration
+            }}</span>
+          </div>
+
+          <div class="action-buttons">
+            <a
+              [href]="playlist.external_urls?.spotify"
+              target="_blank"
+              class="spotify-btn"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"
+                />
+              </svg>
+              Open in Spotify
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tracks List -->
+    <div class="tracks-section" *ngIf="tracks.length > 0">
+      <div class="tracks-header">
+        <span class="col-num">#</span>
+        <span class="col-title">Title</span>
+        <span class="col-album">Album</span>
+        <span class="col-added">Date Added</span>
+        <span class="col-duration">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"
+            />
+          </svg>
+        </span>
+      </div>
+
+      <div class="tracks-list">
+        <div
+          class="track-item"
+          *ngFor="let item of tracks; let i = index"
+          [class.unavailable]="!item.track"
+        >
+          <span class="track-num">{{ i + 1 }}</span>
+
+          <div class="track-info" *ngIf="item.track">
+            <img
+              [src]="item.track.album?.images?.[2]?.url || item.track.album?.images?.[0]?.url || 'assets/default-album.png'"
+              [alt]="item.track.name"
+              class="track-image"
+            />
+            <div class="track-text">
+              <span class="track-name">{{ item.track.name }}</span>
+              <span class="track-artists">
+                <a
+                  *ngFor="let artist of item.track.artists; let last = last"
+                  [routerLink]="['/artist-profile', artist.id]"
+                  class="artist-link"
+                >
+                  {{ artist.name }}{{ last ? "" : ", " }}
+                </a>
+              </span>
+            </div>
+          </div>
+          <div class="track-info unavailable-info" *ngIf="!item.track">
+            <span class="track-name">Track unavailable</span>
+          </div>
+
+          <span class="track-album" *ngIf="item.track">{{
+            item.track.album?.name
+          }}</span>
+          <span class="track-album" *ngIf="!item.track">—</span>
+
+          <span class="track-added">{{ formatDate(item.added_at) }}</span>
+
+          <span class="track-duration" *ngIf="item.track">{{
+            formatDuration(item.track.duration_ms)
+          }}</span>
+          <span class="track-duration" *ngIf="!item.track">—</span>
+        </div>
+      </div>
+
+      <!-- Load More -->
+      <div class="load-more" *ngIf="hasMoreTracks">
+        <button
+          class="load-more-btn"
+          (click)="loadMoreTracks()"
+          [disabled]="loadingMore"
+        >
+          {{ loadingMore ? "Loading..." : "Load More Tracks" }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-tracks" *ngIf="tracks.length === 0 && !loading">
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#6a6a7a"
+        stroke-width="1.5"
+      >
+        <path d="M9 18V5l12-2v13" />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="18" cy="16" r="3" />
+      </svg>
+      <p>This playlist is empty</p>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-container" *ngIf="error && !loading">
+    <svg
+      width="48"
+      height="48"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#ff4757"
+      stroke-width="2"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+    <p class="error-text">{{ error }}</p>
+    <button class="retry-btn" (click)="loadPlaylist()">Try Again</button>
+  </div>
+</div>

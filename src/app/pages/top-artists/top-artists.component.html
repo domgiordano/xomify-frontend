@@ -1,34 +1,74 @@
-<div class="top-artists-page">
-  <app-loader [loading]="loading"></app-loader>
-  <div class="switch-container">
-    <div class="term-buttons">
-      <button
-        class="term-button"
-        [ngClass]="{'selected': selectedTerm === 'short_term'}"
-        (click)="selectedTerm = 'short_term'; onTermChange()">
-        Last Month
-      </button>
-      <button
-        class="term-button"
-        [ngClass]="{'selected': selectedTerm === 'medium_term'}"
-        (click)="selectedTerm = 'medium_term'; onTermChange()">
-        Last 6 Months
-      </button>
-      <button
-        class="term-button"
-        [ngClass]="{'selected': selectedTerm === 'long_term'}"
-        (click)="selectedTerm = 'long_term'; onTermChange()">
-        Last Year
-      </button>
-    </div>
+<app-loader
+  [loading]="loading"
+  message="Loading your top artists..."
+></app-loader>
+
+<div class="page-container" *ngIf="!loading">
+  <header class="page-header">
+    <h1 class="page-title">Your Top Artists</h1>
+    <p class="page-subtitle">The artists you've been vibing with</p>
+  </header>
+
+  <!-- Term Selector -->
+  <div class="term-selector">
+    <button
+      class="term-btn"
+      [class.active]="selectedTerm === 'short_term'"
+      (click)="selectTerm('short_term')"
+    >
+      Last Month
+    </button>
+    <button
+      class="term-btn"
+      [class.active]="selectedTerm === 'medium_term'"
+      (click)="selectTerm('medium_term')"
+    >
+      Last 6 Months
+    </button>
+    <button
+      class="term-btn"
+      [class.active]="selectedTerm === 'long_term'"
+      (click)="selectTerm('long_term')"
+    >
+      All Time
+    </button>
   </div>
 
-  <div class="artists-grid">
-    <div class="artist-card" *ngFor="let artist of displayedArtists; let i = index">
-      <span class="artist-ranking">#{{ i + 1 }}</span>
-      <img [src]="artist.images[0].url" alt="{{ artist.name }}" class="artist-image">
-      <h2 class="artist-title">{{ artist.name }}</h2>
-      <button class="see-more-button" [routerLink]="['/artist']" [queryParams]="{ id: artist.id }">See More</button>
+  <!-- Artists Grid -->
+  <div class="artists-grid" [class.fade-out]="transitioning">
+    <div
+      class="artist-card"
+      *ngFor="let artist of displayedArtists; let i = index"
+      [routerLink]="['/artist-profile', artist.id]"
+    >
+      <div class="rank-badge">#{{ i + 1 }}</div>
+
+      <div class="artist-image-container">
+        <img
+          [src]="artist.images[0]?.url"
+          [alt]="artist.name"
+          class="artist-image"
+        />
+        <div class="image-overlay">
+          <span class="view-profile">View Profile →</span>
+        </div>
+      </div>
+
+      <div class="artist-info">
+        <h3 class="artist-name">{{ artist.name }}</h3>
+        <p class="artist-genre" *ngIf="artist.genres?.length">
+          {{ artist.genres[0] }}
+        </p>
+        <div class="artist-popularity">
+          <div class="popularity-bar">
+            <div
+              class="popularity-fill"
+              [style.width.%]="artist.popularity"
+            ></div>
+          </div>
+          <span class="popularity-label">{{ artist.popularity }}% popular</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>

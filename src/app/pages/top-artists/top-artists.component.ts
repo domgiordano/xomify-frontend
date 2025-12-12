@@ -10,100 +10,84 @@ import { ToastService } from 'src/app/services/toast.service';
   styleUrls: ['./top-artists.component.scss']
 })
 export class TopArtistsComponent implements OnInit {
+  loading = true;
+  transitioning = false;
   selectedTerm = 'short_term';
   displayedArtists: any[] = [];
-  loading: boolean;
-  private topArtistsShortTerm: any[];
-  private topArtistsMedTerm: any[];
-  private topArtistsLongTerm: any[];
-  accessToken: string;
+  
+  private topArtistsShortTerm: any[] = [];
+  private topArtistsMedTerm: any[] = [];
+  private topArtistsLongTerm: any[] = [];
 
   constructor(
-      private AuthService: AuthService,
-      private ArtistService: ArtistService,
-      private ToastService: ToastService
-    ) {}
-  ngOnInit() {
-    this.accessToken = this.AuthService.getAccessToken();
-    this.topArtistsShortTerm = this.ArtistService.getShortTermTopArtists();
-    this.topArtistsMedTerm = this.ArtistService.getMedTermTopArtists();
-    this.topArtistsLongTerm = this.ArtistService.getLongTermTopArtists();
-    this.displayedArtists = this.topArtistsShortTerm;
-    if ( this.topArtistsShortTerm.length === 0){
-      console.log("Need Top Artists.");
+    private authService: AuthService,
+    private artistService: ArtistService,
+    private toastService: ToastService
+  ) {}
+
+  ngOnInit(): void {
+    const cached = this.artistService.getShortTermTopArtists();
+    
+    if (cached.length === 0) {
       this.loadTopArtists();
-    }
-    else{
-      console.log("We got dem top artists.");
-      this.updateDisplayedArtists();
-    }
-
-  }
-
-  onTermChange() {
-    this.updateDisplayedArtists();
-    console.log(this.displayedArtists);
-    console.log('Selected term:', this.selectedTerm);
-  }
-
-  updateDisplayedArtists() {
-    const artistsGrid = document.querySelector('.artists-grid');
-    if (artistsGrid) {
-      artistsGrid.classList.add('fade-out'); // Apply fade-out class
-      setTimeout(() => {
-        switch (this.selectedTerm) {
-          case 'short_term':
-            this.displayedArtists = this.topArtistsShortTerm;
-            break;
-          case 'medium_term':
-            this.displayedArtists = this.topArtistsMedTerm;
-            break;
-          case 'long_term':
-            this.displayedArtists = this.topArtistsLongTerm;
-            break;
-        }
-        artistsGrid.classList.remove('fade-out'); // Remove fade-out class after content is updated
-      }, 400);
+    } else {
+      this.topArtistsShortTerm = cached;
+      this.topArtistsMedTerm = this.artistService.getMedTermTopArtists();
+      this.topArtistsLongTerm = this.artistService.getLongTermTopArtists();
+      this.displayedArtists = [...this.topArtistsShortTerm];
+      this.loading = false;
     }
   }
 
-  loadTopArtists() {
+  loadTopArtists(): void {
     this.loading = true;
-    const getArtistsCalls = forkJoin({
-      shortTermResp: this.ArtistService.getTopArtists('short_term'),
-      medTermResp: this.ArtistService.getTopArtists('medium_term'),
-      longTermResp: this.ArtistService.getTopArtists('long_term'),
-    })
-    getArtistsCalls.pipe(take(1)).subscribe({
-      next: data => {
-        this.updateTopArtists(data.shortTermResp, data.medTermResp, data.longTermResp);
+    
+    forkJoin({
+      short: this.artistService.getTopArtists('short_term'),
+      medium: this.artistService.getTopArtists('medium_term'),
+      long: this.artistService.getTopArtists('long_term')
+    }).pipe(take(1)).subscribe({
+      next: (data) => {
+        this.topArtistsShortTerm = data.short.items;
+        this.topArtistsMedTerm = data.medium.items;
+        this.topArtistsLongTerm = data.long.items;
+        
+        this.artistService.setShortTermTopArtists(this.topArtistsShortTerm);
+        this.artistService.setMedTermTopArtists(this.topArtistsMedTerm);
+        this.artistService.setLongTermTopArtists(this.topArtistsLongTerm);
+        
+        this.displayedArtists = [...this.topArtistsShortTerm];
         this.loading = false;
-        console.log("TOP ARSTISTS FOUND ------");
-        console.log(data);
       },
-      error: err => {
-        console.error('Error fetching user artists', err);
-        this.ToastService.showNegativeToast('Error adding songs to playlist');
+      error: (err) => {
+        console.error('Error fetching top artists', err);
+        this.toastService.showNegativeToast('Error loading top artists');
         this.loading = false;
-      },
-      complete: () => {
-        console.log('Top Artists Loaded.');
       }
     });
   }
 
-  private updateTopArtists(short: any, med: any, long: any): void {
-    this.topArtistsShortTerm = short.items;
-    this.topArtistsMedTerm = med.items;
-    this.topArtistsLongTerm = long.items;
-    this.updateDisplayedArtists();
-    this.ArtistService.setShortTermTopArtists(this.topArtistsShortTerm);
-    this.ArtistService.setMedTermTopArtists(this.topArtistsMedTerm);
-    this.ArtistService.setLongTermTopArtists(this.topArtistsLongTerm);
-  }
-
-  viewArtistDetails(artist: any){
-    console.log('Aritst', artist);
+  selectTerm(term: string): void {
+    if (term === this.selectedTerm) return;
+    
+    this.selectedTerm = term;
+    
+    // Fade transition
+    this.transitioning = true;
+    
+    setTimeout(() => {
+      switch (term) {
+        case 'short_term':
+          this.displayedArtists = [...this.topArtistsShortTerm];
+          break;
+        case 'medium_term':
+          this.displayedArtists = [...this.topArtistsMedTerm];
+          break;
+        case 'long_term':
+          this.displayedArtists = [...this.topArtistsLongTerm];
+          break;
+      }
+      this.transitioning = false;
+    }, 300);
   }
 }
-

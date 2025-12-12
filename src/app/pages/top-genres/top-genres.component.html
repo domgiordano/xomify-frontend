@@ -1,34 +1,91 @@
-<div class="top-genres-page">
-  <h1>Top Genres</h1>
-  <div class="switch-container">
-    <div class="term-buttons">
-      <button
-        class="term-button"
-        [ngClass]="{'selected': selectedTerm === 'short_term'}"
-        (click)="selectTerm('short_term')">
-        Last Month
-      </button>
-      <button
-        class="term-button"
-        [ngClass]="{'selected': selectedTerm === 'medium_term'}"
-        (click)="selectTerm('medium_term')">
-        Last 6 Months
-      </button>
-      <button
-        class="term-button"
-        [ngClass]="{'selected': selectedTerm === 'long_term'}"
-        (click)="selectTerm('long_term')">
-        Last Year
-      </button>
-    </div>
+<app-loader [loading]="loading" message="Analyzing your genres..."></app-loader>
+
+<div class="page-container" *ngIf="!loading">
+  <header class="page-header">
+    <h1 class="page-title">Your Top Genres</h1>
+    <p class="page-subtitle">What styles define your taste</p>
+  </header>
+
+  <!-- Term Selector -->
+  <div class="term-selector">
+    <button 
+      class="term-btn" 
+      [class.active]="selectedTerm === 'short_term'"
+      (click)="selectTerm('short_term')">
+      Last Month
+    </button>
+    <button 
+      class="term-btn" 
+      [class.active]="selectedTerm === 'medium_term'"
+      (click)="selectTerm('medium_term')">
+      Last 6 Months
+    </button>
+    <button 
+      class="term-btn" 
+      [class.active]="selectedTerm === 'long_term'"
+      (click)="selectTerm('long_term')">
+      All Time
+    </button>
   </div>
-  <div class="genres-list">
-    <div class="genre-item" *ngFor="let genre of displayedGenres; let i = index"
-         [ngClass]="{'highlighted': hoveredIndex === i}"
-         (mouseenter)="hoveredIndex = i"
-         (mouseleave)="hoveredIndex = -1">
-      <span class="genre-ranking">{{ i + 1 }}.</span>
-      <span class="genre-name">{{ genre.replace('_', ' ').toUpperCase() }}</span>
-    </div>
+
+  <div class="genres-content" [class.fade-out]="transitioning" *ngIf="genreList.length > 0">
+    <!-- Featured Top 3 -->
+    <section class="featured-genres">
+      <div class="podium">
+        <!-- Second Place -->
+        <div class="podium-item second" *ngIf="genreList[1]">
+          <div class="genre-circle silver">
+            <span class="genre-emoji">🥈</span>
+          </div>
+          <h3 class="genre-name">{{ genreList[1].name }}</h3>
+          <p class="genre-count">{{ genreList[1].count }} artists</p>
+        </div>
+        
+        <!-- First Place -->
+        <div class="podium-item first" *ngIf="genreList[0]">
+          <div class="genre-circle gold">
+            <span class="genre-emoji">🥇</span>
+          </div>
+          <h3 class="genre-name">{{ genreList[0].name }}</h3>
+          <p class="genre-count">{{ genreList[0].count }} artists</p>
+        </div>
+        
+        <!-- Third Place -->
+        <div class="podium-item third" *ngIf="genreList[2]">
+          <div class="genre-circle bronze">
+            <span class="genre-emoji">🥉</span>
+          </div>
+          <h3 class="genre-name">{{ genreList[2].name }}</h3>
+          <p class="genre-count">{{ genreList[2].count }} artists</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Full Genre List -->
+    <section class="genres-list">
+      <h2 class="section-title">All Genres</h2>
+      
+      <div class="genre-items">
+        <div 
+          class="genre-item" 
+          *ngFor="let genre of genreList; let i = index"
+          [class.highlighted]="i < 3">
+          
+          <span class="genre-rank">{{ i + 1 }}</span>
+          <span class="genre-name">{{ genre.name }}</span>
+          <div class="genre-bar-container">
+            <div class="genre-bar">
+              <div class="genre-fill" [style.width.%]="genre.percentage"></div>
+            </div>
+          </div>
+          <span class="genre-count">{{ genre.count }}</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="genreList.length === 0 && !loading">
+    <p>No genre data available yet. Start listening to build your profile!</p>
   </div>
 </div>
