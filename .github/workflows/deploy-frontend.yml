@@ -43,10 +43,10 @@ jobs:
 
       - name: Inject environment variables into Angular
         run: |
-          sed -i "s|spotifyClientId: '---'|spotifyClientId: '$(grep 'SPOTIFY_CLIENT_ID' spotify_credentials.env | cut -d'=' -f2)'|g" src/environments/environment.prod.ts
-          sed -i "s|spotifyClientSecret: '---'|spotifyClientSecret: '$(grep 'SPOTIFY_CLIENT_SECRET' spotify_credentials.env | cut -d'=' -f2)'|g" src/environments/environment.prod.ts
-          sed -i "s|apiAuthToken: '---'|apiAuthToken: '$(grep 'API_AUTH_TOKEN' spotify_credentials.env | cut -d'=' -f2)'|g" src/environments/environment.prod.ts
-          sed -i "s|apiId: '---'|apiId: '$(grep 'API_ID' spotify_credentials.env | cut -d'=' -f2)'|g" src/environments/environment.prod.ts
+          sed -i "s|spotifyClientId: '---'|spotifyClientId: '$(grep 'SPOTIFY_CLIENT_ID' spotify_credentials.env | cut -d'=' -f2)'|g" src/environments/environment.ts
+          sed -i "s|spotifyClientSecret: '---'|spotifyClientSecret: '$(grep 'SPOTIFY_CLIENT_SECRET' spotify_credentials.env | cut -d'=' -f2)'|g" src/environments/environment.ts
+          sed -i "s|apiAuthToken: '---'|apiAuthToken: '$(grep 'API_AUTH_TOKEN' spotify_credentials.env | cut -d'=' -f2)'|g" src/environments/environment.ts
+          sed -i "s|apiId: '---'|apiId: '$(grep 'API_ID' spotify_credentials.env | cut -d'=' -f2)'|g" src/environments/environment.ts
 
       - name: Build the project
         run: npm run build:prod
