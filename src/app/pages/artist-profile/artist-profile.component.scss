@@ -1,7 +1,7 @@
 .page-container {
   min-height: 100vh;
   background: linear-gradient(180deg, #0a0a14 0%, #121225 100%);
-  padding: 70px 24px 180px;
+  padding: 70px 24px 120px;
   position: relative;
 }
 
@@ -429,143 +429,9 @@
   }
 }
 
-// ========================================
-// ALBUMS TICKER - NEWS TICKER STYLE
-// ========================================
-.albums-ticker {
-  position: fixed;
-  bottom: 60px;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: linear-gradient(180deg, rgba(10, 10, 20, 0.95) 0%, rgba(18, 18, 37, 0.98) 100%);
-  border-top: 1px solid rgba(156, 10, 191, 0.3);
-  display: flex;
-  align-items: center;
-  z-index: 100;
-  overflow: hidden;
-}
-
-.ticker-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(135deg, #9c0abf 0%, #7a0896 100%);
-  color: #fff;
-  padding: 0 20px;
-  height: 100%;
-  font-size: 0.85rem;
-  font-weight: 600;
-  white-space: nowrap;
-  z-index: 2;
-  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
-}
-
-.ticker-wrapper {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-  
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 60px;
-    z-index: 1;
-    pointer-events: none;
-  }
-  
-  &::before {
-    left: 0;
-    background: linear-gradient(90deg, rgba(10, 10, 20, 1) 0%, transparent 100%);
-  }
-  
-  &::after {
-    right: 0;
-    background: linear-gradient(90deg, transparent 0%, rgba(10, 10, 20, 1) 100%);
-  }
-}
-
-.ticker-track {
-  display: flex;
-  align-items: center;
-  animation: ticker-scroll 40s linear infinite;
-  width: max-content;
-  
-  &.paused {
-    animation-play-state: paused;
-  }
-}
-
-@keyframes ticker-scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.ticker-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border-radius: 8px;
-  cursor: pointer;
-  
-  &:hover {
-    background: rgba(156, 10, 191, 0.2);
-    
-    .ticker-name {
-      color: #1bdc6f;
-    }
-  }
-}
-
-.ticker-image {
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
-  object-fit: cover;
-  border: 2px solid rgba(156, 10, 191, 0.4);
-  transition: border-color 0.3s ease;
-  
-  .ticker-item:hover & {
-    border-color: #1bdc6f;
-  }
-}
-
-.ticker-name {
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: color 0.3s ease;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ticker-year {
-  color: #8a8a9a;
-  font-size: 0.8rem;
-  white-space: nowrap;
-}
-
-.ticker-divider {
-  color: #4a4a5a;
-  font-size: 0.8rem;
-  margin: 0 8px;
-}
-
 // Mobile Responsive
 @media (max-width: 768px) {
-  .page-container { padding: 70px 16px 160px; }
+  .page-container { padding: 70px 16px 120px; }
   .header-banner { height: 220px; left: -16px; right: -16px; }
   .header-content { padding-top: 40px; }
   .artist-image-wrapper .artist-image { width: 150px; height: 150px; }
@@ -582,11 +448,6 @@
   .carousel-btn { display: none; }
   .carousel-track { padding: 8px 4px; }
   .album-card { width: 150px; }
-  
-  .albums-ticker { bottom: 50px; height: 50px; }
-  .ticker-label { padding: 0 12px; font-size: 0.75rem; }
-  .ticker-image { width: 28px; height: 28px; }
-  .ticker-name { font-size: 0.8rem; max-width: 100px; }
 }
 
 @media (max-width: 480px) {
@@ -595,6 +456,4 @@
   .track-item { grid-template-columns: 24px 40px 1fr; .track-duration { display: none; } }
   .track-image-container { width: 40px; height: 40px; }
   .section-header .section-title { font-size: 1.4rem; }
-  
-  .ticker-label { display: none; }
 }

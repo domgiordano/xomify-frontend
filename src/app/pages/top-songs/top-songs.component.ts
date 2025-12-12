@@ -1,166 +1,166 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { SongService } from 'src/app/services/song.service';
-import { AuthService } from 'src/app/services/auth.service';
-import { PlayerService } from 'src/app/services/player.service';
-import { forkJoin, take } from 'rxjs';
-import { ToastService } from 'src/app/services/toast.service';
+import { take } from 'rxjs';
+
+interface TopSong {
+  id: string;
+  name: string;
+  artists: { id: string; name: string }[];
+  album: {
+    id: string;
+    name: string;
+    images: { url: string }[];
+    release_date: string;
+  };
+  duration_ms: number;
+  popularity: number;
+  explicit: boolean;
+  preview_url: string | null;
+  external_urls: { spotify: string };
+  flipped?: boolean;
+}
 
 @Component({
-  selector: 'app-top-songs-page',
+  selector: 'app-top-songs',
   templateUrl: './top-songs.component.html',
-  styleUrls: ['./top-songs.component.scss']
+  styleUrls: ['./top-songs.component.scss'],
 })
-export class TopSongsComponent implements OnInit, OnDestroy {
-  loading = true;
-  transitioning = false;
-  selectedTerm = 'short_term';
-  displayedSongs: any[] = [];
-  
-  private topTracksShortTerm: any[] = [];
-  private topTracksMedTerm: any[] = [];
-  private topTracksLongTerm: any[] = [];
+export class TopSongsComponent implements OnInit {
+  topSongs: TopSong[] = [];
+  loading: boolean = true;
+  error: string = '';
+  activeTimeRange: 'short_term' | 'medium_term' | 'long_term' = 'short_term';
 
-  constructor(
-    private authService: AuthService,
-    private songService: SongService,
-    private toastService: ToastService,
-    private playerService: PlayerService
-  ) {}
+  timeRanges = [
+    { value: 'short_term' as const, label: 'Last 4 Weeks' },
+    { value: 'medium_term' as const, label: 'Last 6 Months' },
+    { value: 'long_term' as const, label: 'All Time' },
+  ];
+
+  constructor(private songService: SongService, private router: Router) {}
 
   ngOnInit(): void {
-    const cached = this.songService.getShortTermTopTracks();
-    
-    if (cached.length === 0) {
-      this.loadTopTracks();
-    } else {
-      this.topTracksShortTerm = cached;
-      this.topTracksMedTerm = this.songService.getMedTermTopTracks();
-      this.topTracksLongTerm = this.songService.getLongTermTopTracks();
-      this.displayedSongs = [...this.topTracksShortTerm];
+    this.loadTopSongs();
+  }
+
+  loadTopSongs(): void {
+    this.loading = true;
+    this.error = '';
+
+    // Check for cached data first
+    const cachedData = this.getCachedSongs();
+    if (cachedData.length > 0) {
+      this.topSongs = cachedData.map((song) => ({ ...song, flipped: false }));
       this.loading = false;
+      return;
+    }
+
+    this.songService
+      .getTopTracks(this.activeTimeRange, 50)
+      .pipe(take(1))
+      .subscribe({
+        next: (response) => {
+          this.topSongs = (response.items || []).map((song: any) => ({
+            ...song,
+            flipped: false,
+          }));
+          this.cacheSongs(this.topSongs);
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('Error loading top songs:', err);
+          this.error = 'Failed to load your top songs. Please try again.';
+          this.loading = false;
+        },
+      });
+  }
+
+  private getCachedSongs(): any[] {
+    switch (this.activeTimeRange) {
+      case 'short_term':
+        return this.songService.getShortTermTopTracks();
+      case 'medium_term':
+        return this.songService.getMediumTermTopTracks();
+      case 'long_term':
+        return this.songService.getLongTermTopTracks();
+      default:
+        return [];
     }
   }
 
-  ngOnDestroy(): void {
-    this.playerService.stopSong();
+  private cacheSongs(songs: any[]): void {
+    const short =
+      this.activeTimeRange === 'short_term'
+        ? songs
+        : this.songService.getShortTermTopTracks();
+    const medium =
+      this.activeTimeRange === 'medium_term'
+        ? songs
+        : this.songService.getMediumTermTopTracks();
+    const long =
+      this.activeTimeRange === 'long_term'
+        ? songs
+        : this.songService.getLongTermTopTracks();
+    this.songService.setTopTracks(short, medium, long);
   }
 
-  loadTopTracks(): void {
-    this.loading = true;
-    
-    forkJoin({
-      short: this.songService.getTopTracks('short_term'),
-      medium: this.songService.getTopTracks('medium_term'),
-      long: this.songService.getTopTracks('long_term')
-    }).pipe(take(1)).subscribe({
-      next: (data) => {
-        this.topTracksShortTerm = data.short.items;
-        this.topTracksMedTerm = data.medium.items;
-        this.topTracksLongTerm = data.long.items;
-        
-        this.songService.setTopTracks(
-          this.topTracksShortTerm,
-          this.topTracksMedTerm,
-          this.topTracksLongTerm
-        );
-        
-        this.displayedSongs = [...this.topTracksShortTerm];
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('Error fetching top tracks', err);
-        this.toastService.showNegativeToast('Error loading top songs');
-        this.loading = false;
-      }
-    });
+  onTimeRangeChange(range: 'short_term' | 'medium_term' | 'long_term'): void {
+    if (range !== this.activeTimeRange) {
+      this.activeTimeRange = range;
+      this.loadTopSongs();
+    }
   }
 
-  selectTerm(term: string): void {
-    if (term === this.selectedTerm) return;
-    
-    this.selectedTerm = term;
-    this.songService.setCurrentTerm(term);
-    
-    // Fade transition
-    this.transitioning = true;
-    
-    setTimeout(() => {
-      switch (term) {
-        case 'short_term':
-          this.displayedSongs = [...this.topTracksShortTerm];
-          break;
-        case 'medium_term':
-          this.displayedSongs = [...this.topTracksMedTerm];
-          break;
-        case 'long_term':
-          this.displayedSongs = [...this.topTracksLongTerm];
-          break;
-      }
-      this.transitioning = false;
-    }, 300);
-  }
-
-  flipCard(song: any, event: Event): void {
-    event.stopPropagation();
-    
-    // Reset other flipped cards
-    this.displayedSongs.forEach(s => {
-      if (s !== song) s.flipped = false;
-    });
-    
+  flipCard(song: TopSong): void {
     song.flipped = !song.flipped;
   }
 
+  onCardHover(song: TopSong): void {
+    // Preview functionality can be added later if PlayerService supports it
+  }
+
+  onCardLeave(): void {
+    // Preview functionality can be added later if PlayerService supports it
+  }
+
+  getArtistNames(artists: { id: string; name: string }[]): string {
+    return artists
+      .slice(0, 2)
+      .map((a) => a.name)
+      .join(', ');
+  }
+
+  goToArtist(artistId: string, event: Event): void {
+    event.stopPropagation();
+    this.router.navigate(['/artist-profile', artistId]);
+  }
+
+  goToAlbum(albumId: string, event: Event): void {
+    event.stopPropagation();
+    this.router.navigate(['/album', albumId]);
+  }
+
+  openInSpotify(url: string, event: Event): void {
+    event.stopPropagation();
+    window.open(url, '_blank');
+  }
+
   formatDuration(ms: number): string {
-    if (!ms) return '--:--';
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  formatReleaseDate(dateString: string): string {
-    if (!dateString) return 'Unknown';
-    
-    // Handle different date formats from Spotify API
-    // Could be "2024", "2024-01", or "2024-01-15"
-    const parts = dateString.split('-');
-    
-    if (parts.length === 1) {
-      return parts[0]; // Just year
-    }
-    
-    if (parts.length === 2) {
-      const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1);
-      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-    }
-    
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+  formatReleaseYear(date: string): string {
+    return date?.split('-')[0] || '';
   }
 
-  onSongHover(song: any): void {
-    if (!song.preview_url) return;
-    
-    this.playerService.playerReady$.pipe(take(1)).subscribe(ready => {
-      if (ready) {
-        this.playerService.playSong(song.id);
-      }
-    });
-  }
-
-  onSongLeave(): void {
-    this.playerService.playerReady$.pipe(take(1)).subscribe(ready => {
-      if (ready) {
-        this.playerService.stopSong();
-      }
-    });
-  }
-
-  formatArtists(artists: any[]): string {
-    return artists?.map(a => a.name).join(', ') || '';
+  getPopularityLabel(popularity: number): string {
+    if (popularity >= 80) return 'Very Popular';
+    if (popularity >= 60) return 'Popular';
+    if (popularity >= 40) return 'Moderate';
+    if (popularity >= 20) return 'Underground';
+    return 'Obscure';
   }
 }

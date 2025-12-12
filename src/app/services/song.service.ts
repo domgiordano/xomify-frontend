@@ -67,9 +67,9 @@ export class SongService implements OnInit {
     });
   }
 
-  getTopTracks(term: string): Observable<any> {
+  getTopTracks(term: string, limit: number = 50): Observable<any> {
     this.accessToken = this.AuthService.getAccessToken();
-    return this.http.get(`${this.baseUrl}/me/top/tracks?limit=50&time_range=${term}`, {
+    return this.http.get(`${this.baseUrl}/me/top/tracks?limit=${limit}&time_range=${term}`, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
       }
@@ -114,6 +114,11 @@ export class SongService implements OnInit {
     return this.topTracksShortTerm;
   }
 
+  getMediumTermTopTracks(): any[] {
+    return this.topTracksMedTerm;
+  }
+
+  // Alias for consistency
   getMedTermTopTracks(): any[] {
     return this.topTracksMedTerm;
   }
