@@ -242,29 +242,34 @@
   border: 1px solid rgba(156, 10, 191, 0.3);
   transform: rotateY(180deg);
   padding: 16px;
+  padding-right: 12px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
 
-  // Custom scrollbar
+  // Custom scrollbar - more visible
   &::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
   }
 
   &::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(156, 10, 191, 0.5);
-    border-radius: 2px;
+    background: linear-gradient(180deg, #9c0abf 0%, #1bdc6f 100%);
+    border-radius: 3px;
 
     &:hover {
-      background: rgba(156, 10, 191, 0.7);
+      background: linear-gradient(180deg, #b30edf 0%, #22f080 100%);
     }
   }
+
+  // Firefox scrollbar
+  scrollbar-width: thin;
+  scrollbar-color: #9c0abf rgba(255, 255, 255, 0.1);
 }
 
 .back-header {

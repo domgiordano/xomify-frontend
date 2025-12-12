@@ -472,7 +472,7 @@
 // ========================================
 .profile-ticker {
   position: fixed;
-  bottom: 60px;
+  bottom: 70px;
   left: 0;
   right: 0;
   height: 70px;
@@ -548,7 +548,7 @@
 .ticker-track {
   display: flex;
   align-items: center;
-  animation: ticker-scroll 18s linear infinite;
+  animation: ticker-scroll 20s linear infinite;
 
   &.paused {
     animation-play-state: paused;
@@ -663,7 +663,7 @@
 
 @media (max-width: 768px) {
   .page-container {
-    padding: 70px 16px 180px;
+    padding: 70px 16px 200px;
   }
   .header-banner {
     height: 180px;
@@ -715,6 +715,10 @@
   .ticker-subtitle {
     font-size: 0.7rem;
   }
+
+  .profile-ticker {
+    bottom: 80px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -753,5 +757,6 @@
   }
   .profile-ticker {
     height: 60px;
+    bottom: 100px;
   }
 }
