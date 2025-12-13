@@ -59,7 +59,7 @@
       <div
         class="song-card"
         [class.flipped]="song.flipped"
-        (click)="flipCard(song)"
+        (click)="flipCard(song, i)"
       >
         <!-- Card Front -->
         <div class="card-front">
@@ -70,20 +70,10 @@
               [src]="song.album?.images?.[1]?.url || song.album?.images?.[0]?.url || 'assets/default-album.png'"
               [alt]="song.name"
             />
-            <div class="flip-overlay">
-              <svg
-                class="flip-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M17 1l4 4-4 4" />
-                <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                <path d="M7 23l-4-4 4-4" />
-                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+            <div class="play-overlay">
+              <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
               </svg>
-              <span class="flip-text">Tap for details</span>
             </div>
             <span class="explicit-badge" *ngIf="song.explicit">E</span>
           </div>
@@ -120,11 +110,6 @@
                 [track]="getQueueTrack(song)"
                 size="small"
               ></app-add-to-queue-button>
-              <app-play-button
-                [trackId]="song.id"
-                size="medium"
-                variant="filled"
-              ></app-play-button>
             </div>
           </div>
 

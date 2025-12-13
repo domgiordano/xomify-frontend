@@ -19,108 +19,127 @@ export class PlayerService {
 
   private deviceId: string | null = null;
   private player: any = null;
+  private sdkReady = false;
 
   constructor(private http: HttpClient, private authService: AuthService) {
-    this.initializePlayer();
+    this.waitForSpotifySDK();
   }
 
-  private initializePlayer(): void {
-    // Check if Spotify SDK is available
-    if (typeof window !== 'undefined' && (window as any).Spotify) {
-      this.setupPlayer();
-    } else {
-      // Wait for SDK to load
-      (window as any).onSpotifyWebPlaybackSDKReady = () => {
-        this.setupPlayer();
-      };
+  private waitForSpotifySDK(): void {
+    if (typeof window !== 'undefined') {
+      if ((window as any).Spotify?.Player) {
+        this.sdkReady = true;
+        this.initializePlayer();
+      } else {
+        (window as any).onSpotifyWebPlaybackSDKReady = () => {
+          console.log('Spotify SDK Ready');
+          this.sdkReady = true;
+          this.initializePlayer();
+        };
+      }
     }
   }
 
-  private setupPlayer(): void {
+  private initializePlayer(): void {
     const token = this.authService.getAccessToken();
     if (!token) {
       console.warn('No access token available for player');
       return;
     }
 
-    this.player = new (window as any).Spotify.Player({
-      name: 'Xomify Web Player',
-      getOAuthToken: (cb: (token: string) => void) => {
-        cb(this.authService.getAccessToken());
-      },
-      volume: 0.5,
-    });
+    if (!this.sdkReady || !(window as any).Spotify?.Player) {
+      console.warn('Spotify SDK not ready');
+      return;
+    }
 
-    // Ready
-    this.player.addListener('ready', ({ device_id }: { device_id: string }) => {
-      console.log('Spotify Player Ready with Device ID:', device_id);
-      this.deviceId = device_id;
-      this.playerReadySubject.next(true);
-    });
+    try {
+      this.player = new (window as any).Spotify.Player({
+        name: 'Xomify Web Player',
+        getOAuthToken: (cb: (token: string) => void) => {
+          cb(this.authService.getAccessToken());
+        },
+        volume: 0.5,
+      });
 
-    // Not Ready
-    this.player.addListener(
-      'not_ready',
-      ({ device_id }: { device_id: string }) => {
-        console.log('Device ID has gone offline:', device_id);
-        this.playerReadySubject.next(false);
-      }
-    );
+      this.player.addListener(
+        'ready',
+        ({ device_id }: { device_id: string }) => {
+          console.log('Spotify Player Ready with Device ID:', device_id);
+          this.deviceId = device_id;
+          this.playerReadySubject.next(true);
+        }
+      );
 
-    // Player state changed
-    this.player.addListener('player_state_changed', (state: any) => {
-      if (!state) {
-        this.isPlayingSubject.next(false);
-        this.currentTrackIdSubject.next(null);
-        return;
-      }
+      this.player.addListener(
+        'not_ready',
+        ({ device_id }: { device_id: string }) => {
+          console.log('Device ID has gone offline:', device_id);
+          this.playerReadySubject.next(false);
+        }
+      );
 
-      this.isPlayingSubject.next(!state.paused);
+      this.player.addListener('player_state_changed', (state: any) => {
+        if (!state) {
+          this.isPlayingSubject.next(false);
+          this.currentTrackIdSubject.next(null);
+          return;
+        }
+        this.isPlayingSubject.next(!state.paused);
+        if (state.track_window?.current_track) {
+          const trackUri = state.track_window.current_track.uri;
+          const trackId = trackUri.split(':').pop();
+          this.currentTrackIdSubject.next(trackId);
+        }
+      });
 
-      if (state.track_window?.current_track) {
-        const trackUri = state.track_window.current_track.uri;
-        const trackId = trackUri.split(':').pop();
-        this.currentTrackIdSubject.next(trackId);
-      }
-    });
+      this.player.addListener(
+        'initialization_error',
+        ({ message }: { message: string }) => {
+          console.error('Initialization Error:', message);
+        }
+      );
 
-    // Errors
-    this.player.addListener(
-      'initialization_error',
-      ({ message }: { message: string }) => {
-        console.error('Initialization Error:', message);
-      }
-    );
+      this.player.addListener(
+        'authentication_error',
+        ({ message }: { message: string }) => {
+          console.error('Authentication Error:', message);
+          this.playerReadySubject.next(false);
+        }
+      );
 
-    this.player.addListener(
-      'authentication_error',
-      ({ message }: { message: string }) => {
-        console.error('Authentication Error:', message);
-        this.playerReadySubject.next(false);
-      }
-    );
+      this.player.addListener(
+        'account_error',
+        ({ message }: { message: string }) => {
+          console.error('Account Error (Premium required):', message);
+        }
+      );
 
-    this.player.addListener(
-      'account_error',
-      ({ message }: { message: string }) => {
-        console.error('Account Error:', message);
-      }
-    );
+      this.player.addListener(
+        'playback_error',
+        ({ message }: { message: string }) => {
+          console.error('Playback Error:', message);
+          this.isLoadingSubject.next(false);
+        }
+      );
 
-    this.player.addListener(
-      'playback_error',
-      ({ message }: { message: string }) => {
-        console.error('Playback Error:', message);
-        this.isLoadingSubject.next(false);
-      }
-    );
+      this.player.connect().then((success: boolean) => {
+        if (success) {
+          console.log('Spotify Player connected successfully');
+        } else {
+          console.warn('Failed to connect Spotify Player');
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing Spotify Player:', error);
+    }
+  }
 
-    // Connect player
-    this.player.connect().then((success: boolean) => {
-      if (success) {
-        console.log('Spotify Player connected successfully');
-      }
-    });
+  tryInitializePlayer(): void {
+    if (this.sdkReady && !this.player) {
+      this.initializePlayer();
+    } else if (!this.sdkReady) {
+      this.waitForSpotifySDK();
+    }
   }
 
   playSong(trackId: string): void {
@@ -129,7 +148,6 @@ export class PlayerService {
       return;
     }
 
-    // If same track, toggle play/pause
     if (this.currentTrackIdSubject.getValue() === trackId) {
       this.togglePlayPause();
       return;
@@ -144,9 +162,7 @@ export class PlayerService {
       'Content-Type': 'application/json',
     });
 
-    const body = {
-      uris: [`spotify:track:${trackId}`],
-    };
+    const body = { uris: [`spotify:track:${trackId}`] };
 
     this.http
       .put(
@@ -161,6 +177,47 @@ export class PlayerService {
         },
         error: (err) => {
           console.error('Error playing song:', err);
+          this.isLoadingSubject.next(false);
+          this.currentTrackIdSubject.next(null);
+        },
+      });
+  }
+
+  playContext(contextUri: string, trackId?: string): void {
+    if (!this.deviceId) {
+      console.warn('No device ID available');
+      return;
+    }
+
+    this.isLoadingSubject.next(true);
+    if (trackId) {
+      this.currentTrackIdSubject.next(trackId);
+    }
+
+    const token = this.authService.getAccessToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    });
+
+    const body: any = { context_uri: contextUri };
+    if (trackId) {
+      body.offset = { uri: `spotify:track:${trackId}` };
+    }
+
+    this.http
+      .put(
+        `https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`,
+        body,
+        { headers }
+      )
+      .subscribe({
+        next: () => {
+          this.isLoadingSubject.next(false);
+          this.isPlayingSubject.next(true);
+        },
+        error: (err) => {
+          console.error('Error playing context:', err);
           this.isLoadingSubject.next(false);
           this.currentTrackIdSubject.next(null);
         },
@@ -208,7 +265,6 @@ export class PlayerService {
     return Promise.resolve(null);
   }
 
-  // Getters for current values
   get isPlayerReady(): boolean {
     return this.playerReadySubject.getValue();
   }

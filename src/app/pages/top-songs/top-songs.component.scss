@@ -117,7 +117,7 @@
     border-color: rgba(156, 10, 191, 0.4);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 
-    .flip-overlay {
+    .play-overlay {
       opacity: 1;
     }
 
@@ -154,7 +154,7 @@
     transition: transform 0.4s ease;
   }
 
-  .flip-overlay {
+  .play-overlay {
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
@@ -166,17 +166,16 @@
     opacity: 0;
     transition: opacity 0.3s ease;
 
-    .flip-icon {
-      width: 40px;
-      height: 40px;
-      color: #fff;
-      animation: flipPulse 2s ease-in-out infinite;
+    .play-icon {
+      width: 56px;
+      height: 56px;
+      color: #1bdc6f;
+      filter: drop-shadow(0 4px 12px rgba(27, 220, 111, 0.4));
+      transition: transform 0.2s ease;
     }
 
-    .flip-text {
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.8);
-      font-weight: 500;
+    &:hover .play-icon {
+      transform: scale(1.1);
     }
   }
 
