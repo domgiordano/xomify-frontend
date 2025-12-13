@@ -59,9 +59,7 @@
       <div
         class="song-card"
         [class.flipped]="song.flipped"
-        (click)="flipCard(song)"
-        (mouseenter)="onCardHover(song)"
-        (mouseleave)="onCardLeave()"
+        (click)="flipCard(song, i)"
       >
         <!-- Card Front -->
         <div class="card-front">
@@ -73,12 +71,7 @@
               [alt]="song.name"
             />
             <div class="play-overlay">
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
+              <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8 5v14l11-7z" />
               </svg>
             </div>
@@ -112,8 +105,15 @@
         <div class="card-back">
           <div class="back-header">
             <span class="back-rank">#{{ i + 1 }}</span>
-            <h3 class="back-title">{{ song.name }}</h3>
+            <div class="back-actions">
+              <app-add-to-queue-button
+                [track]="getQueueTrack(song)"
+                size="small"
+              ></app-add-to-queue-button>
+            </div>
           </div>
+
+          <h3 class="back-title">{{ song.name }}</h3>
 
           <!-- Artists Section -->
           <div class="stats-section artists-section">

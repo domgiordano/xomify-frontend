@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlbumService } from 'src/app/services/album.service';
-import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
+import { QueueTrack } from 'src/app/services/queue.service';
 import { take, Subscription } from 'rxjs';
 
 @Component({
@@ -24,7 +24,6 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private albumService: AlbumService,
-    private playerService: PlayerService,
     private toastService: ToastService
   ) {}
 
@@ -44,7 +43,6 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
     if (this.routeSub) {
       this.routeSub.unsubscribe();
     }
-    this.playerService.stopSong();
   }
 
   loadAlbum(): void {
@@ -137,19 +135,18 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  onTrackHover(track: any): void {
-    this.playerService.playerReady$.pipe(take(1)).subscribe((ready) => {
-      if (ready) {
-        this.playerService.playSong(track.id);
-      }
-    });
-  }
-
-  onTrackLeave(): void {
-    this.playerService.playerReady$.pipe(take(1)).subscribe((ready) => {
-      if (ready) {
-        this.playerService.stopSong();
-      }
-    });
+  getQueueTrack(track: any): QueueTrack {
+    return {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: {
+        id: this.album?.id || '',
+        name: this.album?.name || '',
+        images: this.album?.images || [],
+      },
+      duration_ms: track.duration_ms,
+      external_urls: track.external_urls,
+    };
   }
 }

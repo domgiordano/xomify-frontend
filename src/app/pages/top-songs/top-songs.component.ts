@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { SongService } from 'src/app/services/song.service';
+import { PlayerService } from 'src/app/services/player.service';
+import { QueueTrack } from 'src/app/services/queue.service';
 import { take } from 'rxjs';
 
 interface TopSong {
@@ -31,6 +33,7 @@ export class TopSongsComponent implements OnInit {
   loading: boolean = true;
   error: string = '';
   activeTimeRange: 'short_term' | 'medium_term' | 'long_term' = 'short_term';
+  currentlyFlippedIndex: number | null = null;
 
   timeRanges = [
     { value: 'short_term' as const, label: 'Last 4 Weeks' },
@@ -38,7 +41,11 @@ export class TopSongsComponent implements OnInit {
     { value: 'long_term' as const, label: 'All Time' },
   ];
 
-  constructor(private songService: SongService, private router: Router) {}
+  constructor(
+    private songService: SongService,
+    private playerService: PlayerService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadTopSongs();
@@ -47,6 +54,7 @@ export class TopSongsComponent implements OnInit {
   loadTopSongs(): void {
     this.loading = true;
     this.error = '';
+    this.currentlyFlippedIndex = null;
 
     // Check for cached data first
     const cachedData = this.getCachedSongs();
@@ -112,16 +120,32 @@ export class TopSongsComponent implements OnInit {
     }
   }
 
-  flipCard(song: TopSong): void {
-    song.flipped = !song.flipped;
+  flipCard(song: TopSong, index: number): void {
+    // If clicking the same card that's flipped, just flip it back
+    if (this.currentlyFlippedIndex === index) {
+      song.flipped = false;
+      this.currentlyFlippedIndex = null;
+      return;
+    }
+
+    // Flip back any currently flipped card
+    if (
+      this.currentlyFlippedIndex !== null &&
+      this.topSongs[this.currentlyFlippedIndex]
+    ) {
+      this.topSongs[this.currentlyFlippedIndex].flipped = false;
+    }
+
+    // Flip the new card and play the song
+    song.flipped = true;
+    this.currentlyFlippedIndex = index;
+
+    // Play the song when flipping
+    this.playSong(song);
   }
 
-  onCardHover(song: TopSong): void {
-    // Preview functionality can be added later if PlayerService supports it
-  }
-
-  onCardLeave(): void {
-    // Preview functionality can be added later if PlayerService supports it
+  playSong(song: TopSong): void {
+    this.playerService.playSong(song.id);
   }
 
   getArtistNames(artists: { id: string; name: string }[]): string {
@@ -162,5 +186,16 @@ export class TopSongsComponent implements OnInit {
     if (popularity >= 40) return 'Moderate';
     if (popularity >= 20) return 'Underground';
     return 'Obscure';
+  }
+
+  getQueueTrack(song: TopSong): QueueTrack {
+    return {
+      id: song.id,
+      name: song.name,
+      artists: song.artists,
+      album: song.album,
+      duration_ms: song.duration_ms,
+      external_urls: song.external_urls,
+    };
   }
 }

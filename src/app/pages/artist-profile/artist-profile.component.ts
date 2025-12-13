@@ -1,9 +1,15 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  OnDestroy,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ArtistService } from 'src/app/services/artist.service';
 import { UserService } from 'src/app/services/user.service';
-import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
+import { QueueTrack } from 'src/app/services/queue.service';
 import { forkJoin, take, Subscription } from 'rxjs';
 
 interface Artist {
@@ -20,29 +26,26 @@ interface Artist {
 @Component({
   selector: 'app-artist-profile',
   templateUrl: './artist-profile.component.html',
-  styleUrls: ['./artist-profile.component.scss']
+  styleUrls: ['./artist-profile.component.scss'],
 })
 export class ArtistProfileComponent implements OnInit, OnDestroy {
   @ViewChild('carouselTrack') carouselTrack!: ElementRef<HTMLDivElement>;
-  
+
   artist: Artist | null = null;
   topTracks: any[] = [];
   albums: any[] = [];
-  
+
   isLoading = true;
   error: string | null = null;
-  
+
   // Follow state
   isFollowing = false;
   followLoading = false;
-  
-  // Ticker
-  tickerPaused = false;
-  
+
   // Carousel
   carouselPosition = 0;
   maxCarouselPosition = 0;
-  
+
   private routeSub!: Subscription;
 
   constructor(
@@ -50,17 +53,16 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     private router: Router,
     private artistService: ArtistService,
     private userService: UserService,
-    private playerService: PlayerService,
     private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
-    this.routeSub = this.route.params.subscribe(params => {
+    this.routeSub = this.route.params.subscribe((params) => {
       const artistId = params['id'];
       if (artistId) {
         this.loadArtistDetails(artistId);
       } else {
-        this.route.queryParams.pipe(take(1)).subscribe(queryParams => {
+        this.route.queryParams.pipe(take(1)).subscribe((queryParams) => {
           const queryId = queryParams['id'];
           if (queryId) {
             this.loadArtistDetails(queryId);
@@ -77,11 +79,11 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     if (this.routeSub) {
       this.routeSub.unsubscribe();
     }
-    this.playerService.stopSong();
   }
 
   loadArtist(): void {
-    const id = this.route.snapshot.params['id'] || this.route.snapshot.queryParams['id'];
+    const id =
+      this.route.snapshot.params['id'] || this.route.snapshot.queryParams['id'];
     if (id) {
       this.loadArtistDetails(id);
     }
@@ -95,20 +97,22 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     forkJoin({
       details: this.artistService.getArtistDetails(artistId),
       tracks: this.artistService.getArtistTopTracks(artistId),
-      albums: this.artistService.getArtistAlbums(artistId, 50)
-    }).pipe(take(1)).subscribe({
-      next: (data) => {
-        this.buildArtist(data.details, data.tracks, data.albums);
-        this.checkFollowStatus(artistId);
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error('Error loading artist:', err);
-        this.error = 'Failed to load artist. Please try again.';
-        this.toastService.showNegativeToast('Failed to load artist');
-        this.isLoading = false;
-      }
-    });
+      albums: this.artistService.getArtistAlbums(artistId, 50),
+    })
+      .pipe(take(1))
+      .subscribe({
+        next: (data) => {
+          this.buildArtist(data.details, data.tracks, data.albums);
+          this.checkFollowStatus(artistId);
+          this.isLoading = false;
+        },
+        error: (err) => {
+          console.error('Error loading artist:', err);
+          this.error = 'Failed to load artist. Please try again.';
+          this.toastService.showNegativeToast('Failed to load artist');
+          this.isLoading = false;
+        },
+      });
   }
 
   private buildArtist(details: any, tracks: any, albumsData: any): void {
@@ -120,7 +124,7 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
       genres: details.genres || [],
       followers: details.followers?.total || 0,
       popularity: details.popularity || 0,
-      external_urls: details.external_urls
+      external_urls: details.external_urls,
     };
 
     this.topTracks = (tracks.tracks || []).map((track: any) => ({
@@ -130,9 +134,9 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
       duration_ms: track.duration_ms,
       popularity: track.popularity,
       preview_url: track.preview_url,
-      artists: track.artists
+      artists: track.artists,
     }));
-    
+
     // Process albums - remove duplicates by name and sort by release date
     const albumMap = new Map();
     (albumsData.items || []).forEach((album: any) => {
@@ -147,42 +151,49 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
           release_date_precision: album.release_date_precision,
           total_tracks: album.total_tracks,
           album_type: album.album_type,
-          external_urls: album.external_urls
+          external_urls: album.external_urls,
         });
       }
     });
-    
-    this.albums = Array.from(albumMap.values())
-      .sort((a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime());
-    
+
+    this.albums = Array.from(albumMap.values()).sort(
+      (a, b) =>
+        new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
+    );
+
     this.calculateCarouselMax();
   }
 
   private checkFollowStatus(artistId: string): void {
-    this.userService.checkFollowingArtists([artistId]).pipe(take(1)).subscribe({
-      next: (result) => {
-        this.isFollowing = result[0] === true;
-      },
-      error: (err) => {
-        console.error('Error checking follow status:', err);
-      }
-    });
+    this.userService
+      .checkFollowingArtists([artistId])
+      .pipe(take(1))
+      .subscribe({
+        next: (result) => {
+          this.isFollowing = result[0] === true;
+        },
+        error: (err) => {
+          console.error('Error checking follow status:', err);
+        },
+      });
   }
 
   toggleFollow(): void {
     if (!this.artist?.id || this.followLoading) return;
-    
+
     this.followLoading = true;
-    
-    const action = this.isFollowing 
+
+    const action = this.isFollowing
       ? this.userService.unfollowArtist(this.artist.id)
       : this.userService.followArtist(this.artist.id);
-    
+
     action.pipe(take(1)).subscribe({
       next: () => {
         this.isFollowing = !this.isFollowing;
         this.toastService.showPositiveToast(
-          this.isFollowing ? `Following ${this.artist?.name}` : `Unfollowed ${this.artist?.name}`
+          this.isFollowing
+            ? `Following ${this.artist?.name}`
+            : `Unfollowed ${this.artist?.name}`
         );
         this.followLoading = false;
       },
@@ -190,7 +201,7 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
         console.error('Error toggling follow:', err);
         this.toastService.showNegativeToast('Failed to update follow status');
         this.followLoading = false;
-      }
+      },
     });
   }
 
@@ -222,32 +233,19 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     return dateString.split('-')[0];
   }
 
-  onTrackHover(track: any): void {
-    this.playerService.playerReady$.pipe(take(1)).subscribe(ready => {
-      if (ready) {
-        this.playerService.playSong(track.id);
-      }
-    });
-  }
-
-  onTrackLeave(): void {
-    this.playerService.playerReady$.pipe(take(1)).subscribe(ready => {
-      if (ready) {
-        this.playerService.stopSong();
-      }
-    });
-  }
-
   scrollCarousel(direction: 'prev' | 'next'): void {
     if (!this.carouselTrack) return;
-    
+
     const track = this.carouselTrack.nativeElement;
     const cardWidth = 180;
     const scrollAmount = cardWidth * 3;
-    
+
     if (direction === 'next') {
       track.scrollLeft += scrollAmount;
-      this.carouselPosition = Math.min(this.carouselPosition + 1, this.maxCarouselPosition);
+      this.carouselPosition = Math.min(
+        this.carouselPosition + 1,
+        this.maxCarouselPosition
+      );
     } else {
       track.scrollLeft -= scrollAmount;
       this.carouselPosition = Math.max(this.carouselPosition - 1, 0);
@@ -256,6 +254,20 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
 
   private calculateCarouselMax(): void {
     const visibleCards = 5;
-    this.maxCarouselPosition = Math.max(0, Math.ceil((this.albums.length - visibleCards) / 3));
+    this.maxCarouselPosition = Math.max(
+      0,
+      Math.ceil((this.albums.length - visibleCards) / 3)
+    );
+  }
+
+  getQueueTrack(track: any): QueueTrack {
+    return {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: track.album || { id: '', name: '', images: [] },
+      duration_ms: track.duration_ms,
+      external_urls: track.external_urls,
+    };
   }
 }

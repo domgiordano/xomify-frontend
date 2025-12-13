@@ -1,0 +1,74 @@
+.add-queue-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: #b0b0b0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+
+  &.small {
+    width: 28px;
+    height: 28px;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &.medium {
+    width: 36px;
+    height: 36px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &:hover:not(.in-queue) {
+    background: rgba(27, 220, 111, 0.15);
+    border-color: rgba(27, 220, 111, 0.4);
+    color: #1bdc6f;
+    transform: scale(1.05);
+  }
+
+  &.in-queue {
+    background: rgba(27, 220, 111, 0.2);
+    border-color: rgba(27, 220, 111, 0.5);
+    color: #1bdc6f;
+
+    &:hover {
+      background: rgba(255, 71, 87, 0.15);
+      border-color: rgba(255, 71, 87, 0.4);
+      color: #ff4757;
+    }
+  }
+
+  .btn-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}
+
+// With label variant
+.add-queue-btn:has(.btn-label) {
+  border-radius: 20px;
+  padding: 0 14px;
+
+  &.small {
+    width: auto;
+    height: 28px;
+  }
+
+  &.medium {
+    width: auto;
+    height: 36px;
+  }
+}

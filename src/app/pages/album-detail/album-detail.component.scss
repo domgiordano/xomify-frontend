@@ -192,8 +192,8 @@
 
 .tracks-header {
   display: grid;
-  grid-template-columns: 50px 1fr 70px;
-  gap: 16px;
+  grid-template-columns: 50px 44px 1fr 36px 70px;
+  gap: 12px;
   padding: 16px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   color: #6a6a7a;
@@ -201,6 +201,14 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+
+  .col-play {
+    // Empty header for play button column
+  }
+
+  .col-queue {
+    // Empty header for queue button column
+  }
 
   .col-duration {
     text-align: right;
@@ -233,13 +241,12 @@
 
 .track-item {
   display: grid;
-  grid-template-columns: 50px 1fr 70px;
-  gap: 16px;
+  grid-template-columns: 50px 44px 1fr 36px 70px;
+  gap: 12px;
   padding: 14px 24px;
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   transition: background 0.2s ease;
-  cursor: pointer;
 
   &:last-child {
     border-bottom: none;
@@ -247,21 +254,7 @@
 
   &:hover {
     background: rgba(156, 10, 191, 0.1);
-
-    .track-num {
-      opacity: 0;
-    }
-
-    &::before {
-      content: "▶";
-      position: absolute;
-      left: 34px;
-      color: #1bdc6f;
-      font-size: 0.8rem;
-    }
   }
-
-  position: relative;
 }
 
 .track-num {
@@ -269,7 +262,12 @@
   font-weight: 500;
   color: #6a6a7a;
   text-align: center;
-  transition: opacity 0.2s ease;
+}
+
+.track-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .track-info {
@@ -423,8 +421,9 @@
 
   .tracks-header,
   .track-item {
-    grid-template-columns: 40px 1fr 60px;
+    grid-template-columns: 40px 36px 1fr 60px;
     padding: 12px 16px;
+    gap: 8px;
   }
 
   .track-info .track-name {
@@ -444,7 +443,7 @@
 
   .tracks-header,
   .track-item {
-    grid-template-columns: 30px 1fr 50px;
-    gap: 12px;
+    grid-template-columns: 30px 32px 1fr 50px;
+    gap: 6px;
   }
 }

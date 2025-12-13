@@ -1,36 +1,80 @@
-<div class="toolbar" [ngClass]="{'show-dropdown': dropdownVisible}">
+<div class="toolbar" [ngClass]="{ 'show-dropdown': dropdownVisible }">
   <a routerLink="/my-profile" class="app-title" *ngIf="isLoggedIn()">
-    <img 
-      class="logo-image" 
-      src="assets/img/banner-logo-x-rework.png" 
-      alt="XOMIFY">
+    <img
+      class="logo-image"
+      src="assets/img/banner-logo-x-rework.png"
+      alt="XOMIFY"
+    />
   </a>
   <h2 class="app-title-text" *ngIf="!isLoggedIn()">
-    <img 
-      class="logo-image" 
-      src="assets/img/banner-logo-x-rework.png" 
-      alt="XOMIFY">
+    <img
+      class="logo-image"
+      src="assets/img/banner-logo-x-rework.png"
+      alt="XOMIFY"
+    />
   </h2>
 
-  <div class="tabs" [ngClass]="{'hidden': dropdownVisible}">
+  <div class="tabs" [ngClass]="{ hidden: dropdownVisible }">
     <div *ngIf="isLoggedIn()">
-      <a routerLink="/my-profile" routerLinkActive="active" [ngClass]="{'selected': isSelected('/my-profile')}">
+      <a
+        routerLink="/my-profile"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/my-profile') }"
+      >
         My Profile
       </a>
-      <a routerLink="/top-songs" routerLinkActive="active" [ngClass]="{'selected': isSelected('/top-songs')}">
+      <a
+        routerLink="/top-songs"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/top-songs') }"
+      >
         Top Songs
       </a>
-      <a routerLink="/top-artists" routerLinkActive="active" [ngClass]="{'selected': isSelected('/top-artists')}">
+      <a
+        routerLink="/top-artists"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/top-artists') }"
+      >
         Top Artists
       </a>
-      <a routerLink="/top-genres" routerLinkActive="active" [ngClass]="{'selected': isSelected('/top-genres')}">
+      <a
+        routerLink="/top-genres"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/top-genres') }"
+      >
         Top Genres
+      </a>
+      <a
+        routerLink="/following"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/following') }"
+      >
+        Following
+      </a>
+      <a
+        routerLink="/playlist-builder"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/playlist-builder') }"
+      >
+        Playlist Builder
+        <span class="queue-badge" *ngIf="queueCount > 0">{{ queueCount }}</span>
+      </a>
+      <a
+        routerLink="/release-calendar"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/release-calendar') }"
+      >
+        Release Calendar
       </a>
     </div>
   </div>
 
   <!-- Logout Button (Desktop) -->
-  <button class="logout-btn desktop-only" *ngIf="isLoggedIn()" (click)="logout()">
+  <button
+    class="logout-btn desktop-only"
+    *ngIf="isLoggedIn()"
+    (click)="logout()"
+  >
     Logout
   </button>
 
@@ -41,10 +85,50 @@
 
   <!-- Mobile Dropdown Menu -->
   <div class="dropdown" *ngIf="dropdownVisible">
-    <a routerLink="/my-profile" routerLinkActive="active" (click)="selectItem('/my-profile')">My Profile</a>
-    <a routerLink="/top-songs" routerLinkActive="active" (click)="selectItem('/top-songs')">Top Songs</a>
-    <a routerLink="/top-artists" routerLinkActive="active" (click)="selectItem('/top-artists')">Top Artists</a>
-    <a routerLink="/top-genres" routerLinkActive="active" (click)="selectItem('/top-genres')">Top Genres</a>
+    <a
+      routerLink="/my-profile"
+      routerLinkActive="active"
+      (click)="selectItem('/my-profile')"
+      >My Profile</a
+    >
+    <a
+      routerLink="/top-songs"
+      routerLinkActive="active"
+      (click)="selectItem('/top-songs')"
+      >Top Songs</a
+    >
+    <a
+      routerLink="/top-artists"
+      routerLinkActive="active"
+      (click)="selectItem('/top-artists')"
+      >Top Artists</a
+    >
+    <a
+      routerLink="/top-genres"
+      routerLinkActive="active"
+      (click)="selectItem('/top-genres')"
+      >Top Genres</a
+    >
+    <a
+      routerLink="/following"
+      routerLinkActive="active"
+      (click)="selectItem('/following')"
+      >Following</a
+    >
+    <a
+      routerLink="/playlist-builder"
+      routerLinkActive="active"
+      (click)="selectItem('/playlist-builder')"
+    >
+      Playlist Builder
+      <span class="queue-badge" *ngIf="queueCount > 0">{{ queueCount }}</span>
+    </a>
+    <a
+      routerLink="/release-calendar"
+      routerLinkActive="active"
+      (click)="selectItem('/release-calendar')"
+      >Release Calendar</a
+    >
     <a class="logout-link" (click)="logout()">Logout</a>
   </div>
 </div>

@@ -1,0 +1,48 @@
+<button
+  class="play-button"
+  [class.small]="size === 'small'"
+  [class.medium]="size === 'medium'"
+  [class.large]="size === 'large'"
+  [class.filled]="variant === 'filled'"
+  [class.outline]="variant === 'outline'"
+  [class.ghost]="variant === 'ghost'"
+  [class.playing]="isPlaying"
+  [class.loading]="isLoading"
+  (click)="togglePlay($event)"
+  [attr.aria-label]="isPlaying ? 'Pause' : 'Play'"
+  [title]="playerReady ? (isPlaying ? 'Pause' : 'Play') : 'Open in Spotify'"
+>
+  <!-- Loading spinner -->
+  <svg *ngIf="isLoading" class="spinner" viewBox="0 0 24 24">
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-dasharray="31.4"
+      stroke-linecap="round"
+    />
+  </svg>
+
+  <!-- Play icon -->
+  <svg
+    *ngIf="!isPlaying && !isLoading"
+    class="play-icon"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M8 5v14l11-7z" />
+  </svg>
+
+  <!-- Pause icon -->
+  <svg
+    *ngIf="isPlaying && !isLoading"
+    class="pause-icon"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+  </svg>
+</button>

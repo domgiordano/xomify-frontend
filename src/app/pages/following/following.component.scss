@@ -12,7 +12,7 @@
 // Page Header
 .page-header {
   margin-bottom: 32px;
-  
+
   .back-btn {
     display: inline-flex;
     align-items: center;
@@ -25,12 +25,12 @@
     padding: 8px 0;
     margin-bottom: 16px;
     transition: color 0.3s ease;
-    
+
     &:hover {
       color: #1bdc6f;
     }
   }
-  
+
   .page-title {
     font-size: 2.5rem;
     font-weight: 700;
@@ -41,7 +41,7 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   .page-subtitle {
     font-size: 1.1rem;
     color: #8a8a9a;
@@ -55,6 +55,7 @@
   gap: 16px;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .search-box {
@@ -68,17 +69,17 @@
   border-radius: 12px;
   padding: 12px 16px;
   transition: all 0.3s ease;
-  
+
   &:focus-within {
     border-color: rgba(156, 10, 191, 0.5);
     background: rgba(255, 255, 255, 0.08);
   }
-  
+
   svg {
     color: #6a6a7a;
     flex-shrink: 0;
   }
-  
+
   input {
     flex: 1;
     background: transparent;
@@ -86,12 +87,12 @@
     color: #fff;
     font-size: 0.95rem;
     outline: none;
-    
+
     &::placeholder {
       color: #6a6a7a;
     }
   }
-  
+
   .clear-btn {
     background: transparent;
     border: none;
@@ -102,7 +103,7 @@
     align-items: center;
     justify-content: center;
     transition: color 0.3s ease;
-    
+
     &:hover {
       color: #ff4757;
     }
@@ -123,12 +124,13 @@
     background-repeat: no-repeat;
     background-position: right 12px center;
     transition: all 0.3s ease;
-    
-    &:hover, &:focus {
+
+    &:hover,
+    &:focus {
       border-color: rgba(156, 10, 191, 0.5);
       outline: none;
     }
-    
+
     option {
       background: #1a1a2e;
       color: #fff;
@@ -136,14 +138,48 @@
   }
 }
 
+.refresh-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #8a8a9a;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(156, 10, 191, 0.15);
+    border-color: rgba(156, 10, 191, 0.3);
+    color: #fff;
+
+    svg {
+      animation: spin 0.5s ease;
+    }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 // Stats Bar
 .stats-bar {
   margin-bottom: 24px;
-  
+
   .total-count {
     font-size: 0.95rem;
     color: #8a8a9a;
-    
+
     strong {
       color: #1bdc6f;
       font-weight: 600;
@@ -162,34 +198,24 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
   padding: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
-  
+
   &:hover {
     border-color: rgba(156, 10, 191, 0.4);
     transform: translateY(-4px);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-    
+
     .image-overlay {
       opacity: 1;
-    }
-    
-    .unfollow-btn {
-      background: rgba(255, 71, 87, 0.15);
-      border-color: rgba(255, 71, 87, 0.4);
-      color: #ff4757;
-      
-      .follow-text {
-        display: none;
-      }
-      
-      .unfollow-text {
-        display: inline;
-      }
     }
   }
 }
@@ -199,14 +225,14 @@
   width: 80px;
   height: 80px;
   flex-shrink: 0;
-  
+
   .artist-image {
     width: 100%;
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
   }
-  
+
   .image-overlay {
     position: absolute;
     inset: 0;
@@ -217,12 +243,12 @@
     justify-content: center;
     opacity: 0;
     transition: opacity 0.3s ease;
-    
+
     svg {
       color: #1bdc6f;
     }
   }
-  
+
   .verified-badge {
     position: absolute;
     bottom: 0;
@@ -235,7 +261,7 @@
     align-items: center;
     justify-content: center;
     border: 2px solid #0a0a14;
-    
+
     svg {
       color: #fff;
     }
@@ -245,7 +271,7 @@
 .artist-info {
   flex: 1;
   min-width: 0;
-  
+
   .artist-name {
     font-size: 1.1rem;
     font-weight: 600;
@@ -255,28 +281,28 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  
+
   .artist-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 8px;
-    
+
     span {
       font-size: 0.8rem;
       color: #8a8a9a;
     }
-    
+
     .popularity {
       color: #9c0abf;
     }
   }
-  
+
   .genres-list {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    
+
     .genre-tag {
       font-size: 0.7rem;
       color: #8a8a9a;
@@ -302,14 +328,12 @@
   min-width: 90px;
   text-align: center;
 
-  .follow-text {
-    display: inline;
+  &:hover {
+    background: rgba(255, 71, 87, 0.15);
+    border-color: rgba(255, 71, 87, 0.4);
+    color: #ff4757;
   }
-  
-  .unfollow-text {
-    display: none;
-  }
-  
+
   &.loading {
     pointer-events: none;
     opacity: 0.6;
@@ -320,7 +344,7 @@
 .empty-state {
   text-align: center;
   padding: 80px 24px;
-  
+
   .empty-icon {
     width: 120px;
     height: 120px;
@@ -330,19 +354,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    
+
     svg {
       color: #4a4a5a;
     }
   }
-  
+
   h3 {
     font-size: 1.5rem;
     font-weight: 600;
     color: #fff;
     margin: 0 0 8px 0;
   }
-  
+
   p {
     font-size: 1rem;
     color: #8a8a9a;
@@ -355,31 +379,35 @@
   .page-container {
     padding: 80px 16px 100px;
   }
-  
+
   .page-header .page-title {
     font-size: 1.8rem;
   }
-  
+
   .controls-bar {
     flex-direction: column;
   }
-  
+
   .search-box {
     min-width: 100%;
   }
-  
+
   .sort-dropdown {
     width: 100%;
-    
+
     select {
       width: 100%;
     }
   }
-  
+
+  .refresh-btn {
+    width: 100%;
+  }
+
   .artists-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .artist-card {
     .unfollow-btn {
       padding: 8px 12px;

@@ -88,6 +88,7 @@
     <div class="tracks-section" *ngIf="tracks.length > 0">
       <div class="tracks-header">
         <span class="col-num">#</span>
+        <span class="col-play"></span>
         <span class="col-title">Title</span>
         <span class="col-album">Album</span>
         <span class="col-added">Date Added</span>
@@ -107,6 +108,15 @@
           [class.unavailable]="!item.track"
         >
           <span class="track-num">{{ i + 1 }}</span>
+
+          <div class="track-play" *ngIf="item.track">
+            <app-play-button
+              [trackId]="item.track.id"
+              size="small"
+              variant="ghost"
+            ></app-play-button>
+          </div>
+          <div class="track-play" *ngIf="!item.track"></div>
 
           <div class="track-info" *ngIf="item.track">
             <img

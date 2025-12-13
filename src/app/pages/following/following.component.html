@@ -1,12 +1,22 @@
 <div class="page-container">
-  <app-loader [loading]="loading" message="Loading who you follow..."></app-loader>
+  <app-loader
+    [loading]="loading"
+    message="Loading who you follow..."
+  ></app-loader>
 
   <div class="following-content" *ngIf="!loading">
     <!-- Page Header -->
     <header class="page-header">
       <button class="back-btn" routerLink="/my-profile">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M15 18l-6-6 6-6"/>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M15 18l-6-6 6-6" />
         </svg>
         Back to Profile
       </button>
@@ -17,20 +27,34 @@
     <!-- Search & Filter -->
     <div class="controls-bar">
       <div class="search-box">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
         </svg>
-        <input 
-          type="text" 
-          placeholder="Search artists..." 
+        <input
+          type="text"
+          placeholder="Search artists..."
           [(ngModel)]="searchQuery"
           (input)="filterArtists()"
         />
         <button class="clear-btn" *ngIf="searchQuery" (click)="clearSearch()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
@@ -43,42 +67,58 @@
           <option value="followers">Most Followers</option>
         </select>
       </div>
+
+      <button class="refresh-btn" (click)="refresh()" title="Refresh list">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M23 4v6h-6M1 20v-6h6" />
+          <path
+            d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"
+          />
+        </svg>
+      </button>
     </div>
 
     <!-- Stats Bar -->
     <div class="stats-bar">
       <span class="total-count">
-        <strong>{{ filteredArtists.length }}</strong> 
-        {{ filteredArtists.length === 1 ? 'artist' : 'artists' }}
+        <strong>{{ filteredArtists.length }}</strong>
+        {{ filteredArtists.length === 1 ? "artist" : "artists" }}
         <span *ngIf="searchQuery"> matching "{{ searchQuery }}"</span>
       </span>
     </div>
 
     <!-- Artists Grid -->
     <div class="artists-grid" *ngIf="filteredArtists.length > 0">
-      <div 
-        class="artist-card" 
+      <div
+        class="artist-card"
         *ngFor="let artist of filteredArtists"
         (click)="goToArtist(artist.id)"
       >
         <div class="artist-image-wrapper">
-          <img 
-            [src]="artist.images?.[0]?.url || 'assets/default-artist.png'" 
+          <img
+            [src]="artist.images?.[0]?.url || 'assets/default-artist.png'"
             [alt]="artist.name"
             class="artist-image"
           />
           <div class="image-overlay">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z"/>
+              <path d="M8 5v14l11-7z" />
             </svg>
           </div>
           <div class="verified-badge" *ngIf="artist.followers?.total >= 100000">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
             </svg>
           </div>
         </div>
-        
+
         <div class="artist-info">
           <h3 class="artist-name">{{ artist.name }}</h3>
           <div class="artist-meta">
@@ -90,20 +130,21 @@
             </span>
           </div>
           <div class="genres-list" *ngIf="artist.genres?.length">
-            <span class="genre-tag" *ngFor="let genre of artist.genres.slice(0, 2)">
+            <span
+              class="genre-tag"
+              *ngFor="let genre of artist.genres.slice(0, 2)"
+            >
               {{ genre }}
             </span>
           </div>
         </div>
 
-        <button 
+        <button
           class="unfollow-btn"
           (click)="unfollowArtist(artist, $event)"
           [class.loading]="artist.unfollowing"
         >
-          <span *ngIf="artist.unfollowing">...</span>
-          <span *ngIf="!artist.unfollowing" class="follow-text">Following</span>
-          <span *ngIf="!artist.unfollowing" class="unfollow-text">Unfollow</span>
+          {{ artist.unfollowing ? "..." : "Following" }}
         </button>
       </div>
     </div>
@@ -111,11 +152,18 @@
     <!-- Empty State -->
     <div class="empty-state" *ngIf="filteredArtists.length === 0 && !loading">
       <div class="empty-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       </div>
       <h3 *ngIf="searchQuery">No artists found</h3>
