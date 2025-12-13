@@ -1,0 +1,138 @@
+.play-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  // Sizes
+  &.small {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &.medium {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &.large {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  // Variants
+  &.filled {
+    background: #1bdc6f;
+    color: #000;
+    box-shadow: 0 4px 15px rgba(27, 220, 111, 0.3);
+
+    &:hover:not(:disabled) {
+      background: #22f080;
+      transform: scale(1.08);
+      box-shadow: 0 6px 20px rgba(27, 220, 111, 0.4);
+    }
+
+    &.playing {
+      background: linear-gradient(135deg, #9c0abf 0%, #7a0896 100%);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(156, 10, 191, 0.4);
+
+      &:hover:not(:disabled) {
+        box-shadow: 0 6px 20px rgba(156, 10, 191, 0.5);
+      }
+    }
+  }
+
+  &.outline {
+    background: transparent;
+    color: #1bdc6f;
+    border: 2px solid rgba(27, 220, 111, 0.5);
+
+    &:hover:not(:disabled) {
+      background: rgba(27, 220, 111, 0.1);
+      border-color: #1bdc6f;
+      transform: scale(1.05);
+    }
+
+    &.playing {
+      color: #9c0abf;
+      border-color: rgba(156, 10, 191, 0.5);
+
+      &:hover:not(:disabled) {
+        background: rgba(156, 10, 191, 0.1);
+        border-color: #9c0abf;
+      }
+    }
+  }
+
+  &.ghost {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    backdrop-filter: blur(4px);
+
+    &:hover:not(:disabled) {
+      background: rgba(27, 220, 111, 0.2);
+      color: #1bdc6f;
+      transform: scale(1.05);
+    }
+
+    &.playing {
+      background: rgba(156, 10, 191, 0.2);
+      color: #c77ddb;
+
+      &:hover:not(:disabled) {
+        background: rgba(156, 10, 191, 0.3);
+      }
+    }
+  }
+
+  // Loading state
+  &.loading {
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+  }
+}
+
+.play-icon, .pause-icon {
+  transition: transform 0.2s ease;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { SongService } from 'src/app/services/song.service';
+import { QueueTrack } from 'src/app/services/queue.service';
 import { take } from 'rxjs';
 
 interface TopSong {
@@ -116,14 +117,6 @@ export class TopSongsComponent implements OnInit {
     song.flipped = !song.flipped;
   }
 
-  onCardHover(song: TopSong): void {
-    // Preview functionality can be added later if PlayerService supports it
-  }
-
-  onCardLeave(): void {
-    // Preview functionality can be added later if PlayerService supports it
-  }
-
   getArtistNames(artists: { id: string; name: string }[]): string {
     return artists
       .slice(0, 2)
@@ -162,5 +155,16 @@ export class TopSongsComponent implements OnInit {
     if (popularity >= 40) return 'Moderate';
     if (popularity >= 20) return 'Underground';
     return 'Obscure';
+  }
+
+  getQueueTrack(song: TopSong): QueueTrack {
+    return {
+      id: song.id,
+      name: song.name,
+      artists: song.artists,
+      album: song.album,
+      duration_ms: song.duration_ms,
+      external_urls: song.external_urls,
+    };
   }
 }

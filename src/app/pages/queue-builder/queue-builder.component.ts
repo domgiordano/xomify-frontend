@@ -1,42 +1,30 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+
 import { UserService } from 'src/app/services/user.service';
 import { PlaylistService } from 'src/app/services/playlist.service';
 import { ToastService } from 'src/app/services/toast.service';
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, take } from 'rxjs/operators';
-
-interface QueueTrack {
-  id: string;
-  uri: string;
-  name: string;
-  artists: { id: string; name: string }[];
-  album: {
-    id: string;
-    name: string;
-    images: { url: string }[];
-  };
-  duration_ms: number;
-  explicit: boolean;
-  preview_url: string | null;
-}
+import { QueueService, QueueTrack } from 'src/app/services/queue.service';
 
 @Component({
   selector: 'app-queue-builder',
   templateUrl: './queue-builder.component.html',
   styleUrls: ['./queue-builder.component.scss']
 })
-export class QueueBuilderComponent implements OnInit {
+export class QueueBuilderComponent implements OnInit, OnDestroy {
   // Search
   searchQuery = '';
-  searchResults: QueueTrack[] = [];
+  searchResults: any[] = [];
   isSearching = false;
   private searchSubject = new Subject<string>();
 
-  // Queue
+  // Queue (from service)
   queue: QueueTrack[] = [];
-  
+  private queueSub!: Subscription;
+
   // Playlist saving
   playlistName = '';
   playlistDescription = '';
@@ -66,13 +54,20 @@ export class QueueBuilderComponent implements OnInit {
     private userService: UserService,
     private playlistService: PlaylistService,
     private toastService: ToastService,
+    private queueService: QueueService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    // Subscribe to queue from service
+    this.queueSub = this.queueService.queue$.subscribe(queue => {
+      this.queue = queue;
+    });
+
     // Check if user is premium (for playback features)
-    const user = this.userService.getUser();
-    this.isPremium = user?.product === 'premium';
+    this.userService.getUser().subscribe((user: any) => {
+      this.isPremium = user?.product === 'premium';
+    });
 
     // Set up debounced search
     this.searchSubject.pipe(
@@ -97,6 +92,12 @@ export class QueueBuilderComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    if (this.queueSub) {
+      this.queueSub.unsubscribe();
+    }
+  }
+
   onSearchInput(): void {
     this.searchSubject.next(this.searchQuery);
   }
@@ -106,147 +107,151 @@ export class QueueBuilderComponent implements OnInit {
     this.searchResults = [];
   }
 
-  // Queue management
-  addToQueue(track: QueueTrack): void {
-    // Check for duplicates
-    if (this.queue.some(t => t.id === track.id)) {
-      this.toastService.showNegativeToast('Track already in queue');
-      return;
-    }
+  // Queue management - now using QueueService
+  addToQueue(track: any): void {
+    const queueTrack: QueueTrack = {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: track.album || { id: '', name: '', images: [] },
+      duration_ms: track.duration_ms,
+      external_urls: track.external_urls
+    };
     
-    this.queue.push({ ...track });
-    this.toastService.showPositiveToast(`Added "${track.name}"`);
+    this.queueService.addToQueue(queueTrack);
   }
 
   removeFromQueue(index: number): void {
     const track = this.queue[index];
-    this.queue.splice(index, 1);
-    this.toastService.showPositiveToast(`Removed "${track.name}"`);
+    this.queueService.removeFromQueue(track.id);
   }
 
   clearQueue(): void {
     if (this.queue.length === 0) return;
     
     if (confirm('Clear all tracks from queue?')) {
-      this.queue = [];
+      this.queueService.clearQueue();
       this.toastService.showPositiveToast('Queue cleared');
     }
   }
 
   onDrop(event: CdkDragDrop<QueueTrack[]>): void {
-    moveItemInArray(this.queue, event.previousIndex, event.currentIndex);
+    this.queueService.moveTrack(event.previousIndex, event.currentIndex);
   }
 
   moveTrack(index: number, direction: 'up' | 'down'): void {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= this.queue.length) return;
-    
-    moveItemInArray(this.queue, index, newIndex);
+    if (newIndex >= 0 && newIndex < this.queue.length) {
+      this.queueService.moveTrack(index, newIndex);
+    }
   }
 
-  // Playlist save
+  // Playlist saving
   openSaveModal(): void {
     if (this.queue.length === 0) {
       this.toastService.showNegativeToast('Add tracks to your queue first');
       return;
     }
     this.showSaveModal = true;
-    this.playlistName = `My Playlist ${new Date().toLocaleDateString()}`;
-    this.playlistDescription = `Created with Xomify • ${this.queue.length} tracks`;
   }
 
   closeSaveModal(): void {
     this.showSaveModal = false;
+    this.playlistName = '';
+    this.playlistDescription = '';
+    this.isPublic = false;
   }
 
-  saveAsPlaylist(): void {
+  savePlaylist(): void {
     if (!this.playlistName.trim()) {
-      this.toastService.showNegativeToast('Enter a playlist name');
+      this.toastService.showNegativeToast('Please enter a playlist name');
       return;
     }
 
     this.isSaving = true;
-    const userId = this.userService.getUserId();
-    const trackUris = this.queue.map(t => t.uri);
 
-    // First create the playlist
-    this.playlistService.createPlaylist(
-      userId,
-      this.playlistName,
-      this.playlistDescription,
-      this.isPublic
-    ).pipe(take(1)).subscribe({
-      next: (playlist: any) => {
-        // Then add tracks to it
-        this.playlistService.addTracksToPlaylist(playlist.id, trackUris)
-          .pipe(take(1))
-          .subscribe({
-            next: () => {
-              this.isSaving = false;
-              this.showSaveModal = false;
-              this.toastService.showPositiveToast(`Playlist "${this.playlistName}" created!`);
-              
-              // Optionally clear queue after saving
-              // this.queue = [];
-            },
-            error: (err) => {
-              console.error('Error adding tracks to playlist', err);
-              this.toastService.showNegativeToast('Error adding tracks to playlist');
-              this.isSaving = false;
-            }
-          });
+    // Get user ID first
+    this.userService.getUser().subscribe({
+      next: (user: any) => {
+        const userId = user?.id;
+        if (!userId) {
+          this.toastService.showNegativeToast('Could not get user info');
+          this.isSaving = false;
+          return;
+        }
+
+        // Create playlist
+        this.playlistService.createPlaylist(
+          userId,
+          this.playlistName,
+          this.playlistDescription,
+          this.isPublic
+        ).subscribe({
+          next: (playlist: any) => {
+            // Add tracks to playlist
+            const trackUris = this.queue.map(t => `spotify:track:${t.id}`);
+            this.playlistService.addTracksToPlaylist(playlist.id, trackUris).subscribe({
+              next: () => {
+                this.toastService.showPositiveToast(`Playlist "${this.playlistName}" created!`);
+                this.closeSaveModal();
+                this.isSaving = false;
+                
+                // Optionally clear queue after saving
+                // this.queueService.clearQueue();
+              },
+              error: () => {
+                this.toastService.showNegativeToast('Failed to add tracks to playlist');
+                this.isSaving = false;
+              }
+            });
+          },
+          error: () => {
+            this.toastService.showNegativeToast('Failed to create playlist');
+            this.isSaving = false;
+          }
+        });
       },
-      error: (err) => {
-        console.error('Error creating playlist', err);
-        this.toastService.showNegativeToast('Error creating playlist');
+      error: () => {
+        this.toastService.showNegativeToast('Could not get user info');
         this.isSaving = false;
       }
     });
   }
 
-  // Playback controls (Premium only)
-  playPreview(track: QueueTrack): void {
-    if (!track.preview_url) {
-      this.toastService.showNegativeToast('No preview available');
+  // Navigation
+  goToArtist(artistId: string): void {
+    if (artistId) {
+      this.router.navigate(['/artist-profile', artistId]);
+    }
+  }
+
+  // Play all in Spotify
+  playAllInSpotify(): void {
+    if (this.queue.length === 0) {
+      this.toastService.showNegativeToast('No tracks in queue');
       return;
     }
     
-    // For now just open preview - full playback would use Web Playback SDK
-    window.open(track.preview_url, '_blank');
-  }
-
-  addToSpotifyQueue(track: QueueTrack): void {
-    if (!this.isPremium) {
-      this.toastService.showNegativeToast('Spotify Premium required');
-      return;
-    }
-
-    this.playlistService.addToQueue(track.uri).pipe(take(1)).subscribe({
-      next: () => {
-        this.toastService.showPositiveToast(`Added to Spotify queue`);
-      },
-      error: (err) => {
-        console.error('Error adding to queue', err);
-        this.toastService.showNegativeToast('Error adding to Spotify queue');
-      }
-    });
-  }
-
-  playAllInSpotify(): void {
-    if (this.queue.length === 0) return;
-
-    // Open first track in Spotify
+    // Open first track in Spotify - user can then play the queue
     const firstTrack = this.queue[0];
-    const spotifyUrl = `https://open.spotify.com/track/${firstTrack.id}`;
-    window.open(spotifyUrl, '_blank');
+    if (firstTrack.external_urls?.spotify) {
+      window.open(firstTrack.external_urls.spotify, '_blank');
+    } else {
+      window.open(`https://open.spotify.com/track/${firstTrack.id}`, '_blank');
+    }
   }
 
-  // Navigation
-  goToArtist(artistId: string): void {
-    this.router.navigate(['/artist-profile', artistId]);
+  // Alias for savePlaylist (template uses saveAsPlaylist)
+  saveAsPlaylist(): void {
+    this.savePlaylist();
   }
 
-  // Formatters
+  // Preview playback
+  playPreview(track: QueueTrack): void {
+    // Implement preview if needed
+  }
+
+  // Utilities
   formatDuration(ms: number): string {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
@@ -264,11 +269,11 @@ export class QueueBuilderComponent implements OnInit {
     return `${minutes} min`;
   }
 
-  getArtistNames(track: QueueTrack): string {
-    return track.artists.map(a => a.name).join(', ');
+  getArtistNames(track: any): string {
+    return track.artists?.map((a: any) => a.name).join(', ') || '';
   }
 
   isInQueue(trackId: string): boolean {
-    return this.queue.some(t => t.id === trackId);
+    return this.queueService.isInQueue(trackId);
   }
 }

@@ -1,26 +1,40 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { QueueService } from '../../services/queue.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-toolbar',
   templateUrl: './toolbar.component.html',
   styleUrls: ['./toolbar.component.scss'],
 })
-export class ToolbarComponent implements OnInit {
+export class ToolbarComponent implements OnInit, OnDestroy {
   dropdownVisible = false;
-  isMobile: boolean;
+  isMobile: boolean = false;
+  queueCount = 0;
+
+  private queueSub!: Subscription;
 
   constructor(
-    private AuthService: AuthService,
-    private router: Router
+    private authService: AuthService,
+    private router: Router,
+    private queueService: QueueService
   ) {
     this.checkIfMobile();
     window.addEventListener('resize', this.checkIfMobile.bind(this));
   }
 
   ngOnInit(): void {
-    console.log("Toolbar initialized.");
+    this.queueSub = this.queueService.queueCount$.subscribe((count) => {
+      this.queueCount = count;
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.queueSub) {
+      this.queueSub.unsubscribe();
+    }
   }
 
   toggleDropdown() {
@@ -45,7 +59,7 @@ export class ToolbarComponent implements OnInit {
   }
 
   isLoggedIn(): boolean {
-    return this.AuthService.isLoggedIn();
+    return this.authService.isLoggedIn();
   }
 
   isSelected(route: string): boolean {
@@ -53,7 +67,7 @@ export class ToolbarComponent implements OnInit {
   }
 
   logout(): void {
-    this.AuthService.logout();
+    this.authService.logout();
     this.dropdownVisible = false;
     this.router.navigate(['/home']);
   }

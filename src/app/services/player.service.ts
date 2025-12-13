@@ -1,150 +1,232 @@
 import { Injectable } from '@angular/core';
-import { AuthService } from './auth.service';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject } from 'rxjs';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PlayerService {
-  private player: any;
+  private playerReadySubject = new BehaviorSubject<boolean>(false);
+  private currentTrackIdSubject = new BehaviorSubject<string | null>(null);
+  private isLoadingSubject = new BehaviorSubject<boolean>(false);
+  private isPlayingSubject = new BehaviorSubject<boolean>(false);
+
+  playerReady$ = this.playerReadySubject.asObservable();
+  currentTrackId$ = this.currentTrackIdSubject.asObservable();
+  isLoading$ = this.isLoadingSubject.asObservable();
+  isPlaying$ = this.isPlayingSubject.asObservable();
+
   private deviceId: string | null = null;
-  private accessToken: string;
-  private playerInitialized = false;
-  private playerTransfered = false;
-  private baseUrl = 'https://api.spotify.com/v1';
-  private lastTrackId: string | null = null;
-  private firstPlayDone = false; // ensures first-track auto-play only once
+  private player: any = null;
 
-  public playerReady$ = new BehaviorSubject<boolean>(false);
-
-  constructor(private authService: AuthService, private http: HttpClient) {
-    this.accessToken = this.authService.getAccessToken();
-    this.loadSpotifySDK();
-  }
-
-  private loadSpotifySDK(): void {
-    if (this.playerInitialized) return;
-
-    if ((window as any).Spotify) {
-      this.initializePlayer();
-    } else {
-      const scriptTag = document.createElement('script');
-      scriptTag.src = 'https://sdk.scdn.co/spotify-player.js';
-      scriptTag.async = true;
-      document.body.appendChild(scriptTag);
-
-      (window as any).onSpotifyWebPlaybackSDKReady = () => {
-        this.initializePlayer();
-      };
-    }
-
-    this.playerInitialized = true;
+  constructor(private http: HttpClient, private authService: AuthService) {
+    this.initializePlayer();
   }
 
   private initializePlayer(): void {
-    if (this.player) return;
+    // Check if Spotify SDK is available
+    if (typeof window !== 'undefined' && (window as any).Spotify) {
+      this.setupPlayer();
+    } else {
+      // Wait for SDK to load
+      (window as any).onSpotifyWebPlaybackSDKReady = () => {
+        this.setupPlayer();
+      };
+    }
+  }
+
+  private setupPlayer(): void {
+    const token = this.authService.getAccessToken();
+    if (!token) {
+      console.warn('No access token available for player');
+      return;
+    }
 
     this.player = new (window as any).Spotify.Player({
-      name: 'Xomify Player',
-      getOAuthToken: (cb: (token: string) => void) => cb(this.accessToken),
+      name: 'Xomify Web Player',
+      getOAuthToken: (cb: (token: string) => void) => {
+        cb(this.authService.getAccessToken());
+      },
       volume: 0.5,
     });
 
-    this.player.addListener('ready', ({ device_id }: any) => {
-      console.log('Ready with Device ID', device_id);
+    // Ready
+    this.player.addListener('ready', ({ device_id }: { device_id: string }) => {
+      console.log('Spotify Player Ready with Device ID:', device_id);
       this.deviceId = device_id;
-      this.playerReady$.next(true);
+      this.playerReadySubject.next(true);
+    });
 
-      if (!this.playerTransfered) {
-        this.transferPlaybackHere(false); // only transfer, do NOT auto-play
+    // Not Ready
+    this.player.addListener(
+      'not_ready',
+      ({ device_id }: { device_id: string }) => {
+        console.log('Device ID has gone offline:', device_id);
+        this.playerReadySubject.next(false);
+      }
+    );
+
+    // Player state changed
+    this.player.addListener('player_state_changed', (state: any) => {
+      if (!state) {
+        this.isPlayingSubject.next(false);
+        this.currentTrackIdSubject.next(null);
+        return;
+      }
+
+      this.isPlayingSubject.next(!state.paused);
+
+      if (state.track_window?.current_track) {
+        const trackUri = state.track_window.current_track.uri;
+        const trackId = trackUri.split(':').pop();
+        this.currentTrackIdSubject.next(trackId);
       }
     });
 
-    this.player.addListener('not_ready', ({ device_id }: any) => {
-      console.log('Device offline', device_id);
-      this.deviceId = null;
-      this.playerReady$.next(false);
-    });
+    // Errors
+    this.player.addListener(
+      'initialization_error',
+      ({ message }: { message: string }) => {
+        console.error('Initialization Error:', message);
+      }
+    );
 
-    this.player.connect();
+    this.player.addListener(
+      'authentication_error',
+      ({ message }: { message: string }) => {
+        console.error('Authentication Error:', message);
+        this.playerReadySubject.next(false);
+      }
+    );
+
+    this.player.addListener(
+      'account_error',
+      ({ message }: { message: string }) => {
+        console.error('Account Error:', message);
+      }
+    );
+
+    this.player.addListener(
+      'playback_error',
+      ({ message }: { message: string }) => {
+        console.error('Playback Error:', message);
+        this.isLoadingSubject.next(false);
+      }
+    );
+
+    // Connect player
+    this.player.connect().then((success: boolean) => {
+      if (success) {
+        console.log('Spotify Player connected successfully');
+      }
+    });
   }
 
-  private getAuthHeaders(): HttpHeaders {
-    return new HttpHeaders({
-      Authorization: `Bearer ${this.accessToken}`,
+  playSong(trackId: string): void {
+    if (!this.deviceId) {
+      console.warn('No device ID available');
+      return;
+    }
+
+    // If same track, toggle play/pause
+    if (this.currentTrackIdSubject.getValue() === trackId) {
+      this.togglePlayPause();
+      return;
+    }
+
+    this.isLoadingSubject.next(true);
+    this.currentTrackIdSubject.next(trackId);
+
+    const token = this.authService.getAccessToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     });
-  }
 
-  playSong(trackId: string, autoPlay = false): void {
-    if (!this.deviceId) return;
-
-    // Prevent repeated same-track calls
-    if (this.lastTrackId === trackId && !autoPlay) return;
-
-    this.lastTrackId = trackId;
-
-    // Only auto-play first time if allowed
-    const shouldPlay =
-      autoPlay && !this.firstPlayDone ? true : !autoPlay ? true : false;
-    if (autoPlay && !this.firstPlayDone) this.firstPlayDone = true;
+    const body = {
+      uris: [`spotify:track:${trackId}`],
+    };
 
     this.http
       .put(
-        `${this.baseUrl}/me/player/play?device_id=${this.deviceId}`,
-        { uris: [`spotify:track:${trackId}`] },
-        { headers: this.getAuthHeaders() }
+        `https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`,
+        body,
+        { headers }
       )
       .subscribe({
-        next: () => console.log(`Playing track ${trackId}`),
-        error: (err) => console.error('Error playing track', err),
+        next: () => {
+          this.isLoadingSubject.next(false);
+          this.isPlayingSubject.next(true);
+        },
+        error: (err) => {
+          console.error('Error playing song:', err);
+          this.isLoadingSubject.next(false);
+          this.currentTrackIdSubject.next(null);
+        },
       });
   }
 
   stopSong(): void {
-    if (!this.deviceId) return;
-
-    this.http
-      .put(
-        `${this.baseUrl}/me/player/pause?device_id=${this.deviceId}`,
-        {},
-        { headers: this.getAuthHeaders(), responseType: 'text' }
-      )
-      .subscribe({
-        next: () => console.log('Playback paused'),
-        error: (err) => console.error('Error pausing track', err),
+    if (this.player) {
+      this.player.pause().then(() => {
+        this.isPlayingSubject.next(false);
       });
+    }
   }
 
-  transferPlaybackHere(playImmediately = false): void {
-    if (!this.deviceId || this.playerTransfered) return;
-
-    this.http
-      .put(
-        `${this.baseUrl}/me/player`,
-        { device_ids: [this.deviceId], play: playImmediately },
-        { headers: this.getAuthHeaders(), responseType: 'text' }
-      )
-      .subscribe({
-        next: () => {
-          console.log('Playback transferred to Xomify app');
-          this.playerTransfered = true;
-        },
-        error: (err) => console.error('Error transferring playback', err),
-      });
+  togglePlayPause(): void {
+    if (this.player) {
+      this.player.togglePlay();
+    }
   }
 
-  disconnectPlayer(): void {
+  resume(): void {
+    if (this.player) {
+      this.player.resume().then(() => {
+        this.isPlayingSubject.next(true);
+      });
+    }
+  }
+
+  setVolume(volume: number): void {
+    if (this.player) {
+      this.player.setVolume(volume);
+    }
+  }
+
+  seek(positionMs: number): void {
+    if (this.player) {
+      this.player.seek(positionMs);
+    }
+  }
+
+  getCurrentState(): Promise<any> {
+    if (this.player) {
+      return this.player.getCurrentState();
+    }
+    return Promise.resolve(null);
+  }
+
+  // Getters for current values
+  get isPlayerReady(): boolean {
+    return this.playerReadySubject.getValue();
+  }
+
+  get currentTrackId(): string | null {
+    return this.currentTrackIdSubject.getValue();
+  }
+
+  get isCurrentlyPlaying(): boolean {
+    return this.isPlayingSubject.getValue();
+  }
+
+  disconnect(): void {
     if (this.player) {
       this.player.disconnect();
-      this.player = null;
-      this.deviceId = null;
-      this.playerInitialized = false;
-      this.playerTransfered = false;
-      this.lastTrackId = null;
-      this.firstPlayDone = false;
-      this.playerReady$.next(false);
+      this.playerReadySubject.next(false);
+      this.currentTrackIdSubject.next(null);
+      this.isPlayingSubject.next(false);
     }
   }
 }

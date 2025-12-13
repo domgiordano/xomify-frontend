@@ -4,30 +4,20 @@ import { UserService } from 'src/app/services/user.service';
 import { ArtistService } from 'src/app/services/artist.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { forkJoin, of } from 'rxjs';
-import { catchError, take } from 'rxjs/operators';
-
-interface Release {
-  id: string;
-  name: string;
-  type: string;
-  releaseDate: Date;
-  releaseDateStr: string;
-  images: any[];
-  totalTracks: number;
-  artist: {
-    id: string;
-    name: string;
-    image?: string;
-  };
-  spotifyUrl: string;
-}
+import { catchError, switchMap } from 'rxjs/operators';
 
 interface CalendarDay {
   date: Date;
   dayOfMonth: number;
   isCurrentMonth: boolean;
   isToday: boolean;
-  releases: Release[];
+  releases: any[];
+}
+
+interface CachedData {
+  releases: any[];
+  timestamp: number;
+  artistIds: string[];
 }
 
 @Component({
@@ -36,235 +26,233 @@ interface CalendarDay {
   styleUrls: ['./release-calendar.component.scss'],
 })
 export class ReleaseCalendarComponent implements OnInit {
+  releases: any[] = [];
+  filteredReleases: any[] = [];
   loading = true;
-  loadingProgress = 0;
-  loadingMessage = 'Loading followed artists...';
-
-  currentDate = new Date();
-  viewDate = new Date();
-  calendarDays: CalendarDay[] = [];
-
-  allReleases: Release[] = [];
-  selectedDay: CalendarDay | null = null;
+  error: string | null = null;
 
   viewMode: 'calendar' | 'list' = 'calendar';
   filterType: 'all' | 'album' | 'single' = 'all';
 
+  // Calendar state
+  viewDate = new Date();
+  calendarDays: CalendarDay[] = [];
+  selectedDay: CalendarDay | null = null;
   weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Stats
   totalReleases = 0;
   albumCount = 0;
   singleCount = 0;
-  artistsWithReleases = 0;
+  upcomingCount = 0;
+
+  // Cache settings
+  private readonly CACHE_KEY = 'xomify_release_calendar';
+  private readonly CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
   constructor(
+    private router: Router,
     private userService: UserService,
     private artistService: ArtistService,
-    private toastService: ToastService,
-    private router: Router
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
     this.loadReleases();
   }
 
-  loadReleases(): void {
-    this.loading = true;
-    this.loadingProgress = 0;
-    this.loadingMessage = 'Loading followed artists...';
-
-    // First get all followed artists
-    this.userService
-      .getAllFollowedArtists()
-      .pipe(take(1))
-      .subscribe({
-        next: (artists) => {
-          if (artists.length === 0) {
-            this.loading = false;
-            this.buildCalendar();
-            return;
-          }
-
-          this.loadingMessage = `Fetching releases from ${artists.length} artists...`;
-          this.fetchArtistReleases(artists);
-        },
-        error: (err) => {
-          console.error('Error loading followed artists', err);
-          this.toastService.showNegativeToast('Error loading followed artists');
-          this.loading = false;
-        },
-      });
-  }
-
-  fetchArtistReleases(artists: any[]): void {
-    // Get releases from last 90 days and next 30 days
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 90);
-
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + 30);
-
-    // Batch artists to avoid rate limits (process 5 at a time)
-    const batchSize = 5;
-    const batches: any[][] = [];
-
-    for (let i = 0; i < artists.length; i += batchSize) {
-      batches.push(artists.slice(i, i + batchSize));
-    }
-
-    let completedBatches = 0;
-    const allReleases: Release[] = [];
-    const artistsWithReleasesSet = new Set<string>();
-
-    const processBatch = (batchIndex: number) => {
-      if (batchIndex >= batches.length) {
-        // All done
-        this.allReleases = allReleases.sort(
-          (a, b) => b.releaseDate.getTime() - a.releaseDate.getTime()
-        );
-        this.calculateStats(artistsWithReleasesSet);
-        this.buildCalendar();
+  loadReleases(forceRefresh = false): void {
+    // Check cache first
+    if (!forceRefresh) {
+      const cached = this.getCache();
+      if (cached) {
+        this.releases = cached.releases;
+        this.processReleases();
         this.loading = false;
         return;
       }
+    }
 
-      const batch = batches[batchIndex];
-      const requests = batch.map((artist) =>
-        this.artistService
-          .getArtistAlbums(artist.id, 20, 0, 'album,single')
-          .pipe(catchError(() => of({ items: [] })))
-      );
+    this.loading = true;
+    this.error = null;
 
-      forkJoin(requests).subscribe({
-        next: (responses) => {
-          responses.forEach((response: any, idx) => {
-            const artist = batch[idx];
+    // Get followed artists, then fetch their albums
+    this.userService
+      .getFollowedArtists(50)
+      .pipe(
+        switchMap((response: any) => {
+          const artists = response.artists?.items || [];
+          if (artists.length === 0) {
+            return of([]);
+          }
+
+          // Fetch albums for each artist (last 6 months)
+          const albumRequests = artists.map((artist: any) =>
+            this.artistService
+              .getArtistAlbums(artist.id, 20)
+              .pipe(catchError(() => of({ items: [] })))
+          );
+
+          return forkJoin(albumRequests);
+        })
+      )
+      .subscribe({
+        next: (albumsResponses: any) => {
+          const sixMonthsAgo = new Date();
+          sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+          // Flatten and filter releases from last 6 months
+          const allReleases: any[] = [];
+          const seenIds = new Set<string>();
+
+          albumsResponses.forEach((response: any) => {
             const albums = response.items || [];
-
             albums.forEach((album: any) => {
-              const releaseDate = this.parseReleaseDate(album.release_date);
+              if (seenIds.has(album.id)) return;
 
-              // Only include releases within our date range
-              if (releaseDate >= cutoffDate && releaseDate <= futureDate) {
-                artistsWithReleasesSet.add(artist.id);
-
+              const releaseDate = new Date(album.release_date);
+              if (releaseDate >= sixMonthsAgo) {
+                seenIds.add(album.id);
                 allReleases.push({
-                  id: album.id,
-                  name: album.name,
+                  ...album,
+                  releaseDate,
                   type: album.album_type,
-                  releaseDate: releaseDate,
-                  releaseDateStr: album.release_date,
-                  images: album.images || [],
-                  totalTracks: album.total_tracks,
-                  artist: {
-                    id: artist.id,
-                    name: artist.name,
-                    image: artist.images?.[0]?.url,
-                  },
-                  spotifyUrl: album.external_urls?.spotify,
                 });
               }
             });
           });
 
-          completedBatches++;
-          this.loadingProgress = Math.round(
-            (completedBatches / batches.length) * 100
+          // Sort by release date (newest first)
+          this.releases = allReleases.sort(
+            (a, b) => b.releaseDate.getTime() - a.releaseDate.getTime()
           );
-          this.loadingMessage = `Processing releases... ${this.loadingProgress}%`;
 
-          // Small delay between batches to avoid rate limits
-          setTimeout(() => processBatch(batchIndex + 1), 100);
+          // Cache results
+          this.setCache(this.releases);
+
+          this.processReleases();
+          this.loading = false;
+
+          if (forceRefresh) {
+            this.toastService.showPositiveToast('Releases refreshed');
+          }
         },
-        error: () => {
-          completedBatches++;
-          setTimeout(() => processBatch(batchIndex + 1), 100);
+        error: (err) => {
+          console.error('Error loading releases:', err);
+          this.error = 'Failed to load releases. Please try again.';
+          this.loading = false;
         },
       });
-    };
-
-    processBatch(0);
   }
 
-  parseReleaseDate(dateStr: string): Date {
-    // Spotify dates can be YYYY, YYYY-MM, or YYYY-MM-DD
-    const parts = dateStr.split('-');
-    const year = parseInt(parts[0], 10);
-    const month = parts[1] ? parseInt(parts[1], 10) - 1 : 0;
-    const day = parts[2] ? parseInt(parts[2], 10) : 1;
-    return new Date(year, month, day);
-  }
-
-  calculateStats(artistsSet: Set<string>): void {
-    this.totalReleases = this.allReleases.length;
-    this.albumCount = this.allReleases.filter((r) => r.type === 'album').length;
-    this.singleCount = this.allReleases.filter(
-      (r) => r.type === 'single'
+  private processReleases(): void {
+    // Calculate stats
+    this.totalReleases = this.releases.length;
+    this.albumCount = this.releases.filter(
+      (r) => r.album_type === 'album'
     ).length;
-    this.artistsWithReleases = artistsSet.size;
+    this.singleCount = this.releases.filter(
+      (r) => r.album_type === 'single'
+    ).length;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    this.upcomingCount = this.releases.filter(
+      (r) => r.releaseDate >= today
+    ).length;
+
+    this.applyFilter();
+    this.buildCalendar();
+  }
+
+  private applyFilter(): void {
+    if (this.filterType === 'all') {
+      this.filteredReleases = [...this.releases];
+    } else {
+      this.filteredReleases = this.releases.filter(
+        (r) => r.album_type === this.filterType
+      );
+    }
   }
 
   buildCalendar(): void {
     const year = this.viewDate.getFullYear();
     const month = this.viewDate.getMonth();
 
-    // First day of month
     const firstDay = new Date(year, month, 1);
-    // Last day of month
     const lastDay = new Date(year, month + 1, 0);
 
-    // Start from the Sunday of the week containing the 1st
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - startDate.getDay());
 
-    // End at the Saturday of the week containing the last day
     const endDate = new Date(lastDay);
     endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
 
-    this.calendarDays = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const dayDate = new Date(currentDate);
-      dayDate.setHours(0, 0, 0, 0);
+    this.calendarDays = [];
+    const current = new Date(startDate);
 
-      const dayReleases = this.getReleasesForDate(dayDate);
+    while (current <= endDate) {
+      const dayReleases = this.getReleasesForDate(current);
 
       this.calendarDays.push({
-        date: dayDate,
-        dayOfMonth: dayDate.getDate(),
-        isCurrentMonth: dayDate.getMonth() === month,
-        isToday: dayDate.getTime() === today.getTime(),
+        date: new Date(current),
+        dayOfMonth: current.getDate(),
+        isCurrentMonth: current.getMonth() === month,
+        isToday: current.getTime() === today.getTime(),
         releases: dayReleases,
       });
 
-      currentDate.setDate(currentDate.getDate() + 1);
+      current.setDate(current.getDate() + 1);
     }
   }
 
-  getReleasesForDate(date: Date): Release[] {
-    return this.allReleases.filter((release) => {
-      const releaseDate = new Date(release.releaseDate);
-      releaseDate.setHours(0, 0, 0, 0);
-
-      const matchesDate = releaseDate.getTime() === date.getTime();
-      const matchesFilter =
-        this.filterType === 'all' || release.type === this.filterType;
-
-      return matchesDate && matchesFilter;
+  private getReleasesForDate(date: Date): any[] {
+    const dateStr = date.toISOString().split('T')[0];
+    return this.filteredReleases.filter((release) => {
+      const releaseStr = release.release_date;
+      return releaseStr === dateStr;
     });
   }
 
-  getFilteredReleases(): Release[] {
-    if (this.filterType === 'all') {
-      return this.allReleases;
+  // Cache methods
+  private getCache(): CachedData | null {
+    try {
+      const cached = localStorage.getItem(this.CACHE_KEY);
+      if (!cached) return null;
+
+      const data: CachedData = JSON.parse(cached);
+      const now = Date.now();
+
+      if (now - data.timestamp > this.CACHE_TTL) {
+        localStorage.removeItem(this.CACHE_KEY);
+        return null;
+      }
+
+      // Restore Date objects
+      data.releases = data.releases.map((r) => ({
+        ...r,
+        releaseDate: new Date(r.releaseDate),
+      }));
+
+      return data;
+    } catch {
+      return null;
     }
-    return this.allReleases.filter((r) => r.type === this.filterType);
   }
 
+  private setCache(releases: any[]): void {
+    const data: CachedData = {
+      releases,
+      timestamp: Date.now(),
+      artistIds: [],
+    };
+    localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
+  }
+
+  // Navigation
   previousMonth(): void {
     this.viewDate = new Date(
       this.viewDate.getFullYear(),
@@ -297,12 +285,9 @@ export class ReleaseCalendarComponent implements OnInit {
     }
   }
 
-  clearSelectedDay(): void {
-    this.selectedDay = null;
-  }
-
   setFilterType(type: 'all' | 'album' | 'single'): void {
     this.filterType = type;
+    this.applyFilter();
     this.buildCalendar();
   }
 
@@ -311,11 +296,18 @@ export class ReleaseCalendarComponent implements OnInit {
     this.selectedDay = null;
   }
 
+  refresh(): void {
+    this.loadReleases(true);
+  }
+
   goToAlbum(albumId: string): void {
     this.router.navigate(['/album', albumId]);
   }
 
-  goToArtist(artistId: string): void {
+  goToArtist(artistId: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
     this.router.navigate(['/artist-profile', artistId]);
   }
 
@@ -339,10 +331,20 @@ export class ReleaseCalendarComponent implements OnInit {
     });
   }
 
-  getRelativeDate(date: Date): string {
+  formatReleaseDate(dateString: string): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  getRelativeDate(release: any): string {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const releaseDate = new Date(date);
+    const releaseDate = new Date(release.releaseDate);
     releaseDate.setHours(0, 0, 0, 0);
 
     const diffTime = releaseDate.getTime() - today.getTime();

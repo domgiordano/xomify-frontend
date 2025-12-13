@@ -26,7 +26,9 @@ import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.compo
 import { PlaybackBarComponent } from './components/playback-bar/playback-bar.component';
 import { SwiperModule } from 'swiper/angular';
 import { FooterComponent } from './components/footer/footer.component';
+import { PlayButtonComponent } from './components/play-button/play-button.component';
 import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
+import { AddToQueueButtonComponent } from './components/add-to-queue-button/add-to-queue-button.component';
 
 @NgModule({
   declarations: [
@@ -48,6 +50,8 @@ import { AlbumDetailComponent } from './pages/album-detail/album-detail.componen
     ReleaseCalendarComponent,
     QueueBuilderComponent,
     PlaybackBarComponent,
+    PlayButtonComponent,
+    AddToQueueButtonComponent,
     FooterComponent,
   ],
   imports: [

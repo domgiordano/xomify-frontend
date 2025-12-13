@@ -57,6 +57,7 @@
         [ngClass]="{ selected: isSelected('/playlist-builder') }"
       >
         Playlist Builder
+        <span class="queue-badge" *ngIf="queueCount > 0">{{ queueCount }}</span>
       </a>
       <a
         routerLink="/release-calendar"
@@ -115,11 +116,13 @@
       >Following</a
     >
     <a
-      routerLink="/playstlist-builder"
+      routerLink="/playlist-builder"
       routerLinkActive="active"
       (click)="selectItem('/playlist-builder')"
-      >Playlist Builder</a
     >
+      Playlist Builder
+      <span class="queue-badge" *ngIf="queueCount > 0">{{ queueCount }}</span>
+    </a>
     <a
       routerLink="/release-calendar"
       routerLinkActive="active"

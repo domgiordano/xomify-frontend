@@ -92,7 +92,9 @@
     <div class="tracks-section" *ngIf="tracks.length > 0">
       <div class="tracks-header">
         <span class="col-num">#</span>
+        <span class="col-play"></span>
         <span class="col-title">Title</span>
+        <span class="col-queue"></span>
         <span class="col-duration">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path
@@ -103,13 +105,16 @@
       </div>
 
       <div class="tracks-list">
-        <div
-          class="track-item"
-          *ngFor="let track of tracks; let i = index"
-          (mouseenter)="onTrackHover(track)"
-          (mouseleave)="onTrackLeave()"
-        >
+        <div class="track-item" *ngFor="let track of tracks; let i = index">
           <span class="track-num">{{ track.track_number }}</span>
+
+          <div class="track-play">
+            <app-play-button
+              [trackId]="track.id"
+              size="small"
+              variant="ghost"
+            ></app-play-button>
+          </div>
 
           <div class="track-info">
             <div class="track-main">
@@ -125,6 +130,13 @@
                 {{ artist.name }}{{ last ? "" : ", " }}
               </a>
             </span>
+          </div>
+
+          <div class="track-queue">
+            <app-add-to-queue-button
+              [track]="getQueueTrack(track)"
+              size="small"
+            ></app-add-to-queue-button>
           </div>
 
           <span class="track-duration">{{
