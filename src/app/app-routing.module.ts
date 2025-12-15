@@ -14,6 +14,8 @@ import { FollowingComponent } from './pages/following/following.component';
 import { ReleaseCalendarComponent } from './pages/release-calendar/release-calendar.component';
 import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.component';
 import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
+import { WrappedComponent } from './pages/wrapped/wrapped.component';
+import { ReleaseRadarComponent } from './pages/release-radar/release-radar.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -41,6 +43,16 @@ const routes: Routes = [
   {
     path: 'artist-profile/:id',
     component: ArtistProfileComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'wrapped',
+    component: WrappedComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'release-radar',
+    component: ReleaseRadarComponent,
     canActivate: [AuthGuard],
   },
   {

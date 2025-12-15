@@ -45,11 +45,18 @@
         Top Genres
       </a>
       <a
-        routerLink="/following"
+        routerLink="/wrapped"
         routerLinkActive="active"
-        [ngClass]="{ selected: isSelected('/following') }"
+        [ngClass]="{ selected: isSelected('/wrapped') }"
       >
-        Following
+        Monthly Wrapped
+      </a>
+      <a
+        routerLink="/release-radar"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/release-radar') }"
+      >
+        Release Radar
       </a>
       <a
         routerLink="/playlist-builder"
@@ -110,10 +117,16 @@
       >Top Genres</a
     >
     <a
-      routerLink="/following"
+      routerLink="/wrapped"
       routerLinkActive="active"
-      (click)="selectItem('/following')"
-      >Following</a
+      (click)="selectItem('/wrapped')"
+      >Monthly Wrapped</a
+    >
+    <a
+      routerLink="/release-radar"
+      routerLinkActive="active"
+      (click)="selectItem('/release-radar')"
+      >Release Radar</a
     >
     <a
       routerLink="/playlist-builder"
