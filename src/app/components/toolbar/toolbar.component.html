@@ -45,18 +45,18 @@
         Top Genres
       </a>
       <a
-        routerLink="/wrapped"
-        routerLinkActive="active"
-        [ngClass]="{ selected: isSelected('/wrapped') }"
-      >
-        Monthly Wrapped
-      </a>
-      <a
         routerLink="/release-radar"
         routerLinkActive="active"
         [ngClass]="{ selected: isSelected('/release-radar') }"
       >
         Release Radar
+      </a>
+      <a
+        routerLink="/wrapped"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/wrapped') }"
+      >
+        Wrapped
       </a>
       <a
         routerLink="/playlist-builder"
@@ -65,13 +65,6 @@
       >
         Playlist Builder
         <span class="queue-badge" *ngIf="queueCount > 0">{{ queueCount }}</span>
-      </a>
-      <a
-        routerLink="/release-calendar"
-        routerLinkActive="active"
-        [ngClass]="{ selected: isSelected('/release-calendar') }"
-      >
-        Release Calendar
       </a>
     </div>
   </div>
@@ -117,16 +110,16 @@
       >Top Genres</a
     >
     <a
-      routerLink="/wrapped"
-      routerLinkActive="active"
-      (click)="selectItem('/wrapped')"
-      >Monthly Wrapped</a
-    >
-    <a
       routerLink="/release-radar"
       routerLinkActive="active"
       (click)="selectItem('/release-radar')"
       >Release Radar</a
+    >
+    <a
+      routerLink="/wrapped"
+      routerLinkActive="active"
+      (click)="selectItem('/wrapped')"
+      >Wrapped</a
     >
     <a
       routerLink="/playlist-builder"
@@ -136,12 +129,6 @@
       Playlist Builder
       <span class="queue-badge" *ngIf="queueCount > 0">{{ queueCount }}</span>
     </a>
-    <a
-      routerLink="/release-calendar"
-      routerLinkActive="active"
-      (click)="selectItem('/release-calendar')"
-      >Release Calendar</a
-    >
     <a class="logout-link" (click)="logout()">Logout</a>
   </div>
 </div>

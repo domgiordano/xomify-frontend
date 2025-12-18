@@ -18,7 +18,7 @@ interface TickerItem {
 @Component({
   selector: 'app-my-profile-page',
   templateUrl: './my-profile.component.html',
-  styleUrls: ['./my-profile.component.scss']
+  styleUrls: ['./my-profile.component.scss'],
 })
 export class MyProfileComponent implements OnInit, OnDestroy {
   loading: boolean = true;
@@ -47,7 +47,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   tickerLabel: string = 'Top Songs';
   tickerPaused: boolean = false;
   tickerLoaded: boolean = false;
-  
+
   private topSongs: any[] = [];
   private topArtists: any[] = [];
   private topGenres: { name: string; count: number }[] = [];
@@ -65,12 +65,12 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.accessToken = this.AuthService.getAccessToken();
     this.userName = this.UserService.getUserName();
-    
+
     if (this.userName.length === 0) {
-      console.log("Need User.");
+      console.log('Need User.');
       this.loadUser();
     } else {
-      console.log("We got dat user.");
+      console.log('We got dat user.');
       this.populateUserData();
       this.loadAdditionalData();
     }
@@ -90,78 +90,83 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     this.followersCount = this.UserService.getFollowers();
     this.wrappedEnrolled = this.UserService.getWrappedEnrollment();
     this.releaseRadarEnrolled = this.UserService.getReleaseRadarEnrollment();
-    
+
     const cachedPlaylistCount = this.UserService.getPlaylistCount();
     const cachedFollowingCount = this.UserService.getFollowingCount();
-    
+
     if (cachedPlaylistCount > 0) {
       this.playlistCount = cachedPlaylistCount;
     }
     if (cachedFollowingCount > 0) {
       this.followingCount = cachedFollowingCount;
     }
-    
+
     if (this.user) {
       this.country = this.user.country || 'Unknown';
       this.product = this.user.product || 'free';
       this.userId = this.user.id || '';
-      this.spotifyProfileUrl = this.user.external_urls?.spotify || 'https://open.spotify.com';
+      this.spotifyProfileUrl =
+        this.user.external_urls?.spotify || 'https://open.spotify.com';
     }
   }
 
   loadUser(): void {
     this.loading = true;
-    this.UserService.getUserData().pipe(take(1)).subscribe({
-      next: data => {
-        console.log("USER------", data);
-        this.UserService.setUser(data);
-        this.populateUserData();
-        this.loadAdditionalData();
-        this.updateUserTable();
-      },
-      error: err => {
-        console.error('Error fetching User', err);
-        this.ToastService.showNegativeToast('Error fetching User');
-        this.loading = false;
-      },
-      complete: () => {
-        console.log('User Loaded.');
-      }
-    });
+    this.UserService.getUserData()
+      .pipe(take(1))
+      .subscribe({
+        next: (data) => {
+          console.log('USER------', data);
+          this.UserService.setUser(data);
+          this.populateUserData();
+          this.loadAdditionalData();
+          this.updateUserTable();
+        },
+        error: (err) => {
+          console.error('Error fetching User', err);
+          this.ToastService.showNegativeToast('Error fetching User');
+          this.loading = false;
+        },
+        complete: () => {
+          console.log('User Loaded.');
+        },
+      });
   }
 
   private loadAdditionalData(): void {
     forkJoin({
       playlists: this.UserService.getUserPlaylists(1),
-      following: this.UserService.getFollowedArtists(1)
-    }).pipe(take(1)).subscribe({
-      next: (data) => {
-        this.playlistCount = data.playlists?.total || 0;
-        this.UserService.setPlaylistCount(this.playlistCount);
-        
-        this.followingCount = data.following?.artists?.total || 0;
-        this.UserService.setFollowingCount(this.followingCount);
-        
-        console.log('Playlist count:', this.playlistCount);
-        console.log('Following count:', this.followingCount);
-        
-        this.loading = false;
-        
-        // Load ticker data after main data is loaded
-        this.loadTickerData();
-      },
-      error: (err) => {
-        console.error('Error fetching additional data', err);
-        this.loading = false;
-      }
-    });
+      following: this.UserService.getFollowedArtists(1),
+    })
+      .pipe(take(1))
+      .subscribe({
+        next: (data) => {
+          this.playlistCount = data.playlists?.total || 0;
+          this.UserService.setPlaylistCount(this.playlistCount);
+
+          this.followingCount = data.following?.artists?.total || 0;
+          this.UserService.setFollowingCount(this.followingCount);
+
+          console.log('Playlist count:', this.playlistCount);
+          console.log('Following count:', this.followingCount);
+
+          this.loading = false;
+
+          // Load ticker data after main data is loaded
+          this.loadTickerData();
+        },
+        error: (err) => {
+          console.error('Error fetching additional data', err);
+          this.loading = false;
+        },
+      });
   }
 
   private loadTickerData(): void {
     // Check if we have cached data first
     const cachedSongs = this.SongService.getShortTermTopTracks();
     const cachedArtists = this.ArtistService.getShortTermTopArtists();
-    
+
     if (cachedSongs.length > 0 && cachedArtists.length > 0) {
       this.topSongs = cachedSongs.slice(0, 10);
       this.topArtists = cachedArtists.slice(0, 10);
@@ -169,42 +174,44 @@ export class MyProfileComponent implements OnInit, OnDestroy {
       this.initializeTicker();
       return;
     }
-    
+
     // Load fresh data
     forkJoin({
       songs: this.SongService.getTopTracks('short_term'),
-      artists: this.ArtistService.getTopArtists('short_term')
-    }).pipe(take(1)).subscribe({
-      next: (data) => {
-        this.topSongs = (data.songs.items || []).slice(0, 10);
-        this.topArtists = (data.artists.items || []).slice(0, 10);
-        this.topGenres = this.extractTopGenres(data.artists.items || []);
-        
-        // Cache the data
-        if (data.songs.items) {
-          this.SongService.setTopTracks(data.songs.items, [], []);
-        }
-        if (data.artists.items) {
-          this.ArtistService.setShortTermTopArtists(data.artists.items);
-        }
-        
-        this.initializeTicker();
-      },
-      error: (err) => {
-        console.error('Error loading ticker data', err);
-      }
-    });
+      artists: this.ArtistService.getTopArtists('short_term'),
+    })
+      .pipe(take(1))
+      .subscribe({
+        next: (data) => {
+          this.topSongs = (data.songs.items || []).slice(0, 10);
+          this.topArtists = (data.artists.items || []).slice(0, 10);
+          this.topGenres = this.extractTopGenres(data.artists.items || []);
+
+          // Cache the data
+          if (data.songs.items) {
+            this.SongService.setTopTracks(data.songs.items, [], []);
+          }
+          if (data.artists.items) {
+            this.ArtistService.setShortTermTopArtists(data.artists.items);
+          }
+
+          this.initializeTicker();
+        },
+        error: (err) => {
+          console.error('Error loading ticker data', err);
+        },
+      });
   }
 
   private extractTopGenres(artists: any[]): { name: string; count: number }[] {
     const genreMap = new Map<string, number>();
-    
-    artists.forEach(artist => {
+
+    artists.forEach((artist) => {
       (artist.genres || []).forEach((genre: string) => {
         genreMap.set(genre, (genreMap.get(genre) || 0) + 1);
       });
     });
-    
+
     return Array.from(genreMap.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
@@ -214,7 +221,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   private initializeTicker(): void {
     this.updateTickerItems('song');
     this.tickerLoaded = true;
-    
+
     // Rotate ticker every 15 seconds
     this.tickerRotationSub = interval(15000).subscribe(() => {
       this.rotateTickerType();
@@ -237,37 +244,37 @@ export class MyProfileComponent implements OnInit, OnDestroy {
 
   private updateTickerItems(type: 'song' | 'artist' | 'genre'): void {
     this.currentTickerType = type;
-    
+
     switch (type) {
       case 'song':
         this.tickerLabel = 'Top Songs';
-        this.tickerItems = this.topSongs.map(song => ({
+        this.tickerItems = this.topSongs.map((song) => ({
           id: song.id,
           name: song.name,
           image: song.album?.images?.[2]?.url || song.album?.images?.[0]?.url,
           subtitle: song.artists?.map((a: any) => a.name).join(', '),
-          type: 'song' as const
+          type: 'song' as const,
         }));
         break;
-        
+
       case 'artist':
         this.tickerLabel = 'Top Artists';
-        this.tickerItems = this.topArtists.map(artist => ({
+        this.tickerItems = this.topArtists.map((artist) => ({
           id: artist.id,
           name: artist.name,
           image: artist.images?.[2]?.url || artist.images?.[0]?.url,
           subtitle: artist.genres?.[0] || 'Artist',
-          type: 'artist' as const
+          type: 'artist' as const,
         }));
         break;
-        
+
       case 'genre':
         this.tickerLabel = 'Top Genres';
         this.tickerItems = this.topGenres.map((genre, index) => ({
           id: `genre-${index}`,
           name: genre.name,
           subtitle: `${genre.count} artists`,
-          type: 'genre' as const
+          type: 'genre' as const,
         }));
         break;
     }
@@ -289,31 +296,33 @@ export class MyProfileComponent implements OnInit, OnDestroy {
 
   updateUserTable(): void {
     console.log('Updating User Table ...');
-    this.UserService.updateUserTableRefreshToken().pipe(take(1)).subscribe({
-      next: xomUser => {
-        console.log("Updated Xomify USER Table------", xomUser);
-        this.wrappedEnrolled = xomUser.activeWrapped ?? false;
-        this.releaseRadarEnrolled = xomUser.activeReleaseRadar ?? false;
-        this.UserService.setReleaseRadarEnrollment(this.releaseRadarEnrolled);
-        this.UserService.setWrappedEnrollment(this.wrappedEnrolled);
-      },
-      error: err => {
-        console.error('Error Updating User Table', err);
-      },
-      complete: () => {
-        console.log('User Table Updated.');
-      }
-    });
+    this.UserService.updateUserTableRefreshToken()
+      .pipe(take(1))
+      .subscribe({
+        next: (xomUser) => {
+          console.log('Updated Xomify USER Table------', xomUser);
+          this.wrappedEnrolled = xomUser.activeWrapped ?? false;
+          this.releaseRadarEnrolled = xomUser.activeReleaseRadar ?? false;
+          this.UserService.setReleaseRadarEnrollment(this.releaseRadarEnrolled);
+          this.UserService.setWrappedEnrollment(this.wrappedEnrolled);
+        },
+        error: (err) => {
+          console.error('Error Updating User Table', err);
+        },
+        complete: () => {
+          console.log('User Table Updated.');
+        },
+      });
   }
 
   toggleWrapped(): void {
-    console.log("Toggling Wrapped Enrollment...");
+    console.log('Toggling Wrapped Enrollment...');
     this.wrappedEnrolled = !this.wrappedEnrolled;
     this.toggleEnrollments();
   }
 
   toggleReleaseRadar(): void {
-    console.log("Toggling Release Radar Enrollment...");
+    console.log('Toggling Release Radar Enrollment...');
     this.releaseRadarEnrolled = !this.releaseRadarEnrolled;
     this.toggleEnrollments();
   }
@@ -323,32 +332,42 @@ export class MyProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log("Updating Enrollments..");
+    console.log('Updating Enrollments..');
     this.disableEnrollButtons = true;
     this.enrollAttempts++;
 
-    this.UserService.updateUserTableEnrollments(this.wrappedEnrolled, this.releaseRadarEnrolled)
+    this.UserService.updateUserTableEnrollments(
+      this.wrappedEnrolled,
+      this.releaseRadarEnrolled
+    )
       .pipe(take(1))
       .subscribe({
-        next: xomUser => {
-          console.log("Updated Xomify USER Table------", xomUser);
+        next: (xomUser) => {
+          console.log('Updated Xomify USER Table------', xomUser);
           this.UserService.setReleaseRadarEnrollment(this.releaseRadarEnrolled);
           this.UserService.setWrappedEnrollment(this.wrappedEnrolled);
         },
-        error: err => {
+        error: (err) => {
           console.error('Error Updating User Table', err);
           this.ToastService.showNegativeToast('Error Updating User Table');
-          if (this.wrappedEnrolled !== this.UserService.getWrappedEnrollment()) {
+          if (
+            this.wrappedEnrolled !== this.UserService.getWrappedEnrollment()
+          ) {
             this.wrappedEnrolled = !this.wrappedEnrolled;
           }
-          if (this.releaseRadarEnrolled !== this.UserService.getReleaseRadarEnrollment()) {
+          if (
+            this.releaseRadarEnrolled !==
+            this.UserService.getReleaseRadarEnrollment()
+          ) {
             this.releaseRadarEnrolled = !this.releaseRadarEnrolled;
           }
           this.disableEnrollButtons = false;
         },
         complete: () => {
           console.log('User Table Updated.');
-          this.ToastService.showPositiveToast('Preferences updated successfully!');
+          this.ToastService.showPositiveToast(
+            'Preferences updated successfully!'
+          );
           if (this.enrollAttempts >= this.maxEnrollAttempts) {
             this.maxReached = true;
             this.disableEnrollButtons = true;
@@ -359,7 +378,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
               }
             }, 1000);
           }
-        }
+        },
       });
   }
 }
