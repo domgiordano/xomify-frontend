@@ -19,7 +19,7 @@
 
 .left-section {
   flex: 1;
-  
+
   .credit {
     color: #8a8a9a;
     font-size: 0.9rem;
@@ -50,23 +50,23 @@
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
-  
+
   &.action-btn {
     background: linear-gradient(135deg, #9c0abf 0%, #7a0896 100%);
     color: white;
     box-shadow: 0 4px 15px rgba(156, 10, 191, 0.3);
-    
+
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(156, 10, 191, 0.4);
     }
   }
-  
+
   &.github-btn {
     background: rgba(255, 255, 255, 0.1);
     color: #b0b0b0;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    
+
     &:hover {
       background: rgba(255, 255, 255, 0.15);
       color: #fff;
@@ -79,29 +79,51 @@
   flex-shrink: 0;
 }
 
-// Mobile Responsive
+// Mobile Responsive - Compact footer
 @media (max-width: 768px) {
   .footer-content {
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px 16px;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
   }
-  
-  .left-section,
-  .middle-section,
+
+  .left-section {
+    flex: 0 0 auto;
+
+    .credit {
+      font-size: 0.7rem;
+    }
+  }
+
+  .middle-section {
+    flex: 0 0 auto;
+
+    .action-btn {
+      padding: 6px 12px;
+      font-size: 0.75rem;
+    }
+  }
+
   .right-section {
-    flex: none;
-    width: 100%;
-    justify-content: center;
-    text-align: center;
+    flex: 0 0 auto;
   }
-  
-  .left-section .credit {
-    font-size: 0.8rem;
-  }
-  
+
   .footer-button {
-    padding: 8px 14px;
-    font-size: 0.85rem;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    gap: 4px;
+
+    .github-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    // Hide "View Source" text on mobile, just show icon
+    &.github-btn {
+      span:not(.github-icon) {
+        display: none;
+      }
+    }
   }
 }

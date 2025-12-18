@@ -350,6 +350,8 @@
   padding: 24px;
   max-width: 1000px;
   margin: 0 auto;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .month-nav {
@@ -370,6 +372,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 
     &:hover {
       background: rgba(156, 10, 191, 0.2);
@@ -379,6 +382,8 @@
 
   .month-title {
     text-align: center;
+    min-width: 0;
+    flex: 1;
 
     h2 {
       font-size: 1.5rem;
@@ -409,6 +414,7 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   margin-bottom: 8px;
+  width: 100%;
 
   .week-day {
     text-align: center;
@@ -416,6 +422,8 @@
     font-weight: 600;
     color: #6a6a7a;
     padding: 8px;
+    min-width: 0;
+    overflow: hidden;
   }
 }
 
@@ -423,6 +431,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
+  width: 100%;
 }
 
 .calendar-day {
@@ -434,6 +443,8 @@
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
+  min-width: 0; // Critical: allows grid items to shrink below content size
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 
@@ -930,11 +941,18 @@
 // Mobile Responsive
 @media (max-width: 768px) {
   .page-container {
-    padding: 80px 16px 100px;
+    padding: 80px 12px 80px; // Reduced side padding
+    overflow-x: hidden;
   }
 
   .page-header .page-title {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
+    gap: 8px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
   }
 
   .enrollment-card {
@@ -957,11 +975,25 @@
 
   .stats-bar {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 12px 8px;
+
+    .stat-value {
+      font-size: 1.4rem;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+    }
   }
 
   .controls-bar {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
   .view-toggle,
@@ -969,24 +1001,132 @@
     justify-content: center;
   }
 
+  // Calendar fixes for mobile - viewport-based sizing to GUARANTEE fit
   .calendar-view {
-    padding: 16px;
+    // Calculate available width: 100vw - page padding (24px total)
+    --calendar-width: calc(100vw - 24px);
+    // Each cell: (available width - gaps) / 7 columns
+    // Gaps: 6 gaps * 2px = 12px
+    --cell-size: calc((var(--calendar-width) - 16px - 12px) / 7);
+
+    padding: 8px;
+    border-radius: 12px;
+    margin: 0;
+    width: var(--calendar-width);
+    max-width: var(--calendar-width);
+    overflow: hidden;
+    box-sizing: border-box;
+    border: none;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .month-nav {
+    margin-bottom: 10px;
+
+    .nav-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      flex-shrink: 0;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    .month-title {
+      h2 {
+        font-size: 1rem;
+        margin-bottom: 2px;
+      }
+    }
+
+    .today-btn {
+      padding: 3px 10px;
+      font-size: 0.65rem;
+    }
+  }
+
+  .week-headers {
+    display: grid;
+    grid-template-columns: repeat(7, var(--cell-size));
+    gap: 2px;
+    margin-bottom: 2px;
+    justify-content: center;
+
+    .week-day {
+      font-size: 0.6rem;
+      padding: 2px 0;
+      text-align: center;
+      width: var(--cell-size);
+    }
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, var(--cell-size));
+    gap: 2px;
+    justify-content: center;
   }
 
   .calendar-day {
-    padding: 4px;
+    width: var(--cell-size);
+    height: var(--cell-size);
+    padding: 2px;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    aspect-ratio: unset; // Remove aspect-ratio, use explicit size
 
     .day-number {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
+      line-height: 1.2;
     }
 
-    .release-dots .dot {
-      width: 6px;
-      height: 6px;
+    .release-dots {
+      gap: 1px;
+      margin-top: 2px;
+      justify-content: center;
+      flex-wrap: wrap;
+
+      .dot {
+        width: 4px;
+        height: 4px;
+      }
+
+      .more-dot {
+        font-size: 0.45rem;
+      }
     }
 
     .release-preview {
       display: none;
+    }
+  }
+
+  .day-detail {
+    padding: 12px;
+    margin-top: 16px;
+
+    .detail-header h3 {
+      font-size: 1rem;
+    }
+  }
+
+  .release-item {
+    padding: 10px;
+    gap: 10px;
+
+    .release-image {
+      width: 48px;
+      height: 48px;
+    }
+
+    .release-info .release-name {
+      font-size: 0.9rem;
     }
   }
 
@@ -1086,24 +1226,74 @@
 }
 
 @media (max-width: 480px) {
+  .page-container {
+    padding: 80px 8px 70px;
+    overflow-x: hidden;
+  }
+
   .stats-bar {
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 4px;
   }
 
   .stat-card {
-    padding: 12px;
+    padding: 8px 4px;
 
     .stat-value {
-      font-size: 1.4rem;
+      font-size: 1.1rem;
+    }
+
+    .stat-label {
+      font-size: 0.6rem;
+    }
+  }
+
+  // Recalculate for smaller page padding (16px total)
+  .calendar-view {
+    --calendar-width: calc(100vw - 16px);
+    --cell-size: calc((var(--calendar-width) - 12px - 12px) / 7);
+    padding: 6px;
+  }
+
+  .month-nav {
+    .nav-btn {
+      width: 28px;
+      height: 28px;
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+
+    .month-title h2 {
+      font-size: 0.9rem;
+    }
+
+    .today-btn {
+      padding: 2px 8px;
+      font-size: 0.6rem;
     }
   }
 
   .week-headers .week-day {
-    font-size: 0.7rem;
+    font-size: 0.5rem;
   }
 
-  .calendar-day .day-number {
-    font-size: 0.65rem;
+  .calendar-day {
+    .day-number {
+      font-size: 0.6rem;
+    }
+
+    .release-dots {
+      .dot {
+        width: 3px;
+        height: 3px;
+      }
+
+      .more-dot {
+        display: none;
+      }
+    }
   }
 }
