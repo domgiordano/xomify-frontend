@@ -8,84 +8,242 @@
 
   <!-- Term Selector -->
   <div class="term-selector">
-    <button 
-      class="term-btn" 
+    <button
+      class="term-btn"
       [class.active]="selectedTerm === 'short_term'"
-      (click)="selectTerm('short_term')">
+      (click)="selectTerm('short_term')"
+    >
       Last Month
     </button>
-    <button 
-      class="term-btn" 
+    <button
+      class="term-btn"
       [class.active]="selectedTerm === 'medium_term'"
-      (click)="selectTerm('medium_term')">
+      (click)="selectTerm('medium_term')"
+    >
       Last 6 Months
     </button>
-    <button 
-      class="term-btn" 
+    <button
+      class="term-btn"
       [class.active]="selectedTerm === 'long_term'"
-      (click)="selectTerm('long_term')">
+      (click)="selectTerm('long_term')"
+    >
       All Time
     </button>
   </div>
 
-  <div class="genres-content" [class.fade-out]="transitioning" *ngIf="genreList.length > 0">
-    <!-- Featured Top 3 -->
-    <section class="featured-genres">
-      <div class="podium">
-        <!-- Second Place -->
-        <div class="podium-item second" *ngIf="genreList[1]">
-          <div class="genre-circle silver">
-            <span class="genre-emoji">🥈</span>
-          </div>
-          <h3 class="genre-name">{{ genreList[1].name }}</h3>
-          <p class="genre-count">{{ genreList[1].count }} artists</p>
-        </div>
-        
-        <!-- First Place -->
-        <div class="podium-item first" *ngIf="genreList[0]">
-          <div class="genre-circle gold">
-            <span class="genre-emoji">🥇</span>
-          </div>
-          <h3 class="genre-name">{{ genreList[0].name }}</h3>
-          <p class="genre-count">{{ genreList[0].count }} artists</p>
-        </div>
-        
-        <!-- Third Place -->
-        <div class="podium-item third" *ngIf="genreList[2]">
-          <div class="genre-circle bronze">
-            <span class="genre-emoji">🥉</span>
-          </div>
-          <h3 class="genre-name">{{ genreList[2].name }}</h3>
-          <p class="genre-count">{{ genreList[2].count }} artists</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Full Genre List -->
-    <section class="genres-list">
-      <h2 class="section-title">All Genres</h2>
-      
-      <div class="genre-items">
-        <div 
-          class="genre-item" 
-          *ngFor="let genre of genreList; let i = index"
-          [class.highlighted]="i < 3">
-          
-          <span class="genre-rank">{{ i + 1 }}</span>
-          <span class="genre-name">{{ genre.name }}</span>
-          <div class="genre-bar-container">
-            <div class="genre-bar">
-              <div class="genre-fill" [style.width.%]="genre.percentage"></div>
-            </div>
-          </div>
-          <span class="genre-count">{{ genre.count }}</span>
-        </div>
-      </div>
-    </section>
+  <!-- View Mode Toggle -->
+  <div class="view-toggle">
+    <button
+      [class.active]="viewMode === 'grouped'"
+      (click)="setViewMode('grouped')"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path
+          d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"
+        />
+      </svg>
+      Categories
+    </button>
+    <button
+      [class.active]="viewMode === 'detailed'"
+      (click)="setViewMode('detailed')"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path
+          d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
+        />
+      </svg>
+      All Genres
+    </button>
   </div>
 
-  <!-- Empty State -->
-  <div class="empty-state" *ngIf="genreList.length === 0 && !loading">
-    <p>No genre data available yet. Start listening to build your profile!</p>
+  <div class="genres-content" [class.fade-out]="transitioning">
+    <!-- GROUPED VIEW -->
+    <ng-container *ngIf="viewMode === 'grouped' && groupedGenres.length > 0">
+      <!-- Featured Top 3 Groups -->
+      <section class="featured-genres">
+        <div class="podium">
+          <!-- Second Place -->
+          <div class="podium-item second" *ngIf="groupedGenres[1]">
+            <div class="genre-circle silver">
+              <span class="genre-emoji">{{
+                getGroupIcon(groupedGenres[1].name)
+              }}</span>
+            </div>
+            <h3 class="genre-name">
+              {{ formatGenreName(groupedGenres[1].name) }}
+            </h3>
+            <p class="genre-count">
+              {{ groupedGenres[1].artists.length }} artists
+            </p>
+            <p class="genre-subgenres">
+              {{ groupedGenres[1].genres.length }} sub-genres
+            </p>
+          </div>
+
+          <!-- First Place -->
+          <div class="podium-item first" *ngIf="groupedGenres[0]">
+            <div class="genre-circle gold">
+              <span class="genre-emoji">{{
+                getGroupIcon(groupedGenres[0].name)
+              }}</span>
+            </div>
+            <h3 class="genre-name">
+              {{ formatGenreName(groupedGenres[0].name) }}
+            </h3>
+            <p class="genre-count">
+              {{ groupedGenres[0].artists.length }} artists
+            </p>
+            <p class="genre-subgenres">
+              {{ groupedGenres[0].genres.length }} sub-genres
+            </p>
+          </div>
+
+          <!-- Third Place -->
+          <div class="podium-item third" *ngIf="groupedGenres[2]">
+            <div class="genre-circle bronze">
+              <span class="genre-emoji">{{
+                getGroupIcon(groupedGenres[2].name)
+              }}</span>
+            </div>
+            <h3 class="genre-name">
+              {{ formatGenreName(groupedGenres[2].name) }}
+            </h3>
+            <p class="genre-count">
+              {{ groupedGenres[2].artists.length }} artists
+            </p>
+            <p class="genre-subgenres">
+              {{ groupedGenres[2].genres.length }} sub-genres
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- All Groups List -->
+      <section class="genres-list">
+        <h2 class="section-title">All Categories</h2>
+
+        <div class="genre-groups">
+          <div
+            class="genre-group"
+            *ngFor="let group of groupedGenres; let i = index"
+            [class.highlighted]="i < 3"
+            [class.expanded]="isGroupExpanded(group.name)"
+          >
+            <div class="group-header" (click)="toggleGroupExpand(group.name)">
+              <span class="genre-rank">{{ i + 1 }}</span>
+              <span class="group-icon">{{ getGroupIcon(group.name) }}</span>
+              <span class="genre-name">{{ formatGenreName(group.name) }}</span>
+              <div class="genre-bar-container">
+                <div class="genre-bar">
+                  <div
+                    class="genre-fill"
+                    [style.width.%]="group.percentage"
+                  ></div>
+                </div>
+              </div>
+              <span class="group-stats">{{ group.genres.length }} genres</span>
+              <span
+                class="expand-icon"
+                [class.rotated]="isGroupExpanded(group.name)"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M7 10l5 5 5-5z" />
+                </svg>
+              </span>
+            </div>
+
+            <div class="group-details" *ngIf="isGroupExpanded(group.name)">
+              <div class="sub-genres">
+                <span class="sub-genre" *ngFor="let subgenre of group.genres">
+                  {{ formatGenreName(subgenre) }}
+                </span>
+              </div>
+              <div class="group-artists">
+                <span class="artists-label">Top artists:</span>
+                <span class="artists-list">{{
+                  getArtistsPreview(group.artists, 5)
+                }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </ng-container>
+
+    <!-- DETAILED VIEW -->
+    <ng-container *ngIf="viewMode === 'detailed' && genreList.length > 0">
+      <!-- Featured Top 3 -->
+      <section class="featured-genres">
+        <div class="podium">
+          <!-- Second Place -->
+          <div class="podium-item second" *ngIf="genreList[1]">
+            <div class="genre-circle silver">
+              <span class="genre-emoji">🥈</span>
+            </div>
+            <h3 class="genre-name">{{ formatGenreName(genreList[1].name) }}</h3>
+            <p class="genre-count">{{ genreList[1].artists.length }} artists</p>
+          </div>
+
+          <!-- First Place -->
+          <div class="podium-item first" *ngIf="genreList[0]">
+            <div class="genre-circle gold">
+              <span class="genre-emoji">🥇</span>
+            </div>
+            <h3 class="genre-name">{{ formatGenreName(genreList[0].name) }}</h3>
+            <p class="genre-count">{{ genreList[0].artists.length }} artists</p>
+          </div>
+
+          <!-- Third Place -->
+          <div class="podium-item third" *ngIf="genreList[2]">
+            <div class="genre-circle bronze">
+              <span class="genre-emoji">🥉</span>
+            </div>
+            <h3 class="genre-name">{{ formatGenreName(genreList[2].name) }}</h3>
+            <p class="genre-count">{{ genreList[2].artists.length }} artists</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Full Genre List -->
+      <section class="genres-list">
+        <h2 class="section-title">All Genres</h2>
+
+        <div class="genre-items">
+          <div
+            class="genre-item"
+            *ngFor="let genre of genreList; let i = index"
+            [class.highlighted]="i < 3"
+          >
+            <span class="genre-rank">{{ i + 1 }}</span>
+            <div class="genre-info">
+              <span class="genre-name">{{ formatGenreName(genre.name) }}</span>
+              <span class="genre-artists">{{
+                getArtistsPreview(genre.artists, 2)
+              }}</span>
+            </div>
+            <div class="genre-bar-container">
+              <div class="genre-bar">
+                <div
+                  class="genre-fill"
+                  [style.width.%]="genre.percentage"
+                ></div>
+              </div>
+            </div>
+            <span class="genre-percentage">{{ genre.percentage }}%</span>
+          </div>
+        </div>
+      </section>
+    </ng-container>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="genreList.length === 0">
+      <p>No genre data available yet. Start listening to build your profile!</p>
+    </div>
   </div>
 </div>
