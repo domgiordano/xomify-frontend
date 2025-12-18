@@ -1,8 +1,35 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+
+export interface MonthlyWrap {
+  monthKey: string; // "YYYY-MM" format
+  topSongIds: {
+    short_term: string[];
+    medium_term: string[];
+    long_term: string[];
+  };
+  topArtistIds: {
+    short_term: string[];
+    medium_term: string[];
+    long_term: string[];
+  };
+  topGenres: {
+    short_term: { [genre: string]: number };
+    medium_term: { [genre: string]: number };
+    long_term: { [genre: string]: number };
+  };
+  createdAt: string;
+}
+
+export interface WrappedDataResponse {
+  active: boolean;
+  activeWrapped: boolean;
+  activeReleaseRadar: boolean;
+  wraps: MonthlyWrap[];
+}
 
 @Injectable({
   providedIn: 'root',
@@ -10,60 +37,97 @@ import { environment } from 'src/environments/environment';
 export class WrappedService {
   private xomifyApiUrl: string = `https://${environment.apiId}.execute-api.us-east-1.amazonaws.com/dev`;
   private readonly apiAuthToken = environment.apiAuthToken;
+
   constructor(private http: HttpClient) {}
 
-  // Method to get user wrapped data based on the selected term (short, medium, long)
-  getUserWrappedData(email: string): Observable<any> {
-    const url = `${this.xomifyApiUrl}/wrapped/data?email=${email}`;
-    const headers = {
+  private getHeaders(): HttpHeaders {
+    return new HttpHeaders({
       Authorization: `Bearer ${this.apiAuthToken}`,
       'Content-Type': 'application/json',
-    };
-    return this.http.get(url, { headers });
+    });
   }
 
-  // Optional method to sign up the user for monthly wrapped (if not opted in)
+  /**
+   * Get all wrapped data for a user including enrollment status and history.
+   * Returns wraps sorted newest first.
+   */
+  getUserWrappedData(email: string): Observable<WrappedDataResponse> {
+    const url = `${this.xomifyApiUrl}/wrapped/data?email=${encodeURIComponent(
+      email
+    )}`;
+    return this.http
+      .get<WrappedDataResponse>(url, { headers: this.getHeaders() })
+      .pipe(
+        map((response) => {
+          // Ensure wraps array exists
+          if (!response.wraps) {
+            response.wraps = [];
+          }
+          return response;
+        }),
+        catchError((error) => {
+          console.error('Error fetching wrapped data:', error);
+          return of({
+            active: false,
+            activeWrapped: false,
+            activeReleaseRadar: false,
+            wraps: [],
+          });
+        })
+      );
+  }
+
+  /**
+   * Get wrapped data for a specific month.
+   */
+  getWrappedMonth(
+    email: string,
+    monthKey: string
+  ): Observable<MonthlyWrap | null> {
+    const url = `${this.xomifyApiUrl}/wrapped/month?email=${encodeURIComponent(
+      email
+    )}&monthKey=${encodeURIComponent(monthKey)}`;
+    return this.http.get<MonthlyWrap>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error(`Error fetching wrapped for ${monthKey}:`, error);
+        return of(null);
+      })
+    );
+  }
+
+  /**
+   * Get all wrapped data for a specific year.
+   */
+  getWrappedYear(email: string, year: string): Observable<MonthlyWrap[]> {
+    const url = `${this.xomifyApiUrl}/wrapped/year?email=${encodeURIComponent(
+      email
+    )}&year=${encodeURIComponent(year)}`;
+    return this.http
+      .get<MonthlyWrap[]>(url, { headers: this.getHeaders() })
+      .pipe(
+        catchError((error) => {
+          console.error(`Error fetching wrapped for year ${year}:`, error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Opt user in or out of monthly wrapped.
+   */
   optInOrOutUserForWrapped(
     email: string,
-    id: string,
+    userId: string,
     refreshToken: string,
-    optIn: boolean,
-    topSongIdsLastMonth: any = { short_term: [], med_term: [], long_term: [] },
-    topArtistIdsLastMonth: any = {
-      short_term: [],
-      med_term: [],
-      long_term: [],
-    },
-    topGenresLastMonth: any = { short_term: [], med_term: [], long_term: [] },
-    topSongIdsTwoMonthsAgo: any = {
-      short_term: [],
-      med_term: [],
-      long_term: [],
-    },
-    topArtistIdsTwoMonthsAgo: any = {
-      short_term: [],
-      med_term: [],
-      long_term: [],
-    },
-    topGenresTwoMonthsAgo: any = { short_term: [], med_term: [], long_term: [] }
+    optIn: boolean
   ): Observable<any> {
     const url = `${this.xomifyApiUrl}/wrapped/data`;
     const body = {
       email: email,
-      userId: id,
+      userId: userId,
       refreshToken: refreshToken,
       active: optIn,
-      topSongIdsLastMonth: topSongIdsLastMonth,
-      topArtistIdsLastMonth: topArtistIdsLastMonth,
-      topGenresLastMonth: topGenresLastMonth,
-      topSongIdsTwoMonthsAgo: topSongIdsTwoMonthsAgo,
-      topArtistIdsTwoMonthsAgo: topArtistIdsTwoMonthsAgo,
-      topGenresTwoMonthsAgo: topGenresTwoMonthsAgo,
     };
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${this.apiAuthToken}`,
-      'Content-Type': 'application/json',
-    });
-    return this.http.post(url, body, { headers });
+    return this.http.post(url, body, { headers: this.getHeaders() });
   }
 }

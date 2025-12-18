@@ -1,71 +1,118 @@
 # Xomify Frontend
 
-Spotify API app - Angular Frontend
+A Spotify-powered music analytics and discovery application built with Angular.
 
-**Live Site:** https://xomify.com (email dominickj.giordano@gmail.com to get whitelisted - dev mode)
+## Features
 
-## Repositories
+### 🎵 Music Analytics
 
-- **Frontend:** https://github.com/domgiordano/xomify-frontend
-- **Backend:** https://github.com/domgiordano/python-spotify
-- **Infrastructure:** https://github.com/domgiordano/angular-spotify-infrastructure
-- **Terraform Workspace:** https://app.terraform.io/app/Domjgiordano/workspaces/angular-spotify-infrastructure
+- **Top Songs** - View your most played tracks across different time ranges (4 weeks, 6 months, all time)
+- **Top Artists** - Discover your most listened-to artists with detailed stats
+- **Top Genres** - See which genres dominate your listening habits
 
-## Development
+### 📊 Monthly Wrapped
+
+- Automatic monthly snapshots of your listening data
+- Navigate through your listening history month by month
+- Compare stats across different time periods
+- View top songs, artists, and genres for each month
+
+### 📅 Release Radar
+
+- Calendar view of new releases from artists you follow
+- Filter by albums, singles, or all releases
+- Never miss new music from your favorite artists
+- Weekly playlist generation with latest releases
+
+### 🎧 Playback Features
+
+- Built-in Spotify Web Playback SDK integration
+- Play/pause controls directly in the app
+- Queue management and track queuing
+- Seamless playback of any track
+
+### 👤 Profile & Discovery
+
+- View your Spotify profile and stats
+- Browse artist profiles with discographies
+- Explore album details and track listings
+- Build custom playlists
+
+## Tech Stack
+
+- **Framework**: Angular 15+
+- **Styling**: SCSS with custom theming
+- **API Integration**: Spotify Web API
+- **Playback**: Spotify Web Playback SDK
+- **State Management**: RxJS + Services
+- **Authentication**: Spotify OAuth 2.0
+
+## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Angular CLI (`npm install -g @angular/cli`)
+- npm or yarn
+- Spotify Developer Account
 
-### Local Setup
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/domgiordano/xomify-frontend.git
-   cd xomify-frontend
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Create your local environment file:
-
-   ```bash
-   cp src/environments/environment.example.ts src/environments/environment.dev.ts
-   ```
-
-   Then fill in your Spotify credentials and API details.
-
-4. Start the development server:
-   ```bash
-   npm start
-   ```
-   The app will be available at `http://localhost:4200`
-
-### Build
+### Installation
 
 ```bash
-# Development build
-npm run build
+# Install dependencies
+npm install
 
-# Production build
-npm run build:prod
+# Set up environment
+cp src/environments/environment.example.ts src/environments/environment.ts
+# Edit environment.ts with your Spotify API credentials
+
+# Start development server
+ng serve
 ```
 
-## Environment Configuration
+### Environment Configuration
 
-- `environment.ts` - Base/template configuration
-- `environment.dev.ts` - Local development (gitignored)
-- `environment.prod.ts` - Production (CI/CD replaces placeholders)
+```typescript
+// src/environments/environment.ts
+export const environment = {
+  production: false,
+  apiId: "your-api-gateway-id",
+  apiAuthToken: "your-api-auth-token",
+  spotifyClientId: "your-spotify-client-id",
+};
+```
 
-## Features
+## Project Structure
 
-- 🎵 View your Spotify profile
-- 📊 Top songs, artists, and genres analytics
-- 📅 Monthly wrapped insights
-- 🎨 Clean, modern UI with purple/green theme
+```
+src/app/
+├── components/
+│   ├── toolbar/           # Main navigation
+│   ├── play-button/       # Playback controls
+│   └── add-to-queue-button/
+├── pages/
+│   ├── my-profile/        # User profile dashboard
+│   ├── top-songs/         # Top tracks view
+│   ├── wrapped/           # Monthly wrapped history
+│   ├── release-radar/     # Release calendar
+│   ├── queue-builder/     # Playlist builder
+│   ├── artist-profile/    # Artist details
+│   ├── album-detail/      # Album details
+│   └── following/         # Followed artists
+└── services/
+    ├── user.service.ts    # User data & auth
+    ├── player.service.ts  # Spotify playback
+    ├── queue.service.ts   # Queue management
+    ├── wrapped.service.ts # Wrapped data
+    ├── song.service.ts    # Track API calls
+    └── artist.service.ts  # Artist API calls
+```
+
+## API Dependencies
+
+This frontend requires a backend API with the following endpoints:
+
+- `GET /wrapped/data` - User's wrapped history
+- `POST /user/user-table` - Update user enrollments
+- `GET /user/user-table` - Get user data
+
+See the backend README for API documentation.

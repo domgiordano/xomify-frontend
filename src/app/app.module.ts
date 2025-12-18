@@ -13,7 +13,6 @@ import { TopSongsComponent } from './pages/top-songs/top-songs.component';
 import { TopArtistsComponent } from './pages/top-artists/top-artists.component';
 import { TopGenresComponent } from './pages/top-genres/top-genres.component';
 import { PlaylistGeneratorComponent } from './pages/playlist-generator/playlist-generator.component';
-import { WrappedComponent } from './pages/wrapped/wrapped.component';
 import { AuthService } from './services/auth.service';
 import { LoaderComponent } from './components/loader/loader.component';
 import { ToastComponent } from './components/toast/toast.component';
@@ -29,6 +28,8 @@ import { FooterComponent } from './components/footer/footer.component';
 import { PlayButtonComponent } from './components/play-button/play-button.component';
 import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
 import { AddToQueueButtonComponent } from './components/add-to-queue-button/add-to-queue-button.component';
+import { WrappedComponent } from './pages/wrapped/wrapped.component';
+import { ReleaseRadarComponent } from './pages/release-radar/release-radar.component';
 
 @NgModule({
   declarations: [
@@ -39,7 +40,6 @@ import { AddToQueueButtonComponent } from './components/add-to-queue-button/add-
     TopArtistsComponent,
     TopGenresComponent,
     PlaylistGeneratorComponent,
-    WrappedComponent,
     LoaderComponent,
     ToastComponent,
     CallbackComponent,
@@ -53,6 +53,8 @@ import { AddToQueueButtonComponent } from './components/add-to-queue-button/add-
     PlayButtonComponent,
     AddToQueueButtonComponent,
     FooterComponent,
+    WrappedComponent,
+    ReleaseRadarComponent,
   ],
   imports: [
     BrowserModule,

@@ -285,6 +285,9 @@
 }
 
 .enrollment-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
   background: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.04) 0%,
@@ -292,13 +295,22 @@
   );
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
-  padding: 28px;
+  padding: 24px;
+  cursor: pointer;
   transition: all 0.3s ease;
+  text-decoration: none;
 
   &:hover {
-    border-color: rgba(156, 10, 191, 0.3);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    border-color: rgba(156, 10, 191, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+
+    .card-arrow {
+      transform: translateX(4px);
+      color: #1bdc6f;
+    }
   }
+
   &.enrolled {
     border-color: rgba(27, 220, 111, 0.3);
     background: linear-gradient(
@@ -315,7 +327,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    flex-shrink: 0;
 
     &.wrapped {
       background: linear-gradient(135deg, #1bdc6f 0%, #17b75b 100%);
@@ -330,93 +342,37 @@
   }
 
   .card-content {
-    margin-bottom: 20px;
+    flex: 1;
     .card-title {
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: 700;
       color: #fff;
-      margin: 0 0 8px 0;
+      margin: 0 0 6px 0;
     }
     .card-description {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: #8a8a9a;
-      line-height: 1.5;
+      line-height: 1.4;
       margin: 0;
     }
     .card-status {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      margin-top: 12px;
-      padding: 6px 12px;
+      margin-top: 10px;
+      padding: 4px 10px;
       background: rgba(27, 220, 111, 0.15);
-      border-radius: 20px;
+      border-radius: 16px;
       color: #1bdc6f;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 500;
     }
   }
 
-  .tooltip-container {
-    position: relative;
-    display: inline-block;
-  }
-  .tooltip-text {
-    visibility: hidden;
-    position: absolute;
-    bottom: 125%;
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    z-index: 1000;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    background: rgba(0, 0, 0, 0.9);
-    color: #fff;
-  }
-  .tooltip-container:hover .tooltip-text {
-    visibility: visible;
-    opacity: 1;
-  }
-
-  .enrollment-btn {
-    width: 100%;
-    padding: 14px 24px;
-    border: none;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
+  .card-arrow {
+    color: #6a6a7a;
+    flex-shrink: 0;
     transition: all 0.3s ease;
-    background: linear-gradient(135deg, #9c0abf 0%, #7a0896 100%);
-    color: #fff;
-    box-shadow: 0 4px 15px rgba(156, 10, 191, 0.3);
-
-    &:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(156, 10, 191, 0.4);
-    }
-    &.enrolled {
-      background: transparent;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      color: #8a8a9a;
-      box-shadow: none;
-      &:hover:not(:disabled) {
-        border-color: #ff4757;
-        color: #ff4757;
-        background: rgba(255, 71, 87, 0.1);
-      }
-    }
-    &:disabled {
-      background: #3a3a4a;
-      cursor: not-allowed;
-      box-shadow: none;
-      opacity: 0.6;
-    }
   }
 }
 
@@ -503,23 +459,33 @@
   background: rgba(156, 10, 191, 0.2);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   min-width: 140px;
-  justify-content: center;
-  transition: all 0.5s ease;
 
   &.songs {
-    background: rgba(156, 10, 191, 0.2);
+    background: linear-gradient(
+      135deg,
+      rgba(156, 10, 191, 0.3) 0%,
+      rgba(156, 10, 191, 0.15) 100%
+    );
     svg {
       color: #c77ddb;
     }
   }
   &.artists {
-    background: rgba(27, 220, 111, 0.2);
+    background: linear-gradient(
+      135deg,
+      rgba(27, 220, 111, 0.3) 0%,
+      rgba(27, 220, 111, 0.15) 100%
+    );
     svg {
       color: #1bdc6f;
     }
   }
   &.genres {
-    background: rgba(59, 130, 246, 0.2);
+    background: linear-gradient(
+      135deg,
+      rgba(59, 130, 246, 0.3) 0%,
+      rgba(59, 130, 246, 0.15) 100%
+    );
     svg {
       color: #60a5fa;
     }
@@ -531,24 +497,17 @@
   overflow: hidden;
   mask-image: linear-gradient(
     90deg,
-    transparent 0%,
+    transparent,
     black 5%,
     black 95%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    black 5%,
-    black 95%,
-    transparent 100%
+    transparent
   );
 }
 
 .ticker-track {
   display: flex;
-  align-items: center;
-  animation: ticker-scroll 20s linear infinite;
+  animation: ticker-scroll 40s linear infinite;
+  width: max-content;
 
   &.paused {
     animation-play-state: paused;
@@ -574,88 +533,78 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
+  transition: all 0.2s ease;
   white-space: nowrap;
+  text-decoration: none;
 
   &:hover {
     background: rgba(156, 10, 191, 0.15);
     border-color: rgba(156, 10, 191, 0.3);
-    transform: translateY(-2px);
+    transform: scale(1.02);
+  }
+
+  .ticker-rank {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #1bdc6f;
+    min-width: 24px;
+  }
+
+  .ticker-image {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 6px;
+
+    &.round {
+      border-radius: 50%;
+    }
+  }
+
+  .ticker-genre-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(
+      135deg,
+      rgba(59, 130, 246, 0.2) 0%,
+      rgba(59, 130, 246, 0.1) 100%
+    );
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #60a5fa;
+  }
+
+  .ticker-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .ticker-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .ticker-subtitle {
+      font-size: 0.75rem;
+      color: #8a8a9a;
+    }
+  }
+
+  .ticker-divider {
+    color: #4a4a5a;
+    margin-left: 8px;
   }
 }
 
-.ticker-rank {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #9c0abf;
-  min-width: 24px;
-}
-
-.ticker-image {
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
-  object-fit: cover;
-  flex-shrink: 0;
-
-  &.round {
-    border-radius: 50%;
-  }
-}
-
-.ticker-genre-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.3) 0%,
-    rgba(59, 130, 246, 0.1) 100%
-  );
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #60a5fa;
-  flex-shrink: 0;
-}
-
-.ticker-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ticker-name {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #fff;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ticker-subtitle {
-  font-size: 0.75rem;
-  color: #8a8a9a;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ticker-divider {
-  color: #4a4a5a;
-  margin: 0 8px;
-  font-size: 0.8rem;
-}
-
-// ========================================
-// RESPONSIVE
-// ========================================
-@media (max-width: 1024px) {
+// Mobile Responsive
+@media (max-width: 992px) {
   .quick-stats-grid {
     grid-template-columns: 1fr;
   }
+
   .enrollment-grid {
     grid-template-columns: 1fr;
   }
@@ -663,32 +612,58 @@
 
 @media (max-width: 768px) {
   .page-container {
-    padding: 70px 16px 200px;
+    padding: 70px 16px 180px;
   }
+
   .header-banner {
-    height: 180px;
+    height: 160px;
     left: -16px;
     right: -16px;
   }
+
   .header-content {
     padding-top: 60px;
   }
+
   .profile-image-wrapper .profile-image {
-    width: 130px;
-    height: 130px;
+    width: 120px;
+    height: 120px;
   }
+
   .user-name {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
 
   .profile-stats {
     gap: 16px;
+
     .stat-value {
       font-size: 1.2rem;
     }
-    .stat-divider {
-      height: 30px;
+
+    .stat-label {
+      font-size: 0.75rem;
     }
+  }
+
+  .enrollment-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+
+    .card-content {
+      .card-title {
+        font-size: 1.1rem;
+      }
+    }
+
+    .card-arrow {
+      display: none;
+    }
+  }
+
+  .profile-ticker {
+    height: 60px;
   }
 
   .ticker-label {
@@ -699,64 +674,35 @@
 
   .ticker-item {
     padding: 6px 12px;
-  }
-  .ticker-image {
-    width: 32px;
-    height: 32px;
-  }
-  .ticker-genre-icon {
-    width: 32px;
-    height: 32px;
-  }
-  .ticker-name {
-    font-size: 0.8rem;
-    max-width: 120px;
-  }
-  .ticker-subtitle {
-    font-size: 0.7rem;
-  }
 
-  .profile-ticker {
-    bottom: 80px;
+    .ticker-image,
+    .ticker-genre-icon {
+      width: 32px;
+      height: 32px;
+    }
+
+    .ticker-text .ticker-name {
+      font-size: 0.8rem;
+    }
   }
 }
 
 @media (max-width: 480px) {
-  .user-name {
-    font-size: 1.6rem;
-  }
   .profile-stats {
-    flex-direction: column;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 12px;
+
     .stat-divider {
-      width: 60px;
-      height: 1px;
+      display: none;
     }
   }
 
   .quick-stat-card {
     padding: 16px;
+
     .stat-icon {
       width: 48px;
       height: 48px;
     }
-    .stat-info .stat-title {
-      font-size: 1rem;
-    }
-  }
-
-  .enrollment-card {
-    padding: 20px;
-  }
-  .account-row {
-    padding: 14px 16px;
-  }
-
-  .ticker-label {
-    display: none;
-  }
-  .profile-ticker {
-    height: 60px;
-    bottom: 100px;
   }
 }

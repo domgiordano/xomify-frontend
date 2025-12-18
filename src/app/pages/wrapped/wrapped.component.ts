@@ -1,12 +1,48 @@
 import { Component, OnInit } from '@angular/core';
-import { forkJoin, take } from 'rxjs';
-import { ArtistService } from 'src/app/services/artist.service';
-import { AuthService } from 'src/app/services/auth.service';
-import { GenresService } from 'src/app/services/genre.service';
-import { SongService } from 'src/app/services/song.service';
-import { ToastService } from 'src/app/services/toast.service';
-import { UserService } from 'src/app/services/user.service'; // Service to handle user info and authentication
+import { Router } from '@angular/router';
+import { UserService } from 'src/app/services/user.service';
 import { WrappedService } from 'src/app/services/wrapped.service';
+import { SongService } from 'src/app/services/song.service';
+import { ArtistService } from 'src/app/services/artist.service';
+import { ToastService } from 'src/app/services/toast.service';
+import { forkJoin, of } from 'rxjs';
+import { take, catchError } from 'rxjs/operators';
+
+interface MonthlyWrap {
+  month: string;
+  year: number;
+  monthKey: string; // e.g., "2024-11"
+  topSongIds: {
+    short_term: string[];
+    medium_term: string[];
+    long_term: string[];
+  };
+  topArtistIds: {
+    short_term: string[];
+    medium_term: string[];
+    long_term: string[];
+  };
+  topGenres: {
+    short_term: { [genre: string]: number };
+    medium_term: { [genre: string]: number };
+    long_term: { [genre: string]: number };
+  };
+}
+
+interface DisplayTrack {
+  id: string;
+  name: string;
+  artists: { id: string; name: string }[];
+  album: { id: string; name: string; images: { url: string }[] };
+  duration_ms: number;
+}
+
+interface DisplayArtist {
+  id: string;
+  name: string;
+  images: { url: string }[];
+  genres: string[];
+}
 
 @Component({
   selector: 'app-wrapped',
@@ -14,140 +50,304 @@ import { WrappedService } from 'src/app/services/wrapped.service';
   styleUrls: ['./wrapped.component.scss'],
 })
 export class WrappedComponent implements OnInit {
-  loading: boolean;
-  userEmail: string;
-  userId: string;
-  refreshToken: string;
-  hasOptedIn: boolean = false;
-  hasData: boolean = false;
-  firstMonth: boolean = false;
+  loading = true;
+  loadingDetails = false;
+  error: string | null = null;
 
-  // Objects
-  topSongIdsLastMonth: any = {};
-  topArtistIdsLastMonth: any = {};
-  topGenresLastMonth: any = {};
-  topSongIdsTwoMonthsAgo: any = {};
-  topArtistIdsTwoMonthsAgo: any = {};
-  topGenresTwoMonthsAgo: any = {};
+  // Enrollment state
+  isEnrolled = false;
+  enrollmentLoading = false;
 
-  // The Actual Songs
-  topSongShortLastMonth: any[] = [];
-  topSongMedLastMonth: any[] = [];
-  topSongLongLastMonth: any[] = [];
-  topArtistShortLastMonth: any[] = [];
-  topArtistMedLastMonth: any[] = [];
-  topArtistLongLastMonth: any[] = [];
+  // Monthly wraps
+  availableWraps: MonthlyWrap[] = [];
+  selectedWrap: MonthlyWrap | null = null;
+  selectedTerm: 'short_term' | 'medium_term' | 'long_term' = 'short_term';
+
+  // Display data for selected month
+  displayTracks: DisplayTrack[] = [];
+  displayArtists: DisplayArtist[] = [];
+  displayGenres: { name: string; count: number }[] = [];
+
+  // View mode
+  viewMode: 'tracks' | 'artists' | 'genres' = 'tracks';
+
+  termLabels: { [key: string]: string } = {
+    short_term: 'Last 4 Weeks',
+    medium_term: 'Last 6 Months',
+    long_term: 'All Time',
+  };
 
   constructor(
-    private UserService: UserService,
-    private WrappedService: WrappedService,
-    private AuthService: AuthService,
-    private SongService: SongService,
-    private ArtistService: ArtistService,
-    private GenreService: GenresService,
-    private ToastService: ToastService
-    ) {}
+    private router: Router,
+    private userService: UserService,
+    private wrappedService: WrappedService,
+    private songService: SongService,
+    private artistService: ArtistService,
+    private toastService: ToastService
+  ) {}
 
-  ngOnInit() {
-    this.userEmail = this.UserService.getEmail()
-    this.userId = this.UserService.getUserId();
-    this.refreshToken = this.AuthService.getRefreshToken();
-    this.loadUserData();
+  ngOnInit(): void {
+    this.isEnrolled = this.userService.getWrappedEnrollment();
+    this.loadWrappedData();
   }
 
-  loadUserData() {
+  toggleEnrollment(): void {
+    this.enrollmentLoading = true;
+    const newStatus = !this.isEnrolled;
+
+    this.userService
+      .updateUserTableEnrollments(
+        newStatus,
+        this.userService.getReleaseRadarEnrollment()
+      )
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.isEnrolled = newStatus;
+          this.userService.setWrappedEnrollment(newStatus);
+          this.toastService.showPositiveToast(
+            newStatus
+              ? 'Enrolled in Monthly Wrapped!'
+              : 'Unenrolled from Monthly Wrapped'
+          );
+          this.enrollmentLoading = false;
+        },
+        error: (err) => {
+          console.error('Error updating enrollment:', err);
+          this.toastService.showNegativeToast('Failed to update enrollment');
+          this.enrollmentLoading = false;
+        },
+      });
+  }
+
+  loadWrappedData(): void {
     this.loading = true;
-    // Check if the user has opted in
-    this.WrappedService.getUserWrappedData(this.userEmail).subscribe({
-      next: (userData) => {
-        this.hasOptedIn = userData.active;
-        console.log('userData', userData);
-        if (this.hasOptedIn){
-          this.updateSongs(userData);
-        }
-      },
-      error: (err) => {
-        this.loading = false;
-        this.ToastService.showNegativeToast('Error Fetching your opt-in status.');
-        console.error('Error fetching opt-in status:', err);
-      },
-      complete: () => {
-        this.loading = false;
-        console.log('User Wrapped Table Data Loaded.');
-      }
-    });
-  }
+    this.error = null;
 
-  private updateSongs(userData: any){
-    if(userData.topSongIdsLastMonth.short_term.length == 0){
-      this.hasData = false;
+    const email = this.userService.getEmail();
+    if (!email) {
+      this.loading = false;
       return;
     }
 
-    this.userEmail = userData.email;
-    this.userId = userData.id;
-    this.refreshToken = userData.refreshToken;
-    this.topSongIdsLastMonth = userData.topSongIdsLastMonth;
-    this.topArtistIdsLastMonth = userData.topArtistIdsLastMonth;
-    this.topGenresLastMonth = userData.topGenresLastMonth;
-    this.topSongIdsTwoMonthsAgo = userData.topSongIdsTwoMonthsAgo;
-    this.topArtistIdsTwoMonthsAgo = userData.topArtistIdsTwoMonthsAgo;
-    this.topGenresTwoMonthsAgo = userData.topGenresTwoMonthsAgo;
-    this.hasData = true;
+    this.wrappedService
+      .getUserWrappedData(email)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          console.error('Error loading wrapped data:', err);
+          return of(null);
+        })
+      )
+      .subscribe({
+        next: (data: any) => {
+          if (data && data.wraps && Array.isArray(data.wraps)) {
+            this.availableWraps = this.parseWrapsData(data.wraps);
 
-    const wrappedCalls = forkJoin({
-      songsShortTermResp: this.SongService.getTracksByIds(this.topSongIdsLastMonth.short_term.join(',')),
-      songsMedTermResp: this.SongService.getTracksByIds(this.topSongIdsLastMonth.medium_term.join(',')),
-      songsLongTermResp: this.SongService.getTracksByIds(this.topSongIdsLastMonth.long_term.join(',')),
-      artistsShortTermResp: this.ArtistService.getArtistsByIds(this.topArtistIdsLastMonth.short_term.join(',')),
-      artistsMedTermResp: this.ArtistService.getArtistsByIds(this.topArtistIdsLastMonth.medium_term.join(',')),
-      artistsLongTermResp: this.ArtistService.getArtistsByIds(this.topArtistIdsLastMonth.long_term.join(',')),
-    });
-    this.loading = true;
-    wrappedCalls.pipe(take(1)).subscribe({
-      next: data => {
-        this.topSongShortLastMonth = data.songsShortTermResp.tracks;
-        this.topSongMedLastMonth = data.songsMedTermResp.tracks;
-        this.topSongLongLastMonth = data.songsLongTermResp.tracks;
-        this.topArtistShortLastMonth = data.artistsShortTermResp.artists;
-        this.topArtistMedLastMonth = data.artistsMedTermResp.artists;
-        this.topArtistLongLastMonth = data.artistsLongTermResp.artists;
-        console.log("DATA------------", data);
-      },
-      error: err => {
-        console.error('Error fetching Wrapped Data', err);
-        this.ToastService.showNegativeToast('Error adding songs to playlist');
-        this.loading = false;
-      },
-      complete: () => {
-        this.loading = false;
-        console.log('Wrapped Data Loaded.');
-      }
-    });
+            // Auto-select most recent wrap
+            if (this.availableWraps.length > 0) {
+              this.selectWrap(this.availableWraps[0]);
+            }
+          }
+          this.loading = false;
+        },
+        error: () => {
+          this.loading = false;
+        },
+      });
   }
 
-  signUpForWrapped() {
-    // Call the API to sign the user up for monthly wrapped
-    this.WrappedService.optInOrOutUserForWrapped(this.userEmail, this.userId, this.refreshToken, true).subscribe({
-      next: () => {
-        this.hasOptedIn = true;
-        this.ToastService.showPositiveToast('Successfully Opted-in for Monthly Wrapped :)');
-      },
-      error: (err) => {
-        console.error('Error opting in:', err);
-        this.ToastService.showNegativeToast("Error Opting you into Monthly Wrapped :(");
-      }
-    });
+  private parseWrapsData(wraps: any[]): MonthlyWrap[] {
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    return wraps
+      .map((wrap) => {
+        const [year, month] = wrap.monthKey.split('-').map(Number);
+        return {
+          month: monthNames[month - 1],
+          year: year,
+          monthKey: wrap.monthKey,
+          topSongIds: wrap.topSongIds || {
+            short_term: [],
+            medium_term: [],
+            long_term: [],
+          },
+          topArtistIds: wrap.topArtistIds || {
+            short_term: [],
+            medium_term: [],
+            long_term: [],
+          },
+          topGenres: wrap.topGenres || {
+            short_term: {},
+            medium_term: {},
+            long_term: {},
+          },
+        };
+      })
+      .sort((a, b) => {
+        // Sort by most recent first
+        const dateA = new Date(a.year, parseInt(a.monthKey.split('-')[1]) - 1);
+        const dateB = new Date(b.year, parseInt(b.monthKey.split('-')[1]) - 1);
+        return dateB.getTime() - dateA.getTime();
+      });
   }
 
-  getIndicatorClass(rankChange: number): string {
-    if (rankChange > 0) {
-      return 'green-arrow'; // Class for increased rank
-    } else if (rankChange < 0) {
-      return 'red-arrow'; // Class for decreased rank
-    } else {
-      return 'grey-arrow'; // Class for no change
+  selectWrap(wrap: MonthlyWrap): void {
+    this.selectedWrap = wrap;
+    this.loadWrapDetails();
+  }
+
+  selectWrapByMonthKey(monthKey: string): void {
+    const wrap = this.availableWraps.find((w) => w.monthKey === monthKey);
+    if (wrap) {
+      this.selectWrap(wrap);
     }
   }
 
+  selectTerm(term: 'short_term' | 'medium_term' | 'long_term'): void {
+    this.selectedTerm = term;
+    this.loadWrapDetails();
+  }
+
+  setViewMode(mode: 'tracks' | 'artists' | 'genres'): void {
+    this.viewMode = mode;
+  }
+
+  private loadWrapDetails(): void {
+    if (!this.selectedWrap) return;
+
+    this.loadingDetails = true;
+
+    const songIds = this.selectedWrap.topSongIds[this.selectedTerm] || [];
+    const artistIds = this.selectedWrap.topArtistIds[this.selectedTerm] || [];
+    const genresData = this.selectedWrap.topGenres[this.selectedTerm] || {};
+
+    // Process genres - convert from { genre: count } to array sorted by count
+    this.displayGenres = Object.entries(genresData)
+      .map(([name, count]) => ({ name, count: count as number }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 genres
+
+    // Fetch track and artist details from Spotify
+    const requests: any = {};
+
+    if (songIds.length > 0) {
+      // Spotify allows max 50 IDs per request
+      requests.tracks = this.songService.getTracksByIds(
+        songIds.slice(0, 50).join(',')
+      );
+    }
+
+    if (artistIds.length > 0) {
+      requests.artists = this.artistService.getArtistsByIds(
+        artistIds.slice(0, 50).join(',')
+      );
+    }
+
+    if (Object.keys(requests).length === 0) {
+      this.displayTracks = [];
+      this.displayArtists = [];
+      this.loadingDetails = false;
+      return;
+    }
+
+    forkJoin(requests)
+      .pipe(
+        take(1),
+        catchError(() =>
+          of({ tracks: { tracks: [] }, artists: { artists: [] } })
+        )
+      )
+      .subscribe({
+        next: (data: any) => {
+          this.displayTracks = (data.tracks?.tracks || []).map(
+            (track: any) => ({
+              id: track.id,
+              name: track.name,
+              artists: track.artists,
+              album: track.album,
+              duration_ms: track.duration_ms,
+            })
+          );
+
+          this.displayArtists = (data.artists?.artists || []).map(
+            (artist: any) => ({
+              id: artist.id,
+              name: artist.name,
+              images: artist.images,
+              genres: artist.genres,
+            })
+          );
+
+          this.loadingDetails = false;
+        },
+        error: () => {
+          this.loadingDetails = false;
+        },
+      });
+  }
+
+  goToArtist(artistId: string): void {
+    this.router.navigate(['/artist-profile', artistId]);
+  }
+
+  goToAlbum(albumId: string): void {
+    this.router.navigate(['/album', albumId]);
+  }
+
+  openInSpotify(type: 'track' | 'artist', id: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    window.open(`https://open.spotify.com/${type}/${id}`, '_blank');
+  }
+
+  formatDuration(ms: number): string {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  getPreviousMonth(): void {
+    const currentIndex = this.availableWraps.findIndex(
+      (w) => w.monthKey === this.selectedWrap?.monthKey
+    );
+    if (currentIndex < this.availableWraps.length - 1) {
+      this.selectWrap(this.availableWraps[currentIndex + 1]);
+    }
+  }
+
+  getNextMonth(): void {
+    const currentIndex = this.availableWraps.findIndex(
+      (w) => w.monthKey === this.selectedWrap?.monthKey
+    );
+    if (currentIndex > 0) {
+      this.selectWrap(this.availableWraps[currentIndex - 1]);
+    }
+  }
+
+  hasPreviousMonth(): boolean {
+    const currentIndex = this.availableWraps.findIndex(
+      (w) => w.monthKey === this.selectedWrap?.monthKey
+    );
+    return currentIndex < this.availableWraps.length - 1;
+  }
+
+  hasNextMonth(): boolean {
+    const currentIndex = this.availableWraps.findIndex(
+      (w) => w.monthKey === this.selectedWrap?.monthKey
+    );
+    return currentIndex > 0;
+  }
 }

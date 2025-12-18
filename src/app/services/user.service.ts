@@ -49,8 +49,8 @@ export class UserService implements OnInit {
       headers: this.getAuthHeaders(),
       params: {
         limit: limit.toString(),
-        offset: offset.toString()
-      }
+        offset: offset.toString(),
+      },
     });
   }
 
@@ -58,16 +58,16 @@ export class UserService implements OnInit {
   getFollowedArtists(limit: number = 20, after?: string): Observable<any> {
     const params: any = {
       type: 'artist',
-      limit: limit.toString()
+      limit: limit.toString(),
     };
-    
+
     if (after) {
       params.after = after;
     }
-    
+
     return this.http.get(`${this.baseUrl}/me/following`, {
       headers: this.getAuthHeaders(),
-      params
+      params,
     });
   }
 
@@ -75,13 +75,13 @@ export class UserService implements OnInit {
   getAllFollowedArtists(): Observable<any[]> {
     return new Observable((observer) => {
       const allArtists: any[] = [];
-      
+
       const fetchPage = (after?: string) => {
         this.getFollowedArtists(50, after).subscribe({
           next: (data) => {
             const artists = data.artists?.items || [];
             allArtists.push(...artists);
-            
+
             // Check if there are more artists (Spotify uses cursor-based pagination)
             const nextCursor = data.artists?.cursors?.after;
             if (nextCursor && artists.length === 50) {
@@ -93,10 +93,10 @@ export class UserService implements OnInit {
           },
           error: (err) => {
             observer.error(err);
-          }
+          },
         });
       };
-      
+
       fetchPage();
     });
   }
@@ -107,8 +107,8 @@ export class UserService implements OnInit {
       headers: this.getAuthHeaders(),
       params: {
         type: 'artist',
-        ids: artistIds.join(',')
-      }
+        ids: artistIds.join(','),
+      },
     });
   }
 
@@ -118,8 +118,8 @@ export class UserService implements OnInit {
       headers: this.getAuthHeaders(),
       params: {
         type: 'artist',
-        ids: artistId
-      }
+        ids: artistId,
+      },
     });
   }
 
@@ -129,8 +129,8 @@ export class UserService implements OnInit {
       headers: this.getAuthHeaders(),
       params: {
         type: 'artist',
-        ids: artistId
-      }
+        ids: artistId,
+      },
     });
   }
 
@@ -179,11 +179,11 @@ export class UserService implements OnInit {
     this.id = data.id;
     this.user = data;
   }
-  
+
   getUser(): any {
     return this.user;
   }
-  
+
   getProfilePic(): string {
     if (this.user?.images && this.user.images.length > 0) {
       // Get the largest image available
@@ -207,27 +207,27 @@ export class UserService implements OnInit {
   getAccessToken(): string {
     return this.accessToken;
   }
-  
+
   getRefreshToken(): string {
     return this.refreshToken;
   }
-  
+
   getUserId(): string {
     return this.id;
   }
-  
+
   getWrappedEnrollment(): boolean {
     return this.activeWrapped;
   }
-  
+
   getReleaseRadarEnrollment(): boolean {
     return this.activeReleaseRadar;
   }
-  
+
   setWrappedEnrollment(enrolled: boolean): void {
     this.activeWrapped = enrolled;
   }
-  
+
   setReleaseRadarEnrollment(enrolled: boolean): void {
     this.activeReleaseRadar = enrolled;
   }
