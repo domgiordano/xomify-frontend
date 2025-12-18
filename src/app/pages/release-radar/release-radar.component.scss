@@ -713,124 +713,182 @@
   margin: 0 auto;
 }
 
-.releases-grid {
+// List Header
+.list-header {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 24px;
+  grid-template-columns: 50px 2fr 1.5fr 100px 140px 60px 50px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6a6a7a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.release-card {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.06) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  overflow: hidden;
+// Releases List
+.releases-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.release-row {
+  display: grid;
+  grid-template-columns: 50px 2fr 1.5fr 100px 140px 60px 50px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 
   &:hover {
-    border-color: rgba(27, 220, 111, 0.4);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    background: rgba(255, 255, 255, 0.05);
 
-    .card-overlay {
-      opacity: 1;
-    }
-
-    .card-image img {
-      transform: scale(1.05);
+    .release-name {
+      color: #1bdc6f;
     }
   }
 
-  .card-image {
-    position: relative;
-    aspect-ratio: 1;
-    overflow: hidden;
+  &.upcoming {
+    background: linear-gradient(
+      90deg,
+      rgba(27, 220, 111, 0.08) 0%,
+      transparent 100%
+    );
+    border-left: 3px solid #1bdc6f;
+    margin-left: -3px;
+    padding-left: 13px;
+  }
 
-    img {
-      width: 100%;
-      height: 100%;
+  .col-num {
+    font-size: 0.9rem;
+    color: #6a6a7a;
+    text-align: center;
+  }
+
+  .col-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+
+    .release-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 6px;
       object-fit: cover;
-      transition: transform 0.4s ease;
+      flex-shrink: 0;
     }
-
-    .card-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-
-      svg {
-        color: #1bdc6f;
-        filter: drop-shadow(0 4px 12px rgba(27, 220, 111, 0.4));
-      }
-    }
-
-    .type-badge {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-    }
-
-    .date-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      padding: 4px 10px;
-      background: rgba(0, 0, 0, 0.7);
-      border-radius: 12px;
-      font-size: 0.7rem;
-      font-weight: 500;
-      color: #fff;
-
-      &.upcoming {
-        background: rgba(27, 220, 111, 0.9);
-        color: #000;
-      }
-    }
-  }
-
-  .card-info {
-    padding: 14px;
 
     .release-name {
       font-size: 0.95rem;
-      font-weight: 600;
+      font-weight: 500;
       color: #fff;
-      margin: 0 0 6px 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      transition: color 0.2s ease;
     }
+  }
 
-    .release-artist {
-      font-size: 0.8rem;
+  .col-artist {
+    min-width: 0;
+
+    a {
+      font-size: 0.9rem;
       color: #8a8a9a;
-      margin: 0 0 10px 0;
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+      transition: color 0.2s ease;
 
-      a {
-        color: #8a8a9a;
-        text-decoration: none;
-        transition: color 0.2s ease;
-
-        &:hover {
-          color: #1bdc6f;
-        }
+      &:hover {
+        color: #1bdc6f;
       }
     }
+  }
 
-    .release-meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
+  .col-type {
+    .type-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+
+      &.album {
+        background: rgba(156, 10, 191, 0.2);
+        color: #c77dff;
+      }
+
+      &.single {
+        background: rgba(27, 220, 111, 0.2);
+        color: #1bdc6f;
+      }
+    }
+  }
+
+  .col-date {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .date-text {
+      font-size: 0.85rem;
+      color: #b0b0b0;
+    }
+
+    .relative-date {
+      font-size: 0.7rem;
       color: #6a6a7a;
+
+      &.upcoming {
+        color: #1bdc6f;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .col-tracks {
+    font-size: 0.9rem;
+    color: #8a8a9a;
+    text-align: center;
+  }
+
+  .col-actions {
+    display: flex;
+    justify-content: center;
+
+    .spotify-btn {
+      background: transparent;
+      border: none;
+      padding: 8px;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      svg {
+        color: #6a6a7a;
+        transition: color 0.2s ease;
+      }
+
+      &:hover {
+        background: rgba(29, 185, 84, 0.15);
+
+        svg {
+          color: #1db954;
+        }
+      }
     }
   }
 }
@@ -932,9 +990,91 @@
     }
   }
 
-  .releases-grid {
-    grid-template-columns: repeat(2, 1fr);
+  // Mobile list view - stack vertically
+  .list-header {
+    display: none;
+  }
+
+  .release-row {
+    display: flex;
+    flex-wrap: wrap;
     gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.03);
+
+    .col-num {
+      display: none;
+    }
+
+    .col-title {
+      flex: 1 1 100%;
+      order: 1;
+
+      .release-thumb {
+        width: 56px;
+        height: 56px;
+      }
+
+      .release-name {
+        white-space: normal;
+        line-height: 1.3;
+      }
+    }
+
+    .col-artist {
+      flex: 1 1 auto;
+      order: 2;
+    }
+
+    .col-type {
+      order: 3;
+    }
+
+    .col-date {
+      flex: 1 1 100%;
+      order: 4;
+      flex-direction: row;
+      gap: 8px;
+      align-items: center;
+
+      .date-text {
+        font-size: 0.8rem;
+      }
+
+      .relative-date {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 8px;
+        border-radius: 10px;
+
+        &.upcoming {
+          background: rgba(27, 220, 111, 0.2);
+        }
+      }
+    }
+
+    .col-tracks {
+      order: 5;
+
+      &::after {
+        content: " tracks";
+        font-size: 0.75rem;
+        color: #6a6a7a;
+      }
+    }
+
+    .col-actions {
+      order: 6;
+
+      .spotify-btn {
+        background: rgba(29, 185, 84, 0.15);
+
+        svg {
+          color: #1db954;
+        }
+      }
+    }
   }
 
   .release-item {
@@ -965,9 +1105,5 @@
 
   .calendar-day .day-number {
     font-size: 0.65rem;
-  }
-
-  .releases-grid {
-    grid-template-columns: 1fr 1fr;
   }
 }

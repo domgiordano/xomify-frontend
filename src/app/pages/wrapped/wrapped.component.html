@@ -120,11 +120,10 @@
           <h2 class="current-month" *ngIf="selectedWrap">
             {{ selectedWrap.month }} {{ selectedWrap.year }}
           </h2>
-
           <select
             class="month-dropdown"
             [ngModel]="selectedWrap?.monthKey"
-            (ngModelChange)="handleMonthChange($event)"
+            (ngModelChange)="selectWrapByMonthKey($event)"
           >
             <option *ngFor="let wrap of availableWraps" [value]="wrap.monthKey">
               {{ wrap.month }} {{ wrap.year }}
@@ -159,10 +158,10 @@
           {{ termLabels["short_term"] }}
         </button>
         <button
-          [class.active]="selectedTerm === 'med_term'"
-          (click)="selectTerm('med_term')"
+          [class.active]="selectedTerm === 'medium_term'"
+          (click)="selectTerm('medium_term')"
         >
-          {{ termLabels["med_term"] }}
+          {{ termLabels["medium_term"] }}
         </button>
         <button
           [class.active]="selectedTerm === 'long_term'"

@@ -18,7 +18,7 @@
 
 .logo-container {
   margin-bottom: 24px;
-  
+
   .hero-logo {
     height: 80px;
     width: auto;
@@ -47,8 +47,8 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 40px;
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .feature-item {
@@ -56,19 +56,27 @@
   align-items: center;
   gap: 8px;
   background: rgba(255, 255, 255, 0.05);
-  padding: 12px 20px;
+  padding: 10px 16px;
   border-radius: 30px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  
+
   .feature-icon {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
-  
+
   .feature-text {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #b0b0b0;
     font-weight: 500;
   }
+}
+
+.feature-description {
+  font-size: 0.95rem;
+  color: #6a6a7a;
+  line-height: 1.6;
+  margin: 0 0 32px 0;
+  max-width: 400px;
 }
 
 .login-button {
@@ -76,7 +84,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
+  background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
   color: #ffffff;
   border: none;
   border-radius: 30px;
@@ -101,6 +109,22 @@
   flex-shrink: 0;
 }
 
+// Slide up animation
+.slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 // Mobile Responsive
 @media (max-width: 768px) {
   .login-page {
@@ -120,14 +144,20 @@
   }
 
   .features {
-    flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
 
   .feature-item {
-    width: 100%;
-    justify-content: center;
-    padding: 10px 16px;
+    padding: 8px 14px;
+
+    .feature-text {
+      font-size: 0.8rem;
+    }
+  }
+
+  .feature-description {
+    font-size: 0.9rem;
+    padding: 0 10px;
   }
 
   .login-button {

@@ -12,13 +12,21 @@ interface MonthlyWrap {
   month: string;
   year: number;
   monthKey: string; // e.g., "2024-11"
-  topSongIds: { short_term: string[]; med_term: string[]; long_term: string[] };
-  topArtistIds: {
+  topSongIds: {
     short_term: string[];
-    med_term: string[];
+    medium_term: string[];
     long_term: string[];
   };
-  topGenres: { short_term: string[]; med_term: string[]; long_term: string[] };
+  topArtistIds: {
+    short_term: string[];
+    medium_term: string[];
+    long_term: string[];
+  };
+  topGenres: {
+    short_term: { [genre: string]: number };
+    medium_term: { [genre: string]: number };
+    long_term: { [genre: string]: number };
+  };
 }
 
 interface DisplayTrack {
@@ -53,7 +61,7 @@ export class WrappedComponent implements OnInit {
   // Monthly wraps
   availableWraps: MonthlyWrap[] = [];
   selectedWrap: MonthlyWrap | null = null;
-  selectedTerm: 'short_term' | 'med_term' | 'long_term' = 'short_term';
+  selectedTerm: 'short_term' | 'medium_term' | 'long_term' = 'short_term';
 
   // Display data for selected month
   displayTracks: DisplayTrack[] = [];
@@ -63,9 +71,9 @@ export class WrappedComponent implements OnInit {
   // View mode
   viewMode: 'tracks' | 'artists' | 'genres' = 'tracks';
 
-  termLabels = {
+  termLabels: { [key: string]: string } = {
     short_term: 'Last 4 Weeks',
-    med_term: 'Last 6 Months',
+    medium_term: 'Last 6 Months',
     long_term: 'All Time',
   };
 
@@ -174,18 +182,18 @@ export class WrappedComponent implements OnInit {
           monthKey: wrap.monthKey,
           topSongIds: wrap.topSongIds || {
             short_term: [],
-            med_term: [],
+            medium_term: [],
             long_term: [],
           },
           topArtistIds: wrap.topArtistIds || {
             short_term: [],
-            med_term: [],
+            medium_term: [],
             long_term: [],
           },
           topGenres: wrap.topGenres || {
-            short_term: [],
-            med_term: [],
-            long_term: [],
+            short_term: {},
+            medium_term: {},
+            long_term: {},
           },
         };
       })
@@ -197,18 +205,19 @@ export class WrappedComponent implements OnInit {
       });
   }
 
-  handleMonthChange(monthKey: string) {
-    const wrap = this.availableWraps.find((w) => w.monthKey === monthKey);
-    if (wrap) {
-      this.selectWrap(wrap);
-    }
-  }
   selectWrap(wrap: MonthlyWrap): void {
     this.selectedWrap = wrap;
     this.loadWrapDetails();
   }
 
-  selectTerm(term: 'short_term' | 'med_term' | 'long_term'): void {
+  selectWrapByMonthKey(monthKey: string): void {
+    const wrap = this.availableWraps.find((w) => w.monthKey === monthKey);
+    if (wrap) {
+      this.selectWrap(wrap);
+    }
+  }
+
+  selectTerm(term: 'short_term' | 'medium_term' | 'long_term'): void {
     this.selectedTerm = term;
     this.loadWrapDetails();
   }
@@ -224,13 +233,13 @@ export class WrappedComponent implements OnInit {
 
     const songIds = this.selectedWrap.topSongIds[this.selectedTerm] || [];
     const artistIds = this.selectedWrap.topArtistIds[this.selectedTerm] || [];
-    const genres = this.selectedWrap.topGenres[this.selectedTerm] || [];
+    const genresData = this.selectedWrap.topGenres[this.selectedTerm] || {};
 
-    // Process genres immediately (they're just strings)
-    this.displayGenres = genres.map((genre: string, index: number) => ({
-      name: genre,
-      count: genres.length - index, // Fake count for visual ranking
-    }));
+    // Process genres - convert from { genre: count } to array sorted by count
+    this.displayGenres = Object.entries(genresData)
+      .map(([name, count]) => ({ name, count: count as number }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 genres
 
     // Fetch track and artist details from Spotify
     const requests: any = {};
