@@ -230,15 +230,17 @@ export class ReleaseRadarComponent implements OnInit {
 
     while (current <= endDate) {
       const dayReleases = this.getReleasesForDate(current);
-
+      let currentDate = new Date(current);
       this.calendarDays.push({
-        date: new Date(current),
+        date: currentDate,
         dayOfMonth: current.getDate(),
         isCurrentMonth: current.getMonth() === month,
         isToday: current.getTime() === today.getTime(),
         releases: dayReleases,
       });
-
+      if (today.getDate() == currentDate.getDate()) {
+        this.selectedDay = this.calendarDays[this.calendarDays.length - 1];
+      }
       current.setDate(current.getDate() + 1);
     }
   }

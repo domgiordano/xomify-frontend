@@ -1,7 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, Subscription, of } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import {
+  debounceTime,
+  distinctUntilChanged,
+  switchMap,
+  catchError,
+} from 'rxjs/operators';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 import { UserService } from 'src/app/services/user.service';
@@ -12,7 +17,7 @@ import { QueueService, QueueTrack } from 'src/app/services/queue.service';
 @Component({
   selector: 'app-queue-builder',
   templateUrl: './queue-builder.component.html',
-  styleUrls: ['./queue-builder.component.scss']
+  styleUrls: ['./queue-builder.component.scss'],
 })
 export class QueueBuilderComponent implements OnInit, OnDestroy {
   // Search
@@ -45,8 +50,8 @@ export class QueueBuilderComponent implements OnInit, OnDestroy {
 
   get uniqueArtists(): number {
     const artistIds = new Set<string>();
-    this.queue.forEach(track => {
-      track.artists.forEach(a => artistIds.add(a.id));
+    this.queue.forEach((track) => {
+      track.artists.forEach((a) => artistIds.add(a.id));
     });
     return artistIds.size;
   }
@@ -61,44 +66,53 @@ export class QueueBuilderComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Subscribe to queue from service
-    this.queueSub = this.queueService.queue$.subscribe(queue => {
+    this.queueSub = this.queueService.queue$.subscribe((queue) => {
       this.queue = queue;
     });
 
     // Check if user is premium (for playback features)
-    this.userService.getUser().subscribe((user: any) => {
-      this.isPremium = user?.product === 'premium';
-    });
+    // getUser() returns cached user object, not Observable
+    const user = this.userService.getUser();
+    if (user) {
+      this.isPremium = user.product === 'premium';
+    }
 
     // Set up debounced search - FIXED: proper Observable handling
-    this.searchSub = this.searchSubject.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      switchMap(query => {
-        if (!query || !query.trim()) {
+    this.searchSub = this.searchSubject
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((query) => {
+          if (!query || !query.trim()) {
+            this.isSearching = false;
+            return of({ tracks: { items: [] } }); // Return Observable, not array
+          }
+          this.isSearching = true;
+          return this.playlistService.searchTracks(query, 20).pipe(
+            catchError((error) => {
+              console.error('Search error:', error);
+              this.toastService.showNegativeToast('Search failed');
+              return of({ tracks: { items: [] } });
+            })
+          );
+        })
+      )
+      .subscribe({
+        next: (response: any) => {
+          this.searchResults = response?.tracks?.items || [];
           this.isSearching = false;
-          return of({ tracks: { items: [] } });  // Return Observable, not array
-        }
-        this.isSearching = true;
-        return this.playlistService.searchTracks(query, 20).pipe(
-          catchError(error => {
-            console.error('Search error:', error);
-            return of({ tracks: { items: [] } });
-          })
-        );
-      })
-    ).subscribe({
-      next: (response: any) => {
-        this.searchResults = response?.tracks?.items || [];
-        this.isSearching = false;
-        console.log('Search results:', this.searchResults.length, 'tracks found');
-      },
-      error: (err) => {
-        console.error('Search subscription error:', err);
-        this.searchResults = [];
-        this.isSearching = false;
-      }
-    });
+          console.log(
+            'Search results:',
+            this.searchResults.length,
+            'tracks found'
+          );
+        },
+        error: (err) => {
+          console.error('Search subscription error:', err);
+          this.searchResults = [];
+          this.isSearching = false;
+        },
+      });
   }
 
   ngOnDestroy(): void {
@@ -127,9 +141,9 @@ export class QueueBuilderComponent implements OnInit, OnDestroy {
       artists: track.artists || [],
       album: track.album || { id: '', name: '', images: [] },
       duration_ms: track.duration_ms,
-      external_urls: track.external_urls
+      external_urls: track.external_urls,
     };
-    
+
     this.queueService.addToQueue(queueTrack);
   }
 
@@ -140,7 +154,7 @@ export class QueueBuilderComponent implements OnInit, OnDestroy {
 
   clearQueue(): void {
     if (this.queue.length === 0) return;
-    
+
     if (confirm('Clear all tracks from queue?')) {
       this.queueService.clearQueue();
       this.toastService.showPositiveToast('Queue cleared');
@@ -182,52 +196,45 @@ export class QueueBuilderComponent implements OnInit, OnDestroy {
 
     this.isSaving = true;
 
-    // Get user ID first
-    this.userService.getUser().subscribe({
-      next: (user: any) => {
-        const userId = user?.id;
-        if (!userId) {
-          this.toastService.showNegativeToast('Could not get user info');
-          this.isSaving = false;
-          return;
-        }
+    // Get user ID - getUser() returns cached object, not Observable
+    const user = this.userService.getUser();
+    const userId = user?.id;
 
-        // Create playlist
-        this.playlistService.createPlaylist(
-          userId,
-          this.playlistName,
-          this.playlistDescription,
-          this.isPublic
-        ).subscribe({
-          next: (playlist: any) => {
-            // Add tracks to playlist
-            const trackUris = this.queue.map(t => `spotify:track:${t.id}`);
-            this.playlistService.addTracksToPlaylist(playlist.id, trackUris).subscribe({
-              next: () => {
-                this.toastService.showPositiveToast(`Playlist "${this.playlistName}" created!`);
-                this.closeSaveModal();
-                this.isSaving = false;
-                
-                // Optionally clear queue after saving
-                // this.queueService.clearQueue();
-              },
-              error: () => {
-                this.toastService.showNegativeToast('Failed to add tracks to playlist');
-                this.isSaving = false;
-              }
-            });
-          },
-          error: () => {
-            this.toastService.showNegativeToast('Failed to create playlist');
-            this.isSaving = false;
-          }
-        });
-      },
-      error: () => {
-        this.toastService.showNegativeToast('Could not get user info');
-        this.isSaving = false;
-      }
-    });
+    if (!userId) {
+      this.toastService.showNegativeToast('Could not get user info');
+      this.isSaving = false;
+      return;
+    }
+
+    // Build track URIs
+    const trackUris = this.queue.map((t) => `spotify:track:${t.id}`);
+
+    // Use the convenience method that handles everything including logo
+    this.playlistService
+      .createPlaylistWithTracks(
+        userId,
+        this.playlistName,
+        this.playlistDescription || 'Created with Xomify Queue Builder',
+        trackUris,
+        { isPublic: this.isPublic, addXomifyLogo: true }
+      )
+      .subscribe({
+        next: (playlist: any) => {
+          this.toastService.showPositiveToast(
+            `Playlist "${this.playlistName}" created!`
+          );
+          this.closeSaveModal();
+          this.isSaving = false;
+
+          // Optionally clear queue after saving
+          this.queueService.clearQueue();
+        },
+        error: (err) => {
+          console.error('Error creating playlist:', err);
+          this.toastService.showNegativeToast('Failed to create playlist');
+          this.isSaving = false;
+        },
+      });
   }
 
   // Navigation
@@ -243,7 +250,7 @@ export class QueueBuilderComponent implements OnInit, OnDestroy {
       this.toastService.showNegativeToast('No tracks in queue');
       return;
     }
-    
+
     // Open first track in Spotify - user can then play the queue
     const firstTrack = this.queue[0];
     if (firstTrack.external_urls?.spotify) {
@@ -274,7 +281,7 @@ export class QueueBuilderComponent implements OnInit, OnDestroy {
     const totalSeconds = Math.floor(this.totalDuration / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    
+
     if (hours > 0) {
       return `${hours} hr ${minutes} min`;
     }

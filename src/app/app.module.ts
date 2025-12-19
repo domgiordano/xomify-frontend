@@ -20,7 +20,6 @@ import { HomeComponent } from './pages/home/home.component';
 import { ArtistProfileComponent } from './pages/artist-profile/artist-profile.component';
 import { FollowingComponent } from './pages/following/following.component';
 import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.component';
-import { PlaybackBarComponent } from './components/playback-bar/playback-bar.component';
 import { SwiperModule } from 'swiper/angular';
 import { FooterComponent } from './components/footer/footer.component';
 import { PlayButtonComponent } from './components/play-button/play-button.component';
@@ -45,7 +44,6 @@ import { ReleaseRadarComponent } from './pages/release-radar/release-radar.compo
     AlbumDetailComponent,
     FollowingComponent,
     QueueBuilderComponent,
-    PlaybackBarComponent,
     PlayButtonComponent,
     AddToQueueButtonComponent,
     FooterComponent,
