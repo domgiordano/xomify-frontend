@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { Subject, Subscription, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 import { UserService } from 'src/app/services/user.service';
@@ -20,6 +20,7 @@ export class QueueBuilderComponent implements OnInit, OnDestroy {
   searchResults: any[] = [];
   isSearching = false;
   private searchSubject = new Subject<string>();
+  private searchSub!: Subscription;
 
   // Queue (from service)
   queue: QueueTrack[] = [];
@@ -69,23 +70,31 @@ export class QueueBuilderComponent implements OnInit, OnDestroy {
       this.isPremium = user?.product === 'premium';
     });
 
-    // Set up debounced search
-    this.searchSubject.pipe(
+    // Set up debounced search - FIXED: proper Observable handling
+    this.searchSub = this.searchSubject.pipe(
       debounceTime(300),
       distinctUntilChanged(),
       switchMap(query => {
-        if (!query.trim()) {
-          return [];
+        if (!query || !query.trim()) {
+          this.isSearching = false;
+          return of({ tracks: { items: [] } });  // Return Observable, not array
         }
         this.isSearching = true;
-        return this.playlistService.searchTracks(query, 20);
+        return this.playlistService.searchTracks(query, 20).pipe(
+          catchError(error => {
+            console.error('Search error:', error);
+            return of({ tracks: { items: [] } });
+          })
+        );
       })
     ).subscribe({
       next: (response: any) => {
         this.searchResults = response?.tracks?.items || [];
         this.isSearching = false;
+        console.log('Search results:', this.searchResults.length, 'tracks found');
       },
-      error: () => {
+      error: (err) => {
+        console.error('Search subscription error:', err);
         this.searchResults = [];
         this.isSearching = false;
       }
@@ -95,6 +104,9 @@ export class QueueBuilderComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.queueSub) {
       this.queueSub.unsubscribe();
+    }
+    if (this.searchSub) {
+      this.searchSub.unsubscribe();
     }
   }
 

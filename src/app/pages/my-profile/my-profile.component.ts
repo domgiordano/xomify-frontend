@@ -121,6 +121,25 @@ export class MyProfileComponent implements OnInit, OnDestroy {
           this.populateUserData();
           this.loadAdditionalData();
           this.updateUserTable();
+
+          // Fetch Xomify enrollment status
+          this.UserService.getUserTableData(data.email)
+            .pipe(take(1))
+            .subscribe({
+              next: (xomifyData) => {
+                console.log('XOMIFY USER DATA------', xomifyData);
+                this.wrappedEnrolled = xomifyData?.activeWrapped ?? false;
+                this.releaseRadarEnrolled =
+                  xomifyData?.activeReleaseRadar ?? false;
+                this.UserService.setWrappedEnrollment(this.wrappedEnrolled);
+                this.UserService.setReleaseRadarEnrollment(
+                  this.releaseRadarEnrolled
+                );
+              },
+              error: (err) => {
+                console.log('No Xomify user data found (new user)', err);
+              },
+            });
         },
         error: (err) => {
           console.error('Error fetching User', err);

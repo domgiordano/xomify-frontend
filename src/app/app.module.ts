@@ -12,7 +12,6 @@ import { MyProfileComponent } from './pages/my-profile/my-profile.component';
 import { TopSongsComponent } from './pages/top-songs/top-songs.component';
 import { TopArtistsComponent } from './pages/top-artists/top-artists.component';
 import { TopGenresComponent } from './pages/top-genres/top-genres.component';
-import { PlaylistGeneratorComponent } from './pages/playlist-generator/playlist-generator.component';
 import { AuthService } from './services/auth.service';
 import { LoaderComponent } from './components/loader/loader.component';
 import { ToastComponent } from './components/toast/toast.component';
@@ -20,7 +19,6 @@ import { CallbackComponent } from './components/callback/callback.component';
 import { HomeComponent } from './pages/home/home.component';
 import { ArtistProfileComponent } from './pages/artist-profile/artist-profile.component';
 import { FollowingComponent } from './pages/following/following.component';
-import { ReleaseCalendarComponent } from './pages/release-calendar/release-calendar.component';
 import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.component';
 import { PlaybackBarComponent } from './components/playback-bar/playback-bar.component';
 import { SwiperModule } from 'swiper/angular';
@@ -39,7 +37,6 @@ import { ReleaseRadarComponent } from './pages/release-radar/release-radar.compo
     TopSongsComponent,
     TopArtistsComponent,
     TopGenresComponent,
-    PlaylistGeneratorComponent,
     LoaderComponent,
     ToastComponent,
     CallbackComponent,
@@ -47,7 +44,6 @@ import { ReleaseRadarComponent } from './pages/release-radar/release-radar.compo
     ArtistProfileComponent,
     AlbumDetailComponent,
     FollowingComponent,
-    ReleaseCalendarComponent,
     QueueBuilderComponent,
     PlaybackBarComponent,
     PlayButtonComponent,
