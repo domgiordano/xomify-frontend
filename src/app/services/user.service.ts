@@ -174,6 +174,17 @@ export class UserService implements OnInit {
     return this.http.post(url, body, { headers });
   }
 
+  getUserTableData(email: string): Observable<any> {
+    const url = `${
+      this.xomifyApiUrl
+    }/user/user-table?email=${encodeURIComponent(email)}`;
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${this.apiAuthToken}`,
+      'Content-Type': 'application/json',
+    });
+    return this.http.get(url, { headers });
+  }
+
   setUser(data): void {
     this.userName = data.display_name;
     this.id = data.id;

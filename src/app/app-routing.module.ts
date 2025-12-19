@@ -11,7 +11,6 @@ import { TopArtistsComponent } from './pages/top-artists/top-artists.component';
 import { TopGenresComponent } from './pages/top-genres/top-genres.component';
 import { ArtistProfileComponent } from './pages/artist-profile/artist-profile.component';
 import { FollowingComponent } from './pages/following/following.component';
-import { ReleaseCalendarComponent } from './pages/release-calendar/release-calendar.component';
 import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.component';
 import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
 import { WrappedComponent } from './pages/wrapped/wrapped.component';
@@ -63,11 +62,6 @@ const routes: Routes = [
   {
     path: 'album/:id',
     component: AlbumDetailComponent,
-    canActivate: [AuthGuard],
-  },
-  {
-    path: 'release-calendar',
-    component: ReleaseCalendarComponent,
     canActivate: [AuthGuard],
   },
   {
