@@ -210,27 +210,69 @@
   padding: 14px;
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 
-  .song-name {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #fff;
-    margin: 0 0 4px 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    line-height: 1.3;
+  .song-text {
+    flex: 1;
+    min-width: 0; // Allow text to truncate
+
+    .song-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      margin: 0 0 4px 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.3;
+    }
+
+    .artist-names {
+      font-size: 0.8rem;
+      color: #8a8a9a;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 
-  .artist-names {
-    font-size: 0.8rem;
-    color: #8a8a9a;
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .add-queue-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    background: rgba(27, 220, 111, 0.1);
+    border: 1px solid rgba(27, 220, 111, 0.3);
+    border-radius: 50%;
+    color: #1bdc6f;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+
+    &:hover {
+      background: #1bdc6f;
+      color: #000;
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(27, 220, 111, 0.4);
+    }
+
+    &.in-queue {
+      background: rgba(27, 220, 111, 0.2);
+      border-color: rgba(27, 220, 111, 0.5);
+
+      &:hover {
+        background: rgba(255, 71, 87, 0.15);
+        border-color: rgba(255, 71, 87, 0.4);
+        color: #ff4757;
+      }
+    }
   }
 }
 
@@ -294,7 +336,7 @@
 .back-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -308,12 +350,6 @@
     font-size: 0.75rem;
     font-weight: 700;
   }
-
-  .back-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
 }
 
 .back-title {
@@ -326,6 +362,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.3;
+  position: relative; // Ensure it doesn't overlap header
 }
 
 .stats-section {

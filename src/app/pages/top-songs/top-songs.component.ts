@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { SongService } from 'src/app/services/song.service';
 import { PlayerService } from 'src/app/services/player.service';
-import { QueueTrack } from 'src/app/services/queue.service';
+import { QueueService, QueueTrack } from 'src/app/services/queue.service';
+import { ToastService } from 'src/app/services/toast.service';
 import { take } from 'rxjs';
 
 interface TopSong {
@@ -28,7 +29,7 @@ interface TopSong {
   templateUrl: './top-songs.component.html',
   styleUrls: ['./top-songs.component.scss'],
 })
-export class TopSongsComponent implements OnInit {
+export class TopSongsComponent implements OnInit, OnDestroy {
   topSongs: TopSong[] = [];
   loading: boolean = true;
   error: string = '';
@@ -44,11 +45,18 @@ export class TopSongsComponent implements OnInit {
   constructor(
     private songService: SongService,
     private playerService: PlayerService,
+    private queueService: QueueService,
+    private toastService: ToastService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadTopSongs();
+  }
+
+  ngOnDestroy(): void {
+    // Stop playback when navigating away from this page
+    this.playerService.stopSong();
   }
 
   loadTopSongs(): void {
@@ -121,19 +129,22 @@ export class TopSongsComponent implements OnInit {
   }
 
   flipCard(song: TopSong, index: number): void {
-    // If clicking the same card that's flipped, just flip it back
+    // If clicking the same card that's flipped, flip it back and STOP playback
     if (this.currentlyFlippedIndex === index) {
       song.flipped = false;
       this.currentlyFlippedIndex = null;
+      // Stop playback when flipping back
+      this.playerService.stopSong();
       return;
     }
 
-    // Flip back any currently flipped card
+    // Flip back any currently flipped card and stop its playback
     if (
       this.currentlyFlippedIndex !== null &&
       this.topSongs[this.currentlyFlippedIndex]
     ) {
       this.topSongs[this.currentlyFlippedIndex].flipped = false;
+      // Stop current playback before starting new one (new song will start immediately after)
     }
 
     // Flip the new card and play the song
@@ -197,5 +208,25 @@ export class TopSongsComponent implements OnInit {
       duration_ms: song.duration_ms,
       external_urls: song.external_urls,
     };
+  }
+
+  // Queue management - direct methods like goToArtist
+  isInQueue(songId: string): boolean {
+    return this.queueService.isInQueue(songId);
+  }
+
+  toggleQueue(song: TopSong, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const track = this.getQueueTrack(song);
+    
+    if (this.isInQueue(song.id)) {
+      this.queueService.removeFromQueue(song.id);
+      this.toastService.showPositiveToast(`Removed "${song.name}" from queue`);
+    } else {
+      this.queueService.addToQueue(track);
+      this.toastService.showPositiveToast(`Added "${song.name}" to queue`);
+    }
   }
 }

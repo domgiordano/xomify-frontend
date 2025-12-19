@@ -1,15 +1,16 @@
 <button
-  class="add-queue-btn"
+  class="add-to-queue-btn"
+  [class.in-queue]="isInQueue"
   [class.small]="size === 'small'"
   [class.medium]="size === 'medium'"
-  [class.in-queue]="isInQueue"
+  [class.large]="size === 'large'"
   (click)="toggleQueue($event)"
-  [title]="isInQueue ? 'Remove from queue' : 'Add to queue'"
+  [attr.title]="isInQueue ? 'Remove from queue' : 'Add to queue'"
 >
-  <!-- Plus icon when not in queue -->
+  <!-- Add icon -->
   <svg
     *ngIf="!isInQueue"
-    class="add-icon"
+    class="icon"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -19,17 +20,13 @@
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 
-  <!-- Check icon when in queue -->
+  <!-- Checkmark icon (in queue) -->
   <svg
     *ngIf="isInQueue"
-    class="check-icon"
+    class="icon"
     viewBox="0 0 24 24"
     fill="currentColor"
   >
     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
   </svg>
-
-  <span *ngIf="showLabel" class="btn-label">
-    {{ isInQueue ? "In Queue" : "Add to Queue" }}
-  </span>
 </button>
