@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { UserService } from 'src/app/services/user.service';
 import { ArtistService } from 'src/app/services/artist.service';
 import { ToastService } from 'src/app/services/toast.service';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, switchMap, take } from 'rxjs/operators';
 
 interface CalendarDay {
@@ -79,59 +79,38 @@ export class ReleaseRadarComponent implements OnInit {
 
   /**
    * Build week options for the dropdown filter.
-   * Creates options for "This Week" plus the last 6 weeks.
+   * "This Week" = last 7 days, "Last Week" = 8-14 days ago, etc.
    */
   private buildWeekOptions(): void {
     this.weekOptions = [];
     const today = new Date();
-    
+    today.setHours(0, 0, 0, 0);
+
     for (let i = 0; i < 8; i++) {
-      const { start, end } = this.getWeekRange(today, i);
-      
+      // Each "week" is a 7-day window going backwards
+      const endDate = new Date(today);
+      endDate.setDate(today.getDate() - i * 7);
+
+      const startDate = new Date(endDate);
+      startDate.setDate(endDate.getDate() - 6);
+
       let label: string;
       if (i === 0) {
         label = 'This Week';
       } else if (i === 1) {
         label = 'Last Week';
       } else {
-        // Format as "Dec 7 - Dec 13"
-        label = this.formatWeekLabel(start, end);
+        label = this.formatWeekLabel(startDate, endDate);
       }
-      
-      this.weekOptions.push({ label, startDate: start, endDate: end });
-    }
-  }
 
-  /**
-   * Get the Saturday-Friday week range for a given offset.
-   * offset=0 is current week, offset=1 is last week, etc.
-   */
-  private getWeekRange(fromDate: Date, weeksAgo: number): { start: Date; end: Date } {
-    const today = new Date(fromDate);
-    today.setHours(0, 0, 0, 0);
-    
-    // Find the most recent Saturday (start of our week)
-    const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
-    const daysSinceSaturday = (dayOfWeek + 1) % 7; // Sat=0, Sun=1, Mon=2, etc.
-    
-    const thisSaturday = new Date(today);
-    thisSaturday.setDate(today.getDate() - daysSinceSaturday);
-    
-    // Go back additional weeks
-    const startDate = new Date(thisSaturday);
-    startDate.setDate(startDate.getDate() - (weeksAgo * 7));
-    
-    // End date is Friday (6 days after Saturday)
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 6);
-    
-    return { start: startDate, end: endDate };
+      this.weekOptions.push({ label, startDate, endDate });
+    }
   }
 
   private formatWeekLabel(start: Date, end: Date): string {
     const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
     const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
-    
+
     if (startMonth === endMonth) {
       return `${startMonth} ${start.getDate()} - ${end.getDate()}`;
     } else {
@@ -173,6 +152,10 @@ export class ReleaseRadarComponent implements OnInit {
       });
   }
 
+  // =====================================================
+  // loadReleases - fetches ALL followed artists and each
+  // release type separately to avoid Spotify sorting issue
+  // =====================================================
   loadReleases(forceRefresh = false): void {
     // Check cache first
     if (!forceRefresh) {
@@ -188,24 +171,34 @@ export class ReleaseRadarComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
-    // Get followed artists, then fetch their albums
-    this.userService
-      .getFollowedArtists(50)
+    // Get ALL followed artists (paginated), then fetch their albums
+    this.getAllFollowedArtists()
       .pipe(
-        switchMap((response: any) => {
-          const artists = response.artists?.items || [];
+        switchMap((artists: any[]) => {
+          console.log('Total followed artists:', artists.length);
+
           if (artists.length === 0) {
             return of([]);
           }
 
-          // Use the new method that fetches each type separately
-          const albumRequests = artists.map((artist: any) =>
-            this.artistService
-              .getArtistRecentReleases(artist.id, 5) // 5 per type = 15 total per artist
-              .pipe(catchError(() => of({ items: [] })))
-          );
+          // Fetch albums, singles, and appears_on SEPARATELY for each artist
+          // This avoids Spotify's issue where include_groups=album,single
+          // returns all albums first, then all singles (not by release date)
+          const releaseTypes = ['album', 'single', 'appears_on'];
+          const allRequests: any[] = [];
 
-          return forkJoin(albumRequests);
+          artists.forEach((artist: any) => {
+            releaseTypes.forEach((type) => {
+              allRequests.push(
+                this.artistService
+                  .getArtistAlbums(artist.id, 10, 0, type)
+                  .pipe(catchError(() => of({ items: [] })))
+              );
+            });
+          });
+
+          console.log('Making', allRequests.length, 'API calls for releases');
+          return forkJoin(allRequests);
         })
       )
       .subscribe({
@@ -234,6 +227,8 @@ export class ReleaseRadarComponent implements OnInit {
             });
           });
 
+          console.log('Total unique releases found:', allReleases.length);
+
           // Sort by release date (newest first)
           this.releases = allReleases.sort(
             (a, b) => b.releaseDate.getTime() - a.releaseDate.getTime()
@@ -257,8 +252,43 @@ export class ReleaseRadarComponent implements OnInit {
       });
   }
 
+  /**
+   * Get ALL followed artists using cursor-based pagination
+   */
+  private getAllFollowedArtists(): Observable<any[]> {
+    return new Observable((observer) => {
+      const allArtists: any[] = [];
+
+      const fetchPage = (after?: string) => {
+        this.userService.getFollowedArtists(50, after).subscribe({
+          next: (response: any) => {
+            const artists = response.artists?.items || [];
+            allArtists.push(...artists);
+
+            // Check for next page using cursor
+            const nextCursor = response.artists?.cursors?.after;
+            if (nextCursor && artists.length === 50) {
+              fetchPage(nextCursor);
+            } else {
+              observer.next(allArtists);
+              observer.complete();
+            }
+          },
+          error: (err) => {
+            console.error('Error fetching followed artists:', err);
+            // Return what we have so far
+            observer.next(allArtists);
+            observer.complete();
+          },
+        });
+      };
+
+      fetchPage();
+    });
+  }
+
   private processReleases(): void {
-    // Calculate stats (from all releases, not filtered)
+    // Calculate stats
     this.totalReleases = this.releases.length;
     this.albumCount = this.releases.filter(
       (r) => r.album_type === 'album'
@@ -279,12 +309,12 @@ export class ReleaseRadarComponent implements OnInit {
 
   private applyFilter(): void {
     let filtered = [...this.releases];
-    
+
     // Apply type filter
     if (this.filterType !== 'all') {
       filtered = filtered.filter((r) => r.album_type === this.filterType);
     }
-    
+
     // Apply week filter (only in list view)
     if (this.viewMode === 'list' && this.weekOptions.length > 0) {
       const week = this.weekOptions[this.selectedWeekIndex];
@@ -296,7 +326,7 @@ export class ReleaseRadarComponent implements OnInit {
         });
       }
     }
-    
+
     this.filteredReleases = filtered;
   }
 
@@ -320,9 +350,10 @@ export class ReleaseRadarComponent implements OnInit {
     const current = new Date(startDate);
 
     // For calendar, use type-filtered releases (not week-filtered)
-    const calendarReleases = this.filterType === 'all' 
-      ? this.releases 
-      : this.releases.filter(r => r.album_type === this.filterType);
+    const calendarReleases =
+      this.filterType === 'all'
+        ? this.releases
+        : this.releases.filter((r) => r.album_type === this.filterType);
 
     while (current <= endDate) {
       const dayReleases = this.getReleasesForDate(current, calendarReleases);
@@ -334,7 +365,10 @@ export class ReleaseRadarComponent implements OnInit {
         isToday: current.getTime() === today.getTime(),
         releases: dayReleases,
       });
-      if (today.getDate() == currentDate.getDate() && today.getMonth() === currentDate.getMonth()) {
+      if (
+        today.getDate() == currentDate.getDate() &&
+        today.getMonth() === currentDate.getMonth()
+      ) {
         this.selectedDay = this.calendarDays[this.calendarDays.length - 1];
       }
       current.setDate(current.getDate() + 1);
@@ -349,17 +383,17 @@ export class ReleaseRadarComponent implements OnInit {
     });
   }
 
-  // Cache methods
+  // Cache methods - uses sessionStorage so cache clears when browser closes
   private getCache(): CachedData | null {
     try {
-      const cached = localStorage.getItem(this.CACHE_KEY);
+      const cached = sessionStorage.getItem(this.CACHE_KEY);
       if (!cached) return null;
 
       const data: CachedData = JSON.parse(cached);
       const now = Date.now();
 
       if (now - data.timestamp > this.CACHE_TTL) {
-        localStorage.removeItem(this.CACHE_KEY);
+        sessionStorage.removeItem(this.CACHE_KEY);
         return null;
       }
 
@@ -381,7 +415,7 @@ export class ReleaseRadarComponent implements OnInit {
       timestamp: Date.now(),
       artistIds: [],
     };
-    localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
+    sessionStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
   }
 
   // Navigation
@@ -426,10 +460,11 @@ export class ReleaseRadarComponent implements OnInit {
   setViewMode(mode: 'calendar' | 'list'): void {
     this.viewMode = mode;
     this.selectedDay = null;
-    this.applyFilter(); // Re-apply filter since week filter only applies to list view
+    this.applyFilter();
   }
 
   refresh(): void {
+    sessionStorage.removeItem(this.CACHE_KEY);
     this.loadReleases(true);
   }
 
@@ -496,20 +531,17 @@ export class ReleaseRadarComponent implements OnInit {
     return date >= today;
   }
 
-  /**
-   * Get the count of releases for the currently selected week.
-   */
   getSelectedWeekCount(): number {
     if (this.weekOptions.length === 0) return 0;
     const week = this.weekOptions[this.selectedWeekIndex];
     if (!week) return 0;
-    
+
     let releases = this.releases;
     if (this.filterType !== 'all') {
-      releases = releases.filter(r => r.album_type === this.filterType);
+      releases = releases.filter((r) => r.album_type === this.filterType);
     }
-    
-    return releases.filter(r => {
+
+    return releases.filter((r) => {
       const releaseDate = new Date(r.releaseDate);
       releaseDate.setHours(0, 0, 0, 0);
       return releaseDate >= week.startDate && releaseDate <= week.endDate;
