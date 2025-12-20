@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -103,7 +104,7 @@ export class ArtistService {
     });
   }
 
-  // Get artist's albums
+  // Get artist's albums (original method - has sorting limitation)
   getArtistAlbums(artistId: string, limit: number = 20, offset: number = 0, includeGroups: string = 'album,single'): Observable<any> {
     return this.http.get(`${this.baseUrl}/artists/${artistId}/albums`, {
       headers: this.getAuthHeaders(),
@@ -113,6 +114,44 @@ export class ArtistService {
         include_groups: includeGroups
       }
     });
+  }
+
+  /**
+   * Get artist's recent releases - fetches each type separately to avoid Spotify's
+   * sorting issue where albums come first, then singles (not mixed by date).
+   * Returns combined results from albums, singles, and appears_on.
+   */
+  getArtistRecentReleases(artistId: string, limitPerType: number = 5): Observable<any> {
+    const types = ['album', 'single', 'appears_on'];
+    
+    const requests = types.map(type => 
+      this.http.get(`${this.baseUrl}/artists/${artistId}/albums`, {
+        headers: this.getAuthHeaders(),
+        params: {
+          limit: limitPerType.toString(),
+          include_groups: type
+        }
+      }).pipe(
+        map((response: any) => response.items || []),
+        catchError(() => of([]))
+      )
+    );
+
+    return forkJoin(requests).pipe(
+      map((results: any[]) => {
+        // Flatten all results into single array (ES5 compatible)
+        const allReleases = results.reduce((acc, arr) => acc.concat(arr), []);
+        
+        // Sort by release date descending
+        allReleases.sort((a, b) => {
+          const dateA = new Date(a.release_date).getTime();
+          const dateB = new Date(b.release_date).getTime();
+          return dateB - dateA;
+        });
+        
+        return { items: allReleases };
+      })
+    );
   }
 
   // Search for artists
