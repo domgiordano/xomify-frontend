@@ -14,6 +14,12 @@ interface CalendarDay {
   releases: any[];
 }
 
+interface WeekOption {
+  label: string;
+  startDate: Date;
+  endDate: Date;
+}
+
 interface CachedData {
   releases: any[];
   timestamp: number;
@@ -37,6 +43,10 @@ export class ReleaseRadarComponent implements OnInit {
 
   viewMode: 'calendar' | 'list' = 'calendar';
   filterType: 'all' | 'album' | 'single' = 'all';
+
+  // Week filter for list view
+  weekOptions: WeekOption[] = [];
+  selectedWeekIndex: number = 0; // 0 = This Week
 
   // Calendar state
   viewDate = new Date();
@@ -63,7 +73,75 @@ export class ReleaseRadarComponent implements OnInit {
 
   ngOnInit(): void {
     this.isEnrolled = this.userService.getReleaseRadarEnrollment();
+    this.buildWeekOptions();
     this.loadReleases();
+  }
+
+  /**
+   * Build week options for the dropdown filter.
+   * Creates options for "This Week" plus the last 6 weeks.
+   */
+  private buildWeekOptions(): void {
+    this.weekOptions = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 8; i++) {
+      const { start, end } = this.getWeekRange(today, i);
+      
+      let label: string;
+      if (i === 0) {
+        label = 'This Week';
+      } else if (i === 1) {
+        label = 'Last Week';
+      } else {
+        // Format as "Dec 7 - Dec 13"
+        label = this.formatWeekLabel(start, end);
+      }
+      
+      this.weekOptions.push({ label, startDate: start, endDate: end });
+    }
+  }
+
+  /**
+   * Get the Saturday-Friday week range for a given offset.
+   * offset=0 is current week, offset=1 is last week, etc.
+   */
+  private getWeekRange(fromDate: Date, weeksAgo: number): { start: Date; end: Date } {
+    const today = new Date(fromDate);
+    today.setHours(0, 0, 0, 0);
+    
+    // Find the most recent Saturday (start of our week)
+    const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
+    const daysSinceSaturday = (dayOfWeek + 1) % 7; // Sat=0, Sun=1, Mon=2, etc.
+    
+    const thisSaturday = new Date(today);
+    thisSaturday.setDate(today.getDate() - daysSinceSaturday);
+    
+    // Go back additional weeks
+    const startDate = new Date(thisSaturday);
+    startDate.setDate(startDate.getDate() - (weeksAgo * 7));
+    
+    // End date is Friday (6 days after Saturday)
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+    
+    return { start: startDate, end: endDate };
+  }
+
+  private formatWeekLabel(start: Date, end: Date): string {
+    const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
+    const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
+    
+    if (startMonth === endMonth) {
+      return `${startMonth} ${start.getDate()} - ${end.getDate()}`;
+    } else {
+      return `${startMonth} ${start.getDate()} - ${endMonth} ${end.getDate()}`;
+    }
+  }
+
+  setWeekFilter(index: number): void {
+    this.selectedWeekIndex = index;
+    this.applyFilter();
   }
 
   toggleEnrollment(): void {
@@ -120,10 +198,10 @@ export class ReleaseRadarComponent implements OnInit {
             return of([]);
           }
 
-          // Fetch albums for each artist (last 6 months)
+          // Use the new method that fetches each type separately
           const albumRequests = artists.map((artist: any) =>
             this.artistService
-              .getArtistAlbums(artist.id, 20)
+              .getArtistRecentReleases(artist.id, 5) // 5 per type = 15 total per artist
               .pipe(catchError(() => of({ items: [] })))
           );
 
@@ -180,7 +258,7 @@ export class ReleaseRadarComponent implements OnInit {
   }
 
   private processReleases(): void {
-    // Calculate stats
+    // Calculate stats (from all releases, not filtered)
     this.totalReleases = this.releases.length;
     this.albumCount = this.releases.filter(
       (r) => r.album_type === 'album'
@@ -200,13 +278,26 @@ export class ReleaseRadarComponent implements OnInit {
   }
 
   private applyFilter(): void {
-    if (this.filterType === 'all') {
-      this.filteredReleases = [...this.releases];
-    } else {
-      this.filteredReleases = this.releases.filter(
-        (r) => r.album_type === this.filterType
-      );
+    let filtered = [...this.releases];
+    
+    // Apply type filter
+    if (this.filterType !== 'all') {
+      filtered = filtered.filter((r) => r.album_type === this.filterType);
     }
+    
+    // Apply week filter (only in list view)
+    if (this.viewMode === 'list' && this.weekOptions.length > 0) {
+      const week = this.weekOptions[this.selectedWeekIndex];
+      if (week) {
+        filtered = filtered.filter((r) => {
+          const releaseDate = new Date(r.releaseDate);
+          releaseDate.setHours(0, 0, 0, 0);
+          return releaseDate >= week.startDate && releaseDate <= week.endDate;
+        });
+      }
+    }
+    
+    this.filteredReleases = filtered;
   }
 
   buildCalendar(): void {
@@ -228,8 +319,13 @@ export class ReleaseRadarComponent implements OnInit {
     this.calendarDays = [];
     const current = new Date(startDate);
 
+    // For calendar, use type-filtered releases (not week-filtered)
+    const calendarReleases = this.filterType === 'all' 
+      ? this.releases 
+      : this.releases.filter(r => r.album_type === this.filterType);
+
     while (current <= endDate) {
-      const dayReleases = this.getReleasesForDate(current);
+      const dayReleases = this.getReleasesForDate(current, calendarReleases);
       let currentDate = new Date(current);
       this.calendarDays.push({
         date: currentDate,
@@ -238,16 +334,16 @@ export class ReleaseRadarComponent implements OnInit {
         isToday: current.getTime() === today.getTime(),
         releases: dayReleases,
       });
-      if (today.getDate() == currentDate.getDate()) {
+      if (today.getDate() == currentDate.getDate() && today.getMonth() === currentDate.getMonth()) {
         this.selectedDay = this.calendarDays[this.calendarDays.length - 1];
       }
       current.setDate(current.getDate() + 1);
     }
   }
 
-  private getReleasesForDate(date: Date): any[] {
+  private getReleasesForDate(date: Date, releases: any[]): any[] {
     const dateStr = date.toISOString().split('T')[0];
-    return this.filteredReleases.filter((release) => {
+    return releases.filter((release) => {
       const releaseStr = release.release_date;
       return releaseStr === dateStr;
     });
@@ -330,6 +426,7 @@ export class ReleaseRadarComponent implements OnInit {
   setViewMode(mode: 'calendar' | 'list'): void {
     this.viewMode = mode;
     this.selectedDay = null;
+    this.applyFilter(); // Re-apply filter since week filter only applies to list view
   }
 
   refresh(): void {
@@ -397,5 +494,25 @@ export class ReleaseRadarComponent implements OnInit {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return date >= today;
+  }
+
+  /**
+   * Get the count of releases for the currently selected week.
+   */
+  getSelectedWeekCount(): number {
+    if (this.weekOptions.length === 0) return 0;
+    const week = this.weekOptions[this.selectedWeekIndex];
+    if (!week) return 0;
+    
+    let releases = this.releases;
+    if (this.filterType !== 'all') {
+      releases = releases.filter(r => r.album_type === this.filterType);
+    }
+    
+    return releases.filter(r => {
+      const releaseDate = new Date(r.releaseDate);
+      releaseDate.setHours(0, 0, 0, 0);
+      return releaseDate >= week.startDate && releaseDate <= week.endDate;
+    }).length;
   }
 }

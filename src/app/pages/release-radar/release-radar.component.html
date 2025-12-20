@@ -162,6 +162,23 @@
         </button>
       </div>
 
+      <!-- Week Filter (List View Only) -->
+      <div class="week-filter" *ngIf="viewMode === 'list'">
+        <select 
+          class="week-select"
+          [ngModel]="selectedWeekIndex"
+          (ngModelChange)="setWeekFilter($event)"
+        >
+          <option 
+            *ngFor="let week of weekOptions; let i = index" 
+            [value]="i"
+          >
+            {{ week.label }}
+          </option>
+        </select>
+        <span class="week-count">{{ getSelectedWeekCount() }} releases</span>
+      </div>
+
       <button class="refresh-btn" (click)="refresh()" title="Refresh releases">
         <svg
           width="18"
@@ -419,10 +436,16 @@
           </div>
         </div>
       </div>
+
+      <!-- Empty State for Week -->
+      <div class="empty-week" *ngIf="filteredReleases.length === 0 && releases.length > 0">
+        <p>No releases for {{ weekOptions[selectedWeekIndex]?.label || 'this week' }}</p>
+        <button class="try-other-week" (click)="setWeekFilter(0)">View This Week</button>
+      </div>
     </div>
 
     <!-- Empty State -->
-    <div class="empty-state" *ngIf="filteredReleases.length === 0">
+    <div class="empty-state" *ngIf="releases.length === 0">
       <div class="empty-icon">
         <svg
           width="64"

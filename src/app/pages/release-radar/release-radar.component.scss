@@ -318,6 +318,47 @@
   }
 }
 
+// Week Filter
+.week-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .week-select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 16px;
+    color: #fff;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 150px;
+
+    &:hover {
+      border-color: rgba(156, 10, 191, 0.4);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #9c0abf;
+      box-shadow: 0 0 0 2px rgba(156, 10, 191, 0.2);
+    }
+
+    option {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 8px;
+    }
+  }
+
+  .week-count {
+    font-size: 0.8rem;
+    color: #6a6a7a;
+    white-space: nowrap;
+  }
+}
+
 .refresh-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -443,7 +484,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
-  min-width: 0; // Critical: allows grid items to shrink below content size
+  min-width: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -904,6 +945,34 @@
   }
 }
 
+// Empty Week State
+.empty-week {
+  text-align: center;
+  padding: 60px 24px;
+  color: #6a6a7a;
+
+  p {
+    margin: 0 0 16px 0;
+    font-size: 1rem;
+  }
+
+  .try-other-week {
+    background: transparent;
+    border: 1px solid rgba(156, 10, 191, 0.3);
+    color: #9c0abf;
+    padding: 10px 24px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(156, 10, 191, 0.1);
+      border-color: #9c0abf;
+    }
+  }
+}
+
 // Empty State
 .empty-state {
   text-align: center;
@@ -941,7 +1010,7 @@
 // Mobile Responsive
 @media (max-width: 768px) {
   .page-container {
-    padding: 80px 12px 80px; // Reduced side padding
+    padding: 80px 12px 80px;
     overflow-x: hidden;
   }
 
@@ -1001,12 +1070,18 @@
     justify-content: center;
   }
 
-  // Calendar fixes for mobile - viewport-based sizing to GUARANTEE fit
+  .week-filter {
+    justify-content: center;
+    flex-wrap: wrap;
+
+    .week-select {
+      min-width: 140px;
+    }
+  }
+
+  // Calendar fixes for mobile
   .calendar-view {
-    // Calculate available width: 100vw - page padding (24px total)
     --calendar-width: calc(100vw - 24px);
-    // Each cell: (available width - gaps) / 7 columns
-    // Gaps: 6 gaps * 2px = 12px
     --cell-size: calc((var(--calendar-width) - 16px - 12px) / 7);
 
     padding: 8px;
@@ -1079,7 +1154,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    aspect-ratio: unset; // Remove aspect-ratio, use explicit size
+    aspect-ratio: unset;
 
     .day-number {
       font-size: 0.7rem;
@@ -1248,7 +1323,6 @@
     }
   }
 
-  // Recalculate for smaller page padding (16px total)
   .calendar-view {
     --calendar-width: calc(100vw - 16px);
     --cell-size: calc((var(--calendar-width) - 12px - 12px) / 7);
@@ -1294,6 +1368,18 @@
       .more-dot {
         display: none;
       }
+    }
+  }
+
+  .week-filter {
+    .week-select {
+      font-size: 0.8rem;
+      padding: 8px 12px;
+      min-width: 120px;
+    }
+
+    .week-count {
+      font-size: 0.7rem;
     }
   }
 }
