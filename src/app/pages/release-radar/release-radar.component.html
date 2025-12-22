@@ -8,7 +8,8 @@
       <div class="wave"></div>
       <div class="wave"></div>
     </div>
-    <p class="loading-text">Loading releases from artists you follow...</p>
+    <p class="loading-text" *ngIf="!backfilling">Loading releases from artists you follow...</p>
+    <p class="loading-text" *ngIf="backfilling">Building your release history (this may take a minute)...</p>
   </div>
 
   <!-- Error State -->
@@ -166,12 +167,12 @@
       <div class="week-filter" *ngIf="viewMode === 'list'">
         <select 
           class="week-select"
-          [ngModel]="selectedWeekIndex"
+          [ngModel]="selectedWeekKey"
           (ngModelChange)="setWeekFilter($event)"
         >
           <option 
-            *ngFor="let week of weekOptions; let i = index" 
-            [value]="i"
+            *ngFor="let week of weekOptions" 
+            [value]="week.weekKey"
           >
             {{ week.label }}
           </option>
@@ -252,8 +253,8 @@
             <span
               class="dot"
               *ngFor="let release of day.releases.slice(0, 3)"
-              [class.album]="release.album_type === 'album'"
-              [class.single]="release.album_type === 'single'"
+              [class.album]="release.albumType === 'album'"
+              [class.single]="release.albumType === 'single'"
             ></span>
             <span class="more-dot" *ngIf="day.releases.length > 3"
               >+{{ day.releases.length - 3 }}</span
@@ -268,14 +269,14 @@
               (click)="goToAlbum(release.id); $event.stopPropagation()"
             >
               <img
-                [src]="release.images?.[2]?.url || release.images?.[0]?.url || 'assets/default-album.png'"
+                [src]="release.imageUrl || 'assets/default-album.png'"
                 [alt]="release.name"
               />
               <div class="preview-info">
                 <span class="preview-name">{{ release.name }}</span>
                 <span
                   class="preview-artist"
-                  >{{ release.artists?.[0]?.name }}</span
+                  >{{ release.artistName }}</span
                 >
               </div>
             </div>
@@ -308,34 +309,34 @@
           >
             <img
               class="release-image"
-              [src]="release.images?.[1]?.url || release.images?.[0]?.url || 'assets/default-album.png'"
+              [src]="release.imageUrl || 'assets/default-album.png'"
               [alt]="release.name"
             />
             <div class="release-info">
               <h4 class="release-name">{{ release.name }}</h4>
               <p class="release-artist">
                 <a
-                  (click)="goToArtist(release.artists?.[0]?.id, $event)"
-                  >{{ release.artists?.[0]?.name }}</a
+                  (click)="goToArtist(release.artistId, $event)"
+                  >{{ release.artistName }}</a
                 >
               </p>
               <div class="release-meta">
                 <span
                   class="type-badge"
-                  [class.album]="release.album_type === 'album'"
-                  [class.single]="release.album_type === 'single'"
+                  [class.album]="release.albumType === 'album'"
+                  [class.single]="release.albumType === 'single'"
                 >
-                  {{ release.album_type === "single" ? "Single" : "Album" }}
+                  {{ release.albumType === "single" ? "Single" : "Album" }}
                 </span>
                 <span class="track-count"
-                  >{{ release.total_tracks }}
-                  {{ release.total_tracks === 1 ? "track" : "tracks" }}</span
+                  >{{ release.totalTracks }}
+                  {{ release.totalTracks === 1 ? "track" : "tracks" }}</span
                 >
               </div>
             </div>
             <button
               class="spotify-btn"
-              (click)="openInSpotify(release.external_urls?.spotify, $event)"
+              (click)="openInSpotify(release.uri, $event)"
               title="Open in Spotify"
             >
               <svg
@@ -372,7 +373,6 @@
         <div
           class="release-row"
           *ngFor="let release of filteredReleases; let i = index"
-          [class.upcoming]="isUpcoming(release.releaseDate)"
           (click)="goToAlbum(release.id)"
         >
           <span class="col-num">{{ i + 1 }}</span>
@@ -380,7 +380,7 @@
           <div class="col-title">
             <img
               class="release-thumb"
-              [src]="release.images?.[2]?.url || release.images?.[0]?.url || 'assets/default-album.png'"
+              [src]="release.imageUrl || 'assets/default-album.png'"
               [alt]="release.name"
             />
             <span class="release-name">{{ release.name }}</span>
@@ -388,38 +388,37 @@
 
           <div class="col-artist">
             <a
-              (click)="goToArtist(release.artists?.[0]?.id, $event)"
-              >{{ release.artists?.[0]?.name }}</a
+              (click)="goToArtist(release.artistId, $event)"
+              >{{ release.artistName }}</a
             >
           </div>
 
           <div class="col-type">
             <span
               class="type-badge"
-              [class.album]="release.album_type === 'album'"
-              [class.single]="release.album_type === 'single'"
+              [class.album]="release.albumType === 'album'"
+              [class.single]="release.albumType === 'single'"
             >
-              {{ release.album_type === "single" ? "Single" : "Album" }}
+              {{ release.albumType === "single" ? "Single" : "Album" }}
             </span>
           </div>
 
           <div class="col-date">
             <span class="date-text">{{
-              formatReleaseDate(release.release_date)
+              formatReleaseDate(release.releaseDate)
             }}</span>
             <span
               class="relative-date"
-              [class.upcoming]="isUpcoming(release.releaseDate)"
               >{{ getRelativeDate(release) }}</span
             >
           </div>
 
-          <span class="col-tracks">{{ release.total_tracks }}</span>
+          <span class="col-tracks">{{ release.totalTracks }}</span>
 
           <div class="col-actions">
             <button
               class="spotify-btn"
-              (click)="openInSpotify(release.external_urls?.spotify, $event)"
+              (click)="openInSpotify(release.uri, $event)"
               title="Open in Spotify"
             >
               <svg
@@ -439,8 +438,8 @@
 
       <!-- Empty State for Week -->
       <div class="empty-week" *ngIf="filteredReleases.length === 0 && releases.length > 0">
-        <p>No releases for {{ weekOptions[selectedWeekIndex]?.label || 'this week' }}</p>
-        <button class="try-other-week" (click)="setWeekFilter(0)">View This Week</button>
+        <p>No releases for this week</p>
+        <button class="try-other-week" (click)="setWeekFilter(weekOptions[0]?.weekKey)">View This Week</button>
       </div>
     </div>
 
