@@ -147,6 +147,7 @@ export class UserService implements OnInit {
     const body = {
       email: this.user.email,
       userId: this.id,
+      displayName: this.user.display_name || this.user.email,
       refreshToken: this.refreshToken,
     };
     const headers = new HttpHeaders({
