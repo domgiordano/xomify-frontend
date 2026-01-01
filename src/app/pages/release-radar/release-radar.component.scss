@@ -227,13 +227,27 @@
   }
 }
 
+// Stats Section with Period Label
+.stats-section {
+  max-width: 800px;
+  margin: 0 auto 32px;
+  
+  .stats-period {
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #9c0abf;
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+}
+
 // Stats Bar
 .stats-bar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  max-width: 800px;
-  margin: 0 auto 32px;
 }
 
 .stat-card {

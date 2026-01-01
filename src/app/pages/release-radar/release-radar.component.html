@@ -95,23 +95,26 @@
       </button>
     </div>
 
-    <!-- Stats Bar -->
-    <div class="stats-bar">
-      <div class="stat-card">
-        <span class="stat-value">{{ totalReleases }}</span>
-        <span class="stat-label">Total Releases</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value">{{ albumCount }}</span>
-        <span class="stat-label">Albums</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value">{{ singleCount }}</span>
-        <span class="stat-label">Singles</span>
-      </div>
-      <div class="stat-card highlight">
-        <span class="stat-value">{{ upcomingCount }}</span>
-        <span class="stat-label">Upcoming</span>
+    <!-- Stats Section with Dynamic Period Label -->
+    <div class="stats-section">
+      <p class="stats-period">{{ statsLabel }}</p>
+      <div class="stats-bar">
+        <div class="stat-card">
+          <span class="stat-value">{{ totalReleases }}</span>
+          <span class="stat-label">Total Releases</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value">{{ albumCount }}</span>
+          <span class="stat-label">Albums</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value">{{ singleCount }}</span>
+          <span class="stat-label">Singles</span>
+        </div>
+        <div class="stat-card highlight">
+          <span class="stat-value">{{ upcomingCount }}</span>
+          <span class="stat-label">Upcoming</span>
+        </div>
       </div>
     </div>
 
