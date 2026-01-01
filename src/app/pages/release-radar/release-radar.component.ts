@@ -57,11 +57,12 @@ export class ReleaseRadarComponent implements OnInit {
   selectedDay: CalendarDay | null = null;
   weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Stats
+  // Stats - dynamic based on view
   totalReleases = 0;
   albumCount = 0;
   singleCount = 0;
   upcomingCount = 0;
+  statsLabel = '';
 
   // User info
   private userEmail: string = '';
@@ -90,7 +91,6 @@ export class ReleaseRadarComponent implements OnInit {
   private loadUserAndReleases(): void {
     this.loading = true;
 
-    // Get user info first;
     this.userEmail = this.userService.getEmail();
     this.userService
       .getUserTableData(this.userEmail)
@@ -122,7 +122,6 @@ export class ReleaseRadarComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
-    // Use the service to load release radar (handles backfill if needed)
     this.releaseRadarService
       .loadReleaseRadar(this.userEmail, this.userData)
       .pipe(take(1))
@@ -147,23 +146,55 @@ export class ReleaseRadarComponent implements OnInit {
   }
 
   private processReleases(): void {
-    // Calculate stats from all releases
-    this.totalReleases = this.releases.length;
-    this.albumCount = this.releases.filter(
-      (r) => r.albumType === 'album'
-    ).length;
-    this.singleCount = this.releases.filter(
-      (r) => r.albumType === 'single'
-    ).length;
+    this.applyFilter();
+    this.buildCalendar();
+    this.updateStats();
+  }
+
+  /**
+   * Update stats based on current view mode and selection
+   */
+  private updateStats(): void {
+    let releasesToCount: ReleaseRadarRelease[] = [];
+
+    if (this.viewMode === 'calendar') {
+      // Calendar view: show stats for the currently viewed MONTH
+      releasesToCount = this.getReleasesForMonth(this.viewDate);
+      this.statsLabel = this.viewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    } else {
+      // List view: show stats for the selected WEEK
+      if (this.history && this.selectedWeekKey) {
+        const weekData = this.history.weeks.find(w => w.weekKey === this.selectedWeekKey);
+        if (weekData) {
+          releasesToCount = weekData.releases;
+          // Get week label from options
+          const weekOption = this.weekOptions.find(w => w.weekKey === this.selectedWeekKey);
+          this.statsLabel = weekOption?.label || this.selectedWeekKey;
+        }
+      }
+    }
+
+    // Calculate stats from the relevant releases
+    this.totalReleases = releasesToCount.length;
+    this.albumCount = releasesToCount.filter(r => r.albumType === 'album').length;
+    this.singleCount = releasesToCount.filter(r => r.albumType === 'single').length;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    this.upcomingCount = this.releases.filter(
-      (r) => new Date(r.releaseDate) >= today
-    ).length;
+    this.upcomingCount = releasesToCount.filter(r => new Date(r.releaseDate) >= today).length;
+  }
 
-    this.applyFilter();
-    this.buildCalendar();
+  /**
+   * Get all releases for a specific month
+   */
+  private getReleasesForMonth(date: Date): ReleaseRadarRelease[] {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    
+    return this.releases.filter(release => {
+      const releaseDate = new Date(release.releaseDate);
+      return releaseDate.getFullYear() === year && releaseDate.getMonth() === month;
+    });
   }
 
   private applyFilter(): void {
@@ -288,6 +319,7 @@ export class ReleaseRadarComponent implements OnInit {
   setWeekFilter(weekKey: string): void {
     this.selectedWeekKey = weekKey;
     this.applyFilter();
+    this.updateStats();
   }
 
   setFilterType(type: 'all' | 'album' | 'single'): void {
@@ -300,6 +332,7 @@ export class ReleaseRadarComponent implements OnInit {
     this.viewMode = mode;
     this.selectedDay = null;
     this.applyFilter();
+    this.updateStats();
   }
 
   // ============================================
@@ -313,6 +346,7 @@ export class ReleaseRadarComponent implements OnInit {
       1
     );
     this.buildCalendar();
+    this.updateStats();
     this.selectedDay = null;
   }
 
@@ -323,12 +357,14 @@ export class ReleaseRadarComponent implements OnInit {
       1
     );
     this.buildCalendar();
+    this.updateStats();
     this.selectedDay = null;
   }
 
   goToToday(): void {
     this.viewDate = new Date();
     this.buildCalendar();
+    this.updateStats();
     this.selectedDay = null;
   }
 
@@ -359,7 +395,6 @@ export class ReleaseRadarComponent implements OnInit {
 
   openInSpotify(uri: string, event: Event): void {
     event.stopPropagation();
-    // Convert URI to URL
     const parts = uri.split(':');
     if (parts.length === 3) {
       const url = `https://open.spotify.com/${parts[1]}/${parts[2]}`;
