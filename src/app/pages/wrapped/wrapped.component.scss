@@ -39,13 +39,8 @@
 }
 
 @keyframes wave {
-  0%,
-  100% {
-    transform: scaleY(0.5);
-  }
-  50% {
-    transform: scaleY(1);
-  }
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1); }
 }
 
 // Page Header
@@ -83,21 +78,13 @@
   max-width: 700px;
   margin: 0 auto 32px;
   padding: 24px;
-  background: linear-gradient(
-    135deg,
-    rgba(27, 220, 111, 0.1) 0%,
-    rgba(27, 220, 111, 0.05) 100%
-  );
+  background: linear-gradient(135deg, rgba(27, 220, 111, 0.1) 0%, rgba(27, 220, 111, 0.05) 100%);
   border: 1px solid rgba(27, 220, 111, 0.2);
   border-radius: 20px;
   transition: all 0.3s ease;
 
   &.enrolled {
-    background: linear-gradient(
-      135deg,
-      rgba(27, 220, 111, 0.15) 0%,
-      rgba(27, 220, 111, 0.08) 100%
-    );
+    background: linear-gradient(135deg, rgba(27, 220, 111, 0.15) 0%, rgba(27, 220, 111, 0.08) 100%);
     border-color: rgba(27, 220, 111, 0.4);
 
     .enrollment-icon svg {
@@ -189,9 +176,7 @@
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 // Empty State
@@ -233,7 +218,7 @@
   align-items: center;
   justify-content: center;
   gap: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 
   .nav-btn {
     background: rgba(255, 255, 255, 0.05);
@@ -259,81 +244,48 @@
     }
   }
 
-  .month-selector {
-    text-align: center;
+  // Combined styled month selector with dropdown
+  .month-selector-combined {
     position: relative;
-
-    .current-month {
-      font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    
+    .month-dropdown-styled {
+      appearance: none;
+      background: transparent;
+      border: none;
+      font-size: 1.3rem;
       font-weight: 700;
-      color: #fff;
-      margin: 0;
+      color: transparent;
+      cursor: pointer;
+      padding: 8px 28px 8px 8px;
       background: linear-gradient(135deg, #1bdc6f 0%, #9c0abf 100%);
       -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
       background-clip: text;
-    }
-
-    .month-dropdown {
-      position: absolute;
-      bottom: -30px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 4px 24px 4px 8px;
-      color: #8a8a9a;
-      font-size: 0.8rem;
-      cursor: pointer;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8a9a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 6px center;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+      min-width: 200px;
 
       &:focus {
         outline: none;
-        border-color: rgba(27, 220, 111, 0.5);
       }
 
       option {
         background: #1a1a2e;
         color: #fff;
+        font-size: 0.95rem;
+        font-weight: 500;
+        -webkit-text-fill-color: #fff;
       }
     }
-  }
-}
 
-// Term Selector
-.term-selector {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 24px;
-  margin-top: 40px;
-
-  button {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #8a8a9a;
-    padding: 10px 20px;
-    border-radius: 25px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(27, 220, 111, 0.1);
-      border-color: rgba(27, 220, 111, 0.3);
-      color: #fff;
-    }
-
-    &.active {
-      background: linear-gradient(135deg, #1bdc6f 0%, #17b75b 100%);
-      border-color: transparent;
-      color: #fff;
-      box-shadow: 0 4px 15px rgba(27, 220, 111, 0.3);
+    .dropdown-arrow {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #1bdc6f;
+      pointer-events: none;
     }
   }
 }
@@ -462,7 +414,7 @@
   .track-duration {
     font-size: 0.85rem;
     color: #6a6a7a;
-    font-family: "SF Mono", monospace;
+    font-family: 'SF Mono', monospace;
   }
 
   .spotify-btn {
@@ -494,11 +446,7 @@
 }
 
 .artist-card {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.06) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 20px;
@@ -583,11 +531,7 @@
   .genre-icon {
     width: 40px;
     height: 40px;
-    background: linear-gradient(
-      135deg,
-      rgba(156, 10, 191, 0.2) 0%,
-      rgba(156, 10, 191, 0.1) 100%
-    );
+    background: linear-gradient(135deg, rgba(156, 10, 191, 0.2) 0%, rgba(156, 10, 191, 0.1) 100%);
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -661,17 +605,12 @@
   .month-nav {
     gap: 12px;
 
-    .month-selector .current-month {
-      font-size: 1.4rem;
-    }
-  }
-
-  .term-selector {
-    flex-wrap: wrap;
-
-    button {
-      flex: 1;
-      min-width: 100px;
+    .month-selector-combined {
+      .month-dropdown-styled {
+        font-size: 1.1rem;
+        min-width: 160px;
+        padding-right: 24px;
+      }
     }
   }
 
@@ -734,9 +673,13 @@
 }
 
 @media (max-width: 480px) {
-  .term-selector button {
-    padding: 8px 12px;
-    font-size: 0.75rem;
+  .month-nav {
+    .month-selector-combined {
+      .month-dropdown-styled {
+        font-size: 1rem;
+        min-width: 140px;
+      }
+    }
   }
 
   .artists-grid {
