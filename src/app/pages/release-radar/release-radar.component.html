@@ -8,8 +8,7 @@
       <div class="wave"></div>
       <div class="wave"></div>
     </div>
-    <p class="loading-text" *ngIf="!backfilling">Loading releases from artists you follow...</p>
-    <p class="loading-text" *ngIf="backfilling">Building your release history (this may take a minute)...</p>
+    <p class="loading-text">Loading releases from artists you follow...</p>
   </div>
 
   <!-- Error State -->
@@ -74,12 +73,12 @@
       <div class="enrollment-content">
         <h3>{{ isEnrolled ? "You're Enrolled!" : "Get Notified" }}</h3>
         <p *ngIf="!isEnrolled">
-          Enroll to receive notifications when artists you follow release new
-          music.
+          Enroll to receive weekly email notifications when artists you follow
+          release new music.
         </p>
         <p *ngIf="isEnrolled">
-          You'll receive notifications when your followed artists drop new
-          tracks.
+          You'll receive a weekly email every Saturday with your followed
+          artists' new releases.
         </p>
       </div>
       <button
@@ -168,15 +167,12 @@
 
       <!-- Week Filter (List View Only) -->
       <div class="week-filter" *ngIf="viewMode === 'list'">
-        <select 
+        <select
           class="week-select"
           [ngModel]="selectedWeekKey"
           (ngModelChange)="setWeekFilter($event)"
         >
-          <option 
-            *ngFor="let week of weekOptions" 
-            [value]="week.weekKey"
-          >
+          <option *ngFor="let week of weekOptions" [value]="week.weekKey">
             {{ week.label }}
           </option>
         </select>
@@ -277,10 +273,7 @@
               />
               <div class="preview-info">
                 <span class="preview-name">{{ release.name }}</span>
-                <span
-                  class="preview-artist"
-                  >{{ release.artistName }}</span
-                >
+                <span class="preview-artist">{{ release.artistName }}</span>
               </div>
             </div>
             <div class="preview-more" *ngIf="day.releases.length > 2">
@@ -318,10 +311,9 @@
             <div class="release-info">
               <h4 class="release-name">{{ release.name }}</h4>
               <p class="release-artist">
-                <a
-                  (click)="goToArtist(release.artistId, $event)"
-                  >{{ release.artistName }}</a
-                >
+                <a (click)="goToArtist(release.artistId, $event)">{{
+                  release.artistName
+                }}</a>
               </p>
               <div class="release-meta">
                 <span
@@ -390,10 +382,9 @@
           </div>
 
           <div class="col-artist">
-            <a
-              (click)="goToArtist(release.artistId, $event)"
-              >{{ release.artistName }}</a
-            >
+            <a (click)="goToArtist(release.artistId, $event)">{{
+              release.artistName
+            }}</a>
           </div>
 
           <div class="col-type">
@@ -410,10 +401,7 @@
             <span class="date-text">{{
               formatReleaseDate(release.releaseDate)
             }}</span>
-            <span
-              class="relative-date"
-              >{{ getRelativeDate(release) }}</span
-            >
+            <span class="relative-date">{{ getRelativeDate(release) }}</span>
           </div>
 
           <span class="col-tracks">{{ release.totalTracks }}</span>
@@ -440,9 +428,17 @@
       </div>
 
       <!-- Empty State for Week -->
-      <div class="empty-week" *ngIf="filteredReleases.length === 0 && releases.length > 0">
+      <div
+        class="empty-week"
+        *ngIf="filteredReleases.length === 0 && releases.length > 0"
+      >
         <p>No releases for this week</p>
-        <button class="try-other-week" (click)="setWeekFilter(weekOptions[0]?.weekKey)">View This Week</button>
+        <button
+          class="try-other-week"
+          (click)="setWeekFilter(weekOptions[0]?.weekKey)"
+        >
+          View This Week
+        </button>
       </div>
     </div>
 
