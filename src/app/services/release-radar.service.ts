@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import { Observable, of, BehaviorSubject } from 'rxjs';
-import { map, tap, catchError, switchMap } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export interface ReleaseRadarRelease {
@@ -17,20 +17,22 @@ export interface ReleaseRadarRelease {
 }
 
 export interface ReleaseRadarStats {
-  totalTracks: number;
+  artistCount: number;
+  releaseCount: number;
+  trackCount: number;
   albumCount: number;
   singleCount: number;
-  appearsOnCount: number;
 }
 
 export interface ReleaseRadarWeek {
   email: string;
   weekKey: string;
+  weekDisplay?: string;
+  startDate?: string;
+  endDate?: string;
   releases: ReleaseRadarRelease[];
   stats: ReleaseRadarStats;
   playlistId: string | null;
-  finalized?: boolean;
-  lastUpdated?: string;
   createdAt: string;
 }
 
@@ -39,26 +41,17 @@ export interface ReleaseRadarHistoryResponse {
   weeks: ReleaseRadarWeek[];
   count: number;
   currentWeek: string;
+  currentWeekDisplay?: string;
 }
 
-export interface BackfillResponse {
+export interface ReleaseRadarCheckResponse {
   email: string;
-  status: 'success' | 'skipped' | 'started';
-  reason?: string;
-  message?: string;
-  weeksBackfilled?: number;
-  weeksFound?: number;
-  existingWeeks?: number;
-  totalReleases?: number;
-}
-
-export interface LiveResponse {
-  email: string;
-  weekKey: string;
-  week: ReleaseRadarWeek;
-  source: 'spotify' | 'cache' | 'database';
-  finalized: boolean;
-  needsRefresh: boolean;
+  enrolled: boolean;
+  hasHistory: boolean;
+  currentWeek: string;
+  currentWeekDisplay: string;
+  weekStartDate: string;
+  weekEndDate: string;
 }
 
 @Injectable({
@@ -69,10 +62,6 @@ export class ReleaseRadarService {
   private readonly cacheKey = 'xomify_release_radar_history';
   private readonly cacheTTL = 30 * 60 * 1000; // 30 minutes
 
-  // Loading state for backfill
-  private backfillInProgress = new BehaviorSubject<boolean>(false);
-  public backfillInProgress$ = this.backfillInProgress.asObservable();
-
   constructor(private http: HttpClient) {}
 
   private getHeaders(): HttpHeaders {
@@ -82,66 +71,17 @@ export class ReleaseRadarService {
     });
   }
 
-  /**
-   * NEW: Get current week's live data from Spotify (with daily refresh logic).
-   * Backend handles the "once per day" check - only fetches from Spotify if needed.
-   */
-  getCurrentWeekLive(email: string, force: boolean = false): Observable<LiveResponse> {
-    let params = new HttpParams().set('email', email);
-    if (force) {
-      params = params.set('force', 'true');
-    }
-
-    return this.http
-      .get<LiveResponse>(`${this.baseUrl}/release-radar/live`, {
-        headers: this.getHeaders(),
-        params,
-      })
-      .pipe(
-        tap((response) => {
-          console.log(`[ReleaseRadar] Live data for ${response.weekKey}:`, {
-            source: response.source,
-            finalized: response.finalized,
-            releases: response.week?.releases?.length || 0,
-          });
-        }),
-        catchError((err) => {
-          console.error('Error fetching live release radar:', err);
-          // Return empty response so we can still load history
-          return of({
-            email,
-            weekKey: this.getCurrentWeekKey(),
-            week: {
-              email,
-              weekKey: this.getCurrentWeekKey(),
-              releases: [],
-              stats: { totalTracks: 0, albumCount: 0, singleCount: 0, appearsOnCount: 0 },
-              playlistId: null,
-              finalized: false,
-              createdAt: new Date().toISOString(),
-            },
-            source: 'database' as const,
-            finalized: false,
-            needsRefresh: false,
-          });
-        })
-      );
-  }
+  // ============================================
+  // API Methods
+  // ============================================
 
   /**
-   * Get user's release radar history from DynamoDB.
-   * Falls back to Spotify API if no history exists (triggers backfill).
+   * Get user's release radar history from database.
    */
   getHistory(
     email: string,
     limit: number = 26
   ): Observable<ReleaseRadarHistoryResponse> {
-    // Check session cache first
-    const cached = this.getCache();
-    if (cached) {
-      return of(cached);
-    }
-
     const params = new HttpParams()
       .set('email', email)
       .set('limit', limit.toString());
@@ -149,256 +89,103 @@ export class ReleaseRadarService {
     return this.http
       .get<ReleaseRadarHistoryResponse>(
         `${this.baseUrl}/release-radar/history`,
-        { headers: this.getHeaders(), params }
-      )
-      .pipe(
-        tap((response) => {
-          if (response.weeks && response.weeks.length > 0) {
-            this.setCache(response);
-          }
-        }),
-        catchError((err) => {
-          console.error('Error fetching release radar history:', err);
-          return of({ email, weeks: [], count: 0, currentWeek: '' });
-        })
-      );
-  }
-
-  /**
-   * Get a specific week's release radar data.
-   */
-  getWeek(email: string, weekKey: string): Observable<ReleaseRadarWeek | null> {
-    const params = new HttpParams().set('email', email);
-
-    return this.http
-      .get<ReleaseRadarWeek>(`${this.baseUrl}/release-radar/week/${weekKey}`, {
-        headers: this.getHeaders(),
-        params,
-      })
-      .pipe(
-        catchError((err) => {
-          console.error(`Error fetching week ${weekKey}:`, err);
-          return of(null);
-        })
-      );
-  }
-
-  /**
-   * Get release radar data for a date range.
-   */
-  getHistoryInRange(
-    email: string,
-    startWeek: string,
-    endWeek: string
-  ): Observable<ReleaseRadarHistoryResponse> {
-    const params = new HttpParams()
-      .set('email', email)
-      .set('startWeek', startWeek)
-      .set('endWeek', endWeek);
-
-    return this.http
-      .get<ReleaseRadarHistoryResponse>(
-        `${this.baseUrl}/release-radar/history`,
-        { headers: this.getHeaders(), params }
-      )
-      .pipe(
-        catchError((err) => {
-          console.error('Error fetching release radar range:', err);
-          return of({ email, weeks: [], count: 0, currentWeek: '' });
-        })
-      );
-  }
-
-  /**
-   * Check if user has any release radar history.
-   */
-  checkHasHistory(
-    email: string
-  ): Observable<{ hasHistory: boolean; currentWeek: string }> {
-    const params = new HttpParams().set('email', email);
-
-    return this.http
-      .get<{ email: string; hasHistory: boolean; currentWeek: string }>(
-        `${this.baseUrl}/release-radar/check`,
-        { headers: this.getHeaders(), params }
-      )
-      .pipe(
-        map((response) => ({
-          hasHistory: response.hasHistory,
-          currentWeek: response.currentWeek,
-        })),
-        catchError((err) => {
-          console.error('Error checking history:', err);
-          return of({ hasHistory: false, currentWeek: '' });
-        })
-      );
-  }
-
-  /**
-   * Trigger backfill for a user who has no history.
-   * This will populate 6 months of historical data.
-   */
-  triggerBackfill(user: any): Observable<BackfillResponse> {
-    this.backfillInProgress.next(true);
-
-    return this.http
-      .post<BackfillResponse>(
-        `${this.baseUrl}/release-radar/backfill`,
-        { user: user },
         {
           headers: this.getHeaders(),
+          params,
         }
       )
       .pipe(
         tap((response) => {
-          this.backfillInProgress.next(false);
-          // Clear cache so next load gets fresh data
-          this.clearCache();
+          console.log(
+            `[ReleaseRadar] History: ${response.weeks?.length || 0} weeks`
+          );
         }),
         catchError((err) => {
-          console.error('Error triggering backfill:', err);
-          this.backfillInProgress.next(false);
+          console.error('Error fetching release radar history:', err);
           return of({
-            email: user.email,
-            status: 'skipped' as const,
-            reason: 'error',
+            email,
+            weeks: [],
+            count: 0,
+            currentWeek: this.getCurrentWeekKey(),
+            currentWeekDisplay: '',
           });
         })
       );
   }
 
   /**
-   * Load release radar data.
-   * 
-   * Flow:
-   * 1. Check sessionStorage cache first - if valid, return immediately
-   * 2. If no cache, call /live (which checks if data needs refresh)
-   * 3. Then load /history and merge
-   * 
-   * The /live endpoint handles:
-   * - If user has < 30 weeks history: fetches 6 months in ONE pass
-   * - If user has enough history: just fetches/updates current week
-   * - If already updated today: returns cached data from DB (no Spotify calls)
+   * Check user's release radar status.
    */
-  loadReleaseRadar(
-    email: string,
-    user: any
-  ): Observable<ReleaseRadarHistoryResponse> {
-    // Check frontend cache first - avoid ALL API calls if cache is valid
-    const cached = this.getCache();
-    if (cached && cached.weeks.length > 0) {
-      console.log('[ReleaseRadar] Using cached data, skipping API calls');
-      return of(cached);
-    }
-
-    // No valid cache, load from API
-    return this.loadWithLiveCurrentWeek(email);
-  }
-
-  /**
-   * Load history and merge with live current week data.
-   * Only called when cache is invalid/missing.
-   */
-  private loadWithLiveCurrentWeek(email: string): Observable<ReleaseRadarHistoryResponse> {
-    // First get live current week data (backend handles daily refresh check)
-    return this.getCurrentWeekLive(email).pipe(
-      switchMap((liveResponse) => {
-        // Then get history (skip frontend cache since we're refreshing)
-        return this.loadFreshHistory(email).pipe(
-          map((historyResponse) => {
-            // Merge current week into history
-            return this.mergeCurrentWeekIntoHistory(liveResponse, historyResponse);
-          })
-        );
-      })
-    );
-  }
-
-  /**
-   * Load history directly from API, bypassing frontend cache.
-   */
-  private loadFreshHistory(email: string, limit: number = 30): Observable<ReleaseRadarHistoryResponse> {
-    const params = new HttpParams()
-      .set('email', email)
-      .set('limit', limit.toString());
+  checkStatus(email: string): Observable<ReleaseRadarCheckResponse> {
+    const params = new HttpParams().set('email', email);
 
     return this.http
-      .get<ReleaseRadarHistoryResponse>(
-        `${this.baseUrl}/release-radar/history`,
-        { headers: this.getHeaders(), params }
-      )
+      .get<ReleaseRadarCheckResponse>(`${this.baseUrl}/release-radar/check`, {
+        headers: this.getHeaders(),
+        params,
+      })
       .pipe(
         catchError((err) => {
-          console.error('Error fetching release radar history:', err);
-          return of({ email, weeks: [], count: 0, currentWeek: '' });
+          console.error('Error checking release radar status:', err);
+          return of({
+            email,
+            enrolled: false,
+            hasHistory: false,
+            currentWeek: this.getCurrentWeekKey(),
+            currentWeekDisplay: '',
+            weekStartDate: '',
+            weekEndDate: '',
+          });
         })
       );
   }
 
+  // ============================================
+  // Main Load Method
+  // ============================================
+
   /**
-   * NEW: Merge the live current week data into the history response.
-   * Replaces the current week in history with fresh data from /live.
+   * Load release radar data from history.
+   * Uses session cache for performance.
    */
-  private mergeCurrentWeekIntoHistory(
-    liveResponse: LiveResponse,
-    historyResponse: ReleaseRadarHistoryResponse
-  ): ReleaseRadarHistoryResponse {
-    const currentWeekKey = liveResponse.weekKey;
-    const liveWeek = liveResponse.week;
-
-    // Filter out the current week from history (we'll replace it with live data)
-    const historicalWeeks = historyResponse.weeks.filter(
-      (w) => w.weekKey !== currentWeekKey
-    );
-
-    // Add live current week at the beginning if it has releases
-    const mergedWeeks: ReleaseRadarWeek[] = [];
-    
-    if (liveWeek && liveWeek.releases && liveWeek.releases.length > 0) {
-      mergedWeeks.push(liveWeek);
+  loadReleaseRadar(email: string): Observable<ReleaseRadarHistoryResponse> {
+    // Check frontend cache first
+    const cached = this.getCache();
+    if (cached && cached.weeks.length > 0) {
+      console.log('[ReleaseRadar] Using cached data');
+      return of(cached);
     }
-    
-    // Add historical weeks
-    mergedWeeks.push(...historicalWeeks);
 
-    // Sort by weekKey descending (newest first)
-    mergedWeeks.sort((a, b) => b.weekKey.localeCompare(a.weekKey));
-
-    // Update cache with merged data
-    const mergedResponse: ReleaseRadarHistoryResponse = {
-      email: historyResponse.email,
-      weeks: mergedWeeks,
-      count: mergedWeeks.length,
-      currentWeek: currentWeekKey,
-    };
-
-    this.setCache(mergedResponse);
-
-    return mergedResponse;
-  }
-
-  /**
-   * NEW: Force refresh current week from Spotify (bypasses daily check).
-   * Use for manual "Refresh" button.
-   */
-  forceRefreshCurrentWeek(email: string): Observable<ReleaseRadarHistoryResponse> {
-    // Clear cache first
-    this.clearCache();
-    
-    return this.getCurrentWeekLive(email, true).pipe(
-      switchMap((liveResponse) => {
-        return this.getHistory(email).pipe(
-          map((historyResponse) => {
-            return this.mergeCurrentWeekIntoHistory(liveResponse, historyResponse);
-          })
-        );
+    // Load from API
+    return this.getHistory(email).pipe(
+      tap((response) => {
+        if (response.weeks && response.weeks.length > 0) {
+          this.setCache(response);
+        }
       })
     );
   }
 
   /**
+   * Force refresh - clears cache and reloads from API.
+   */
+  forceRefresh(email: string): Observable<ReleaseRadarHistoryResponse> {
+    this.clearCache();
+    return this.getHistory(email).pipe(
+      tap((response) => {
+        if (response.weeks && response.weeks.length > 0) {
+          this.setCache(response);
+        }
+      })
+    );
+  }
+
+  // ============================================
+  // Helper Methods
+  // ============================================
+
+  /**
    * Get all releases from history as a flat array.
-   * Useful for calendar view that shows all releases.
    */
   getAllReleasesFromHistory(
     history: ReleaseRadarHistoryResponse
@@ -422,75 +209,85 @@ export class ReleaseRadarService {
     );
   }
 
-  /**
-   * Get releases for a specific week from history.
-   */
-  getReleasesForWeek(
-    history: ReleaseRadarHistoryResponse,
-    weekKey: string
-  ): ReleaseRadarRelease[] {
-    const week = history.weeks.find((w) => w.weekKey === weekKey);
-    return week?.releases || [];
-  }
+  // ============================================
+  // Week Key Calculations (Saturday-Friday)
+  // ============================================
 
   /**
-   * Calculate the current week key (Sunday-Saturday).
+   * Calculate the current week key.
+   * Week runs Saturday 00:00:00 to Friday 23:59:59.
    */
   getCurrentWeekKey(): string {
     return this.getWeekKey(new Date());
   }
 
   /**
-   * Get week key for a specific date (Sunday-Saturday weeks).
+   * Get week key for a specific date (Saturday-Friday weeks).
    */
   getWeekKey(date: Date): string {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
 
-    // Find the Sunday that starts this week
-    // getDay(): Sun=0, Mon=1, ..., Sat=6
+    // Find the Saturday that starts this week
+    // getDay(): Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6
     const dayOfWeek = d.getDay();
 
-    const sunday = new Date(d);
-    sunday.setDate(d.getDate() - dayOfWeek);
+    // Days since Saturday: Sat=0, Sun=1, Mon=2, Tue=3, Wed=4, Thu=5, Fri=6
+    const daysSinceSaturday = (dayOfWeek + 1) % 7;
 
-    // Get ISO week number based on the Sunday
-    const jan4 = new Date(sunday.getFullYear(), 0, 4);
-    const startOfYear = new Date(jan4);
-    startOfYear.setDate(jan4.getDate() - jan4.getDay()); // Sunday of week containing Jan 4
+    const saturday = new Date(d);
+    saturday.setDate(d.getDate() - daysSinceSaturday);
 
-    const diffMs = sunday.getTime() - startOfYear.getTime();
-    const weekNum = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+    // Get ISO week number of the Saturday
+    const isoWeek = this.getISOWeekNumber(saturday);
+    const year = saturday.getFullYear();
 
-    return `${sunday.getFullYear()}-${weekNum.toString().padStart(2, '0')}`;
+    return `${year}-${isoWeek.toString().padStart(2, '0')}`;
   }
 
   /**
-   * Get the date range for a week key (Sunday-Saturday).
+   * Get ISO week number for a date.
+   */
+  private getISOWeekNumber(date: Date): number {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7)); // Thursday of this week
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  }
+
+  /**
+   * Get the date range for a week key (Saturday-Friday).
    */
   getWeekDateRange(weekKey: string): { start: Date; end: Date } {
     const [year, week] = weekKey.split('-').map(Number);
 
-    // Find Sunday of the first week
+    // Find Monday of that ISO week
     const jan4 = new Date(year, 0, 4);
-    const startOfYear = new Date(jan4);
-    startOfYear.setDate(jan4.getDate() - jan4.getDay()); // Sunday of week containing Jan 4
+    const startOfWeek1 = new Date(jan4);
+    startOfWeek1.setDate(jan4.getDate() - jan4.getDay() + 1); // Monday of week 1
 
-    // Get Sunday of the target week
-    const sunday = new Date(startOfYear);
-    sunday.setDate(startOfYear.getDate() + (week - 1) * 7);
+    // Get Monday of target week
+    const mondayOfWeek = new Date(startOfWeek1);
+    mondayOfWeek.setDate(startOfWeek1.getDate() + (week - 1) * 7);
 
-    // Saturday is 6 days after Sunday
-    const saturday = new Date(sunday);
-    saturday.setDate(sunday.getDate() + 6);
+    // Our week starts on Saturday (5 days after Monday)
+    const saturday = new Date(mondayOfWeek);
+    saturday.setDate(mondayOfWeek.getDate() + 5);
+    saturday.setHours(0, 0, 0, 0);
 
-    return { start: sunday, end: saturday };
+    // Friday is 6 days after Saturday
+    const friday = new Date(saturday);
+    friday.setDate(saturday.getDate() + 6);
+    friday.setHours(23, 59, 59, 999);
+
+    return { start: saturday, end: friday };
   }
 
   /**
    * Format a week key for display.
    */
-  formatWeekKey(weekKey: string): string {
+  formatWeekDisplay(weekKey: string): string {
     try {
       const { start, end } = this.getWeekDateRange(weekKey);
       const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
@@ -507,30 +304,42 @@ export class ReleaseRadarService {
   }
 
   /**
-   * Build week options for dropdown (last 8 weeks).
+   * Build week options for dropdown.
+   * Uses history weeks when available.
    */
-  buildWeekOptions(): { weekKey: string; label: string }[] {
+  buildWeekOptions(
+    history?: ReleaseRadarHistoryResponse
+  ): { weekKey: string; label: string }[] {
     const options: { weekKey: string; label: string }[] = [];
-    const today = new Date();
+    const currentWeekKey = this.getCurrentWeekKey();
 
-    for (let i = 0; i < 8; i++) {
-      const targetDate = new Date(today);
-      targetDate.setDate(today.getDate() - i * 7);
+    // If we have history, build options from that
+    if (history?.weeks && history.weeks.length > 0) {
+      for (const week of history.weeks) {
+        const isCurrentWeek = week.weekKey === currentWeekKey;
+        const label = isCurrentWeek
+          ? 'This Week'
+          : week.weekDisplay || this.formatWeekDisplay(week.weekKey);
 
-      const weekKey = this.getWeekKey(targetDate);
-
-      let label: string;
-      if (i === 0) {
-        label = 'This Week';
-      } else if (i === 1) {
-        label = 'Last Week';
-      } else {
-        label = this.formatWeekKey(weekKey);
+        options.push({
+          weekKey: week.weekKey,
+          label,
+        });
       }
+    } else {
+      // Fallback: generate last 8 weeks
+      const today = new Date();
+      for (let i = 0; i < 8; i++) {
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() - i * 7);
+        const weekKey = this.getWeekKey(targetDate);
 
-      // Avoid duplicates
-      if (!options.find((o) => o.weekKey === weekKey)) {
-        options.push({ weekKey, label });
+        if (!options.find((o) => o.weekKey === weekKey)) {
+          options.push({
+            weekKey,
+            label: i === 0 ? 'This Week' : this.formatWeekDisplay(weekKey),
+          });
+        }
       }
     }
 

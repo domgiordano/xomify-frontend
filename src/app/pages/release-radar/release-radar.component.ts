@@ -36,7 +36,6 @@ export class ReleaseRadarComponent implements OnInit {
 
   // State
   loading = true;
-  backfilling = false;
   error: string | null = null;
 
   // Enrollment state
@@ -66,7 +65,6 @@ export class ReleaseRadarComponent implements OnInit {
 
   // User info
   private userEmail: string = '';
-  private userData: any = null;
 
   constructor(
     private router: Router,
@@ -77,35 +75,21 @@ export class ReleaseRadarComponent implements OnInit {
 
   ngOnInit(): void {
     this.isEnrolled = this.userService.getReleaseRadarEnrollment();
-    this.weekOptions = this.releaseRadarService.buildWeekOptions();
     this.selectedWeekKey = this.releaseRadarService.getCurrentWeekKey();
-
-    // Subscribe to backfill progress
-    this.releaseRadarService.backfillInProgress$.subscribe(
-      (inProgress) => (this.backfilling = inProgress)
-    );
-
     this.loadUserAndReleases();
   }
 
   private loadUserAndReleases(): void {
     this.loading = true;
-
     this.userEmail = this.userService.getEmail();
-    this.userService
-      .getUserTableData(this.userEmail)
-      .pipe(take(1))
-      .subscribe({
-        next: (user: any) => {
-          this.userData = user;
-          this.loadReleases();
-        },
-        error: (err) => {
-          console.error('Error loading user profile:', err);
-          this.error = 'Failed to load user profile.';
-          this.loading = false;
-        },
-      });
+
+    if (!this.userEmail) {
+      this.error = 'User email not available.';
+      this.loading = false;
+      return;
+    }
+
+    this.loadReleases();
   }
 
   loadReleases(forceRefresh = false): void {
@@ -122,27 +106,42 @@ export class ReleaseRadarComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
-    this.releaseRadarService
-      .loadReleaseRadar(this.userEmail, this.userData)
-      .pipe(take(1))
-      .subscribe({
-        next: (response) => {
-          this.history = response;
-          this.releases =
-            this.releaseRadarService.getAllReleasesFromHistory(response);
-          this.processReleases();
-          this.loading = false;
+    const loadObservable = forceRefresh
+      ? this.releaseRadarService.forceRefresh(this.userEmail)
+      : this.releaseRadarService.loadReleaseRadar(this.userEmail);
 
-          if (forceRefresh) {
-            this.toastService.showPositiveToast('Releases refreshed');
-          }
-        },
-        error: (err) => {
-          console.error('Error loading releases:', err);
-          this.error = 'Failed to load releases. Please try again.';
-          this.loading = false;
-        },
-      });
+    loadObservable.pipe(take(1)).subscribe({
+      next: (response) => {
+        this.history = response;
+        this.releases =
+          this.releaseRadarService.getAllReleasesFromHistory(response);
+
+        // Build week options from history
+        this.weekOptions = this.releaseRadarService.buildWeekOptions(response);
+
+        // Set current week as default if not already set
+        if (
+          !this.selectedWeekKey ||
+          !this.weekOptions.find((w) => w.weekKey === this.selectedWeekKey)
+        ) {
+          this.selectedWeekKey =
+            response.currentWeek ||
+            this.releaseRadarService.getCurrentWeekKey();
+        }
+
+        this.processReleases();
+        this.loading = false;
+
+        if (forceRefresh) {
+          this.toastService.showPositiveToast('Releases refreshed');
+        }
+      },
+      error: (err) => {
+        console.error('Error loading releases:', err);
+        this.error = 'Failed to load releases. Please try again.';
+        this.loading = false;
+      },
+    });
   }
 
   private processReleases(): void {
@@ -160,28 +159,42 @@ export class ReleaseRadarComponent implements OnInit {
     if (this.viewMode === 'calendar') {
       // Calendar view: show stats for the currently viewed MONTH
       releasesToCount = this.getReleasesForMonth(this.viewDate);
-      this.statsLabel = this.viewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+      this.statsLabel = this.viewDate.toLocaleString('default', {
+        month: 'long',
+        year: 'numeric',
+      });
     } else {
       // List view: show stats for the selected WEEK
       if (this.history && this.selectedWeekKey) {
-        const weekData = this.history.weeks.find(w => w.weekKey === this.selectedWeekKey);
+        const weekData = this.history.weeks.find(
+          (w) => w.weekKey === this.selectedWeekKey
+        );
         if (weekData) {
           releasesToCount = weekData.releases;
-          // Get week label from options
-          const weekOption = this.weekOptions.find(w => w.weekKey === this.selectedWeekKey);
-          this.statsLabel = weekOption?.label || this.selectedWeekKey;
+          // Get week label from options or weekDisplay
+          const weekOption = this.weekOptions.find(
+            (w) => w.weekKey === this.selectedWeekKey
+          );
+          this.statsLabel =
+            weekOption?.label || weekData.weekDisplay || this.selectedWeekKey;
         }
       }
     }
 
     // Calculate stats from the relevant releases
     this.totalReleases = releasesToCount.length;
-    this.albumCount = releasesToCount.filter(r => r.albumType === 'album').length;
-    this.singleCount = releasesToCount.filter(r => r.albumType === 'single').length;
+    this.albumCount = releasesToCount.filter(
+      (r) => r.albumType === 'album'
+    ).length;
+    this.singleCount = releasesToCount.filter(
+      (r) => r.albumType === 'single'
+    ).length;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    this.upcomingCount = releasesToCount.filter(r => new Date(r.releaseDate) >= today).length;
+    this.upcomingCount = releasesToCount.filter(
+      (r) => new Date(r.releaseDate) >= today
+    ).length;
   }
 
   /**
@@ -190,10 +203,12 @@ export class ReleaseRadarComponent implements OnInit {
   private getReleasesForMonth(date: Date): ReleaseRadarRelease[] {
     const year = date.getFullYear();
     const month = date.getMonth();
-    
-    return this.releases.filter(release => {
+
+    return this.releases.filter((release) => {
       const releaseDate = new Date(release.releaseDate);
-      return releaseDate.getFullYear() === year && releaseDate.getMonth() === month;
+      return (
+        releaseDate.getFullYear() === year && releaseDate.getMonth() === month
+      );
     });
   }
 
