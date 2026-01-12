@@ -265,14 +265,14 @@
             <div
               class="preview-item"
               *ngFor="let release of day.releases.slice(0, 2)"
-              (click)="goToAlbum(release.id); $event.stopPropagation()"
+              (click)="goToAlbum(release.albumId); $event.stopPropagation()"
             >
               <img
                 [src]="release.imageUrl || 'assets/default-album.png'"
-                [alt]="release.name"
+                [alt]="release.albumName"
               />
               <div class="preview-info">
-                <span class="preview-name">{{ release.name }}</span>
+                <span class="preview-name">{{ release.albumName }}</span>
                 <span class="preview-artist">{{ release.artistName }}</span>
               </div>
             </div>
@@ -301,15 +301,15 @@
           <div
             class="release-item"
             *ngFor="let release of selectedDay.releases"
-            (click)="goToAlbum(release.id)"
+            (click)="goToAlbum(release.albumId)"
           >
             <img
               class="release-image"
               [src]="release.imageUrl || 'assets/default-album.png'"
-              [alt]="release.name"
+              [alt]="release.albumName"
             />
             <div class="release-info">
-              <h4 class="release-name">{{ release.name }}</h4>
+              <h4 class="release-name">{{ release.albumName }}</h4>
               <p class="release-artist">
                 <a (click)="goToArtist(release.artistId, $event)">{{
                   release.artistName
@@ -368,7 +368,7 @@
         <div
           class="release-row"
           *ngFor="let release of filteredReleases; let i = index"
-          (click)="goToAlbum(release.id)"
+          (click)="goToAlbum(release.albumId)"
         >
           <span class="col-num">{{ i + 1 }}</span>
 
@@ -376,9 +376,9 @@
             <img
               class="release-thumb"
               [src]="release.imageUrl || 'assets/default-album.png'"
-              [alt]="release.name"
+              [alt]="release.albumName"
             />
-            <span class="release-name">{{ release.name }}</span>
+            <span class="release-name">{{ release.albumName }}</span>
           </div>
 
           <div class="col-artist">

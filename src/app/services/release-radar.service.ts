@@ -5,15 +5,20 @@ import { map, tap, catchError } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export interface ReleaseRadarRelease {
-  id: string;
-  name: string;
+  albumId: string;
+  albumName: string;
   artistName: string;
   artistId: string;
   imageUrl: string | null;
   albumType: 'album' | 'single' | 'appears_on';
   releaseDate: string;
   totalTracks: number;
+  spotifyUrl?: string;
   uri: string;
+
+  // Alias for backwards compatibility
+  id?: string;
+  name?: string;
 }
 
 export interface ReleaseRadarStats {
@@ -195,8 +200,9 @@ export class ReleaseRadarService {
 
     for (const week of history.weeks) {
       for (const release of week.releases) {
-        if (!seenIds.has(release.id)) {
-          seenIds.add(release.id);
+        // Use albumId (the actual field from DynamoDB)
+        if (!seenIds.has(release.albumId)) {
+          seenIds.add(release.albumId);
           allReleases.push(release);
         }
       }
