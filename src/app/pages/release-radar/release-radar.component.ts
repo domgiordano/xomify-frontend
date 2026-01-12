@@ -226,8 +226,9 @@ export class ReleaseRadarComponent implements OnInit {
         (w) => w.weekKey === this.selectedWeekKey
       );
       if (weekData) {
-        const weekReleaseIds = new Set(weekData.releases.map((r) => r.id));
-        filtered = filtered.filter((r) => weekReleaseIds.has(r.id));
+        // Use albumId (the actual field from DynamoDB)
+        const weekReleaseIds = new Set(weekData.releases.map((r) => r.albumId));
+        filtered = filtered.filter((r) => weekReleaseIds.has(r.albumId));
       }
     }
 
