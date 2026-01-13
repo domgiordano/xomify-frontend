@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Location } from '@angular/common';
 import { AlbumService } from 'src/app/services/album.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { QueueTrack } from 'src/app/services/queue.service';
@@ -23,6 +24,7 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private location: Location,
     private albumService: AlbumService,
     private toastService: ToastService
   ) {}
@@ -127,12 +129,8 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    // Navigate back to the artist if we have artist info
-    if (this.album?.artists?.[0]?.id) {
-      this.router.navigate(['/artist-profile', this.album.artists[0].id]);
-    } else {
-      this.router.navigate(['/top-artists']);
-    }
+    // Use browser back button to go to previous page
+    this.location.back();
   }
 
   getQueueTrack(track: any): QueueTrack {

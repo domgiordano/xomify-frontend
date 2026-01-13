@@ -4,18 +4,31 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      skip_cache_invalidation:
+        description: 'Skip CloudFront cache invalidation'
+        required: false
+        default: 'false'
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "18"
+          cache: 'npm'
+
+      - name: Get version from package.json
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Retrieve SSM Parameters
         run: |
@@ -67,3 +80,37 @@ jobs:
         run: |
           aws s3 cp ./dist/xomify/index.html s3://xomify.com/index.html \
             --cache-control "no-cache, no-store, must-revalidate"
+
+      - name: Create GitHub Release
+        if: success()
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.package-version.outputs.version }}
+          release_name: Release v${{ steps.package-version.outputs.version }}
+          body: |
+            ## Xomify Frontend v${{ steps.package-version.outputs.version }}
+
+            Deployed to production on $(date +'%Y-%m-%d at %H:%M UTC')
+
+            ### Changes
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md) for details.
+
+            ### Deployment Info
+            - Commit: ${{ github.sha }}
+            - Branch: ${{ github.ref_name }}
+            - Workflow: ${{ github.run_id }}
+          draft: false
+          prerelease: false
+        continue-on-error: true
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "## Deployment Successful ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** v${{ steps.package-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**S3 Bucket:** s3://xomify.com" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://xomify.com" >> $GITHUB_STEP_SUMMARY

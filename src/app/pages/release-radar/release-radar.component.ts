@@ -2,13 +2,16 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserService } from 'src/app/services/user.service';
 import { ToastService } from 'src/app/services/toast.service';
+import { QueueService, QueueTrack } from 'src/app/services/queue.service';
+import { AlbumService } from 'src/app/services/album.service';
 import {
   ReleaseRadarService,
   ReleaseRadarHistoryResponse,
   ReleaseRadarRelease,
   ReleaseRadarWeek,
 } from 'src/app/services/release-radar.service';
-import { take } from 'rxjs/operators';
+import { take, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 interface CalendarDay {
   date: Date;
@@ -70,7 +73,9 @@ export class ReleaseRadarComponent implements OnInit {
     private router: Router,
     private userService: UserService,
     private releaseRadarService: ReleaseRadarService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private queueService: QueueService,
+    private albumService: AlbumService
   ) {}
 
   ngOnInit(): void {
@@ -492,5 +497,62 @@ export class ReleaseRadarComponent implements OnInit {
       (w) => w.weekKey === this.selectedWeekKey
     );
     return weekData?.stats || null;
+  }
+
+  // ============================================
+  // Queue Management
+  // ============================================
+
+  addAlbumToQueue(release: ReleaseRadarRelease, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    this.toastService.showPositiveToast('Adding tracks to queue...');
+
+    this.albumService
+      .getAlbumTracks(release.albumId)
+      .pipe(
+        take(1),
+        catchError((error) => {
+          console.error('Error fetching album tracks:', error);
+          this.toastService.showNegativeToast('Failed to add tracks to queue');
+          return of(null);
+        })
+      )
+      .subscribe((response) => {
+        if (!response || !response.items) {
+          return;
+        }
+
+        let addedCount = 0;
+        response.items.forEach((track: any) => {
+          const queueTrack: QueueTrack = {
+            id: track.id,
+            name: track.name,
+            artists: track.artists || [],
+            album: {
+              id: release.albumId,
+              name: release.albumName,
+              images: release.imageUrl ? [{ url: release.imageUrl }] : [],
+            },
+            duration_ms: track.duration_ms,
+            external_urls: track.external_urls,
+          };
+
+          const added = this.queueService.addToQueue(queueTrack);
+          if (added) {
+            addedCount++;
+          }
+        });
+
+        if (addedCount > 0) {
+          this.toastService.showPositiveToast(
+            `Added ${addedCount} track${addedCount !== 1 ? 's' : ''} to queue`
+          );
+        } else {
+          this.toastService.showPositiveToast('Tracks already in queue');
+        }
+      });
   }
 }
