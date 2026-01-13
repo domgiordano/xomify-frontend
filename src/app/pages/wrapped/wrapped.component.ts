@@ -5,6 +5,7 @@ import { WrappedService } from 'src/app/services/wrapped.service';
 import { SongService } from 'src/app/services/song.service';
 import { ArtistService } from 'src/app/services/artist.service';
 import { ToastService } from 'src/app/services/toast.service';
+import { QueueTrack } from 'src/app/services/queue.service';
 import { forkJoin, of } from 'rxjs';
 import { take, catchError } from 'rxjs/operators';
 
@@ -280,5 +281,20 @@ export class WrappedComponent implements OnInit {
   hasNextMonth(): boolean {
     const currentIndex = this.availableWraps.findIndex(w => w.monthKey === this.selectedWrap?.monthKey);
     return currentIndex > 0;
+  }
+
+  // ============================================
+  // Queue Management
+  // ============================================
+
+  getQueueTrack(track: DisplayTrack): QueueTrack {
+    return {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: track.album || { id: '', name: '', images: [] },
+      duration_ms: track.duration_ms,
+      external_urls: undefined,
+    };
   }
 }
