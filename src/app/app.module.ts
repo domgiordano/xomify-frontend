@@ -27,6 +27,8 @@ import { AlbumDetailComponent } from './pages/album-detail/album-detail.componen
 import { AddToQueueButtonComponent } from './components/add-to-queue-button/add-to-queue-button.component';
 import { WrappedComponent } from './pages/wrapped/wrapped.component';
 import { ReleaseRadarComponent } from './pages/release-radar/release-radar.component';
+import { FriendsComponent } from './pages/friends/friends.component';
+import { FriendProfileComponent } from './pages/friend-profile/friend-profile.component';
 
 @NgModule({
   declarations: [
@@ -49,6 +51,8 @@ import { ReleaseRadarComponent } from './pages/release-radar/release-radar.compo
     FooterComponent,
     WrappedComponent,
     ReleaseRadarComponent,
+    FriendsComponent,
+    FriendProfileComponent,
   ],
   imports: [
     BrowserModule,

@@ -59,6 +59,14 @@
         Wrapped
       </a>
       <a
+        routerLink="/friends"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/friends') }"
+      >
+        Friends
+        <span class="queue-badge pending" *ngIf="pendingFriendsCount > 0">{{ pendingFriendsCount }}</span>
+      </a>
+      <a
         routerLink="/playlist-builder"
         routerLinkActive="active"
         [ngClass]="{ selected: isSelected('/playlist-builder') }"
@@ -121,6 +129,14 @@
       (click)="selectItem('/wrapped')"
       >Wrapped</a
     >
+    <a
+      routerLink="/friends"
+      routerLinkActive="active"
+      (click)="selectItem('/friends')"
+    >
+      Friends
+      <span class="queue-badge pending" *ngIf="pendingFriendsCount > 0">{{ pendingFriendsCount }}</span>
+    </a>
     <a
       routerLink="/playlist-builder"
       routerLinkActive="active"

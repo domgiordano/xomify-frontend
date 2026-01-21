@@ -15,6 +15,8 @@ import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.compo
 import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
 import { WrappedComponent } from './pages/wrapped/wrapped.component';
 import { ReleaseRadarComponent } from './pages/release-radar/release-radar.component';
+import { FriendsComponent } from './pages/friends/friends.component';
+import { FriendProfileComponent } from './pages/friend-profile/friend-profile.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -67,6 +69,16 @@ const routes: Routes = [
   {
     path: 'playlist-builder',
     component: QueueBuilderComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'friends',
+    component: FriendsComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'friend/:email',
+    component: FriendProfileComponent,
     canActivate: [AuthGuard],
   },
   // Catch-all redirect

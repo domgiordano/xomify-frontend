@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from './auth.service';
 
+
 @Injectable({
   providedIn: 'root',
 })
@@ -275,6 +276,40 @@ export class PlayerService {
 
   get isCurrentlyPlaying(): boolean {
     return this.isPlayingSubject.getValue();
+  }
+
+  // Add track to Spotify's queue (plays on user's active session)
+  addToSpotifyQueue(trackId: string): Observable<boolean> {
+    const token = this.authService.getAccessToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+    });
+
+    const uri = `spotify:track:${trackId}`;
+    return new Observable((observer) => {
+      this.http
+        .post(
+          `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
+          null,
+          { headers }
+        )
+        .subscribe({
+          next: () => {
+            observer.next(true);
+            observer.complete();
+          },
+          error: (err) => {
+            console.error('Error adding to Spotify queue:', err);
+            observer.next(false);
+            observer.complete();
+          },
+        });
+    });
+  }
+
+  // Play next - adds to queue which effectively plays next
+  playNext(trackId: string): Observable<boolean> {
+    return this.addToSpotifyQueue(trackId);
   }
 
   disconnect(): void {

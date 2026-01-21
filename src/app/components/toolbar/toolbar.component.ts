@@ -2,7 +2,10 @@ import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { QueueService } from '../../services/queue.service';
-import { Subscription } from 'rxjs';
+import { FriendsService } from '../../services/friends.service';
+import { UserService } from '../../services/user.service';
+import { Subscription, forkJoin } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-toolbar',
@@ -13,28 +16,55 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   dropdownVisible = false;
   isMobile: boolean = false;
   queueCount = 0;
+  pendingFriendsCount = 0;
 
-  private queueSub!: Subscription;
+  private subscriptions: Subscription[] = [];
 
   constructor(
     private authService: AuthService,
     private router: Router,
-    private queueService: QueueService
+    private queueService: QueueService,
+    private friendsService: FriendsService,
+    private userService: UserService
   ) {
     this.checkIfMobile();
     window.addEventListener('resize', this.checkIfMobile.bind(this));
   }
 
   ngOnInit(): void {
-    this.queueSub = this.queueService.queueCount$.subscribe((count) => {
-      this.queueCount = count;
-    });
+    this.subscriptions.push(
+      this.queueService.queueCount$.subscribe((count) => {
+        this.queueCount = count;
+      })
+    );
+
+    // Subscribe to pending requests
+    this.subscriptions.push(
+      this.friendsService.pendingRequests$.subscribe((requests) => {
+        const email = this.userService.getEmail();
+        if (email) {
+          this.pendingFriendsCount = requests.filter(
+            (r) => r.requestedBy !== email && r.status === 'pending'
+          ).length;
+        }
+      })
+    );
+
+    // Load pending requests if logged in
+    if (this.authService.isLoggedIn()) {
+      this.loadPendingRequests();
+    }
+  }
+
+  loadPendingRequests(): void {
+    const email = this.userService.getEmail();
+    if (email) {
+      this.friendsService.getPendingRequests(email).pipe(take(1)).subscribe();
+    }
   }
 
   ngOnDestroy(): void {
-    if (this.queueSub) {
-      this.queueSub.unsubscribe();
-    }
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
   }
 
   toggleDropdown() {
