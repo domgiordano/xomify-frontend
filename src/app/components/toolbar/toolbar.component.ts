@@ -4,7 +4,7 @@ import { AuthService } from '../../services/auth.service';
 import { QueueService } from '../../services/queue.service';
 import { FriendsService } from '../../services/friends.service';
 import { UserService } from '../../services/user.service';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 
 @Component({
@@ -40,13 +40,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     // Subscribe to pending requests
     this.subscriptions.push(
-      this.friendsService.pendingRequests$.subscribe((requests) => {
-        const email = this.userService.getEmail();
-        if (email) {
-          this.pendingFriendsCount = requests.filter(
-            (r) => r.requestedBy !== email && r.status === 'pending'
-          ).length;
-        }
+      this.friendsService.pendingRequests$.subscribe((pending) => {
+        this.pendingFriendsCount = pending.incoming?.length || 0;
       })
     );
 

@@ -2,7 +2,12 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription, forkJoin, debounceTime, Subject } from 'rxjs';
 import { take } from 'rxjs/operators';
-import { FriendsService, Friend, SearchResult } from 'src/app/services/friends.service';
+import {
+  FriendsService,
+  Friend,
+  PendingRequest,
+  SearchResult,
+} from 'src/app/services/friends.service';
 import { UserService } from 'src/app/services/user.service';
 import { ToastService } from 'src/app/services/toast.service';
 
@@ -27,8 +32,8 @@ export class FriendsComponent implements OnInit, OnDestroy {
   friendsSearchQuery = '';
 
   // Pending requests
-  incomingRequests: Friend[] = [];
-  outgoingRequests: Friend[] = [];
+  incomingRequests: PendingRequest[] = [];
+  outgoingRequests: PendingRequest[] = [];
 
   // User search
   searchQuery = '';
@@ -43,7 +48,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
     private friendsService: FriendsService,
     private userService: UserService,
     private toastService: ToastService,
-    private router: Router
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -54,7 +59,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.searchSubject.pipe(debounceTime(400)).subscribe((query) => {
         this.performSearch(query);
-      })
+      }),
     );
   }
 
@@ -70,19 +75,15 @@ export class FriendsComponent implements OnInit, OnDestroy {
     }
 
     forkJoin({
-      friends: this.friendsService.getFriendsList(this.currentEmail).pipe(take(1)),
+      friendsResponse: this.friendsService.getFriendsList(this.currentEmail).pipe(take(1)),
       pending: this.friendsService.getPendingRequests(this.currentEmail).pipe(take(1)),
     }).subscribe({
-      next: ({ friends, pending }) => {
-        this.friends = friends.filter((f) => f.status === 'accepted');
+      next: ({ friendsResponse, pending }) => {
+        this.friends = friendsResponse.accepted || [];
         this.filteredFriends = [...this.friends];
 
-        this.incomingRequests = pending.filter(
-          (r) => r.requestedBy !== this.currentEmail && r.status === 'pending'
-        );
-        this.outgoingRequests = pending.filter(
-          (r) => r.requestedBy === this.currentEmail && r.status === 'pending'
-        );
+        this.incomingRequests = pending.incoming || [];
+        this.outgoingRequests = pending.outgoing || [];
 
         this.loading = false;
 
@@ -116,7 +117,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
       this.filteredFriends = this.friends.filter(
         (f) =>
           f.displayName?.toLowerCase().includes(query) ||
-          f.email?.toLowerCase().includes(query)
+          f.email?.toLowerCase().includes(query),
       );
     }
   }
@@ -142,12 +143,14 @@ export class FriendsComponent implements OnInit, OnDestroy {
     this.hasSearched = true;
 
     this.friendsService
-      .searchUsers(query.trim())
+      .searchUsers(this.currentEmail, query.trim())
       .pipe(take(1))
       .subscribe({
         next: (results) => {
           // Filter out current user
-          this.searchResults = results.filter((r) => r.email !== this.currentEmail);
+          this.searchResults = results.filter(
+            (r) => r.email !== this.currentEmail,
+          );
           this.isSearching = false;
         },
         error: (err) => {
@@ -176,7 +179,9 @@ export class FriendsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           result.isPending = true;
-          this.toastService.showPositiveToast(`Friend request sent to ${result.displayName}`);
+          this.toastService.showPositiveToast(
+            `Friend request sent to ${result.displayName}`,
+          );
           this.actionLoading[result.email] = false;
         },
         error: (err) => {
@@ -187,7 +192,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
       });
   }
 
-  acceptRequest(request: Friend): void {
+  acceptRequest(request: PendingRequest): void {
     if (this.actionLoading[request.email]) return;
 
     this.actionLoading[request.email] = true;
@@ -198,12 +203,19 @@ export class FriendsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           // Move from pending to friends
-          this.incomingRequests = this.incomingRequests.filter((r) => r.email !== request.email);
-          request.status = 'accepted';
-          this.friends.push(request);
+          this.incomingRequests = this.incomingRequests.filter(
+            (r) => r.email !== request.email,
+          );
+          this.friends.push({
+            email: request.email,
+            displayName: request.displayName,
+            avatar: request.avatar,
+          });
           this.filteredFriends = [...this.friends];
 
-          this.toastService.showPositiveToast(`You are now friends with ${request.displayName}`);
+          this.toastService.showPositiveToast(
+            `You are now friends with ${request.displayName}`,
+          );
           this.actionLoading[request.email] = false;
         },
         error: (err) => {
@@ -214,31 +226,52 @@ export class FriendsComponent implements OnInit, OnDestroy {
       });
   }
 
-  rejectRequest(request: Friend): void {
+  rejectRequest(request: PendingRequest): void {
     if (this.actionLoading[request.email]) return;
 
     this.actionLoading[request.email] = true;
 
     this.friendsService
-      .removeFriend(this.currentEmail, request.email)
+      .rejectFriendRequest(this.currentEmail, request.email)
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this.incomingRequests = this.incomingRequests.filter((r) => r.email !== request.email);
-          this.outgoingRequests = this.outgoingRequests.filter((r) => r.email !== request.email);
-          this.toastService.showPositiveToast('Request removed');
+          this.incomingRequests = this.incomingRequests.filter(
+            (r) => r.email !== request.email,
+          );
+          this.toastService.showPositiveToast('Request rejected');
           this.actionLoading[request.email] = false;
         },
         error: (err) => {
           console.error('Error rejecting request:', err);
-          this.toastService.showNegativeToast('Error removing request');
+          this.toastService.showNegativeToast('Error rejecting request');
           this.actionLoading[request.email] = false;
         },
       });
   }
 
-  cancelRequest(request: Friend): void {
-    this.rejectRequest(request);
+  cancelRequest(request: PendingRequest): void {
+    if (this.actionLoading[request.email]) return;
+
+    this.actionLoading[request.email] = true;
+
+    this.friendsService
+      .rejectFriendRequest(this.currentEmail, request.email)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.outgoingRequests = this.outgoingRequests.filter(
+            (r) => r.email !== request.email,
+          );
+          this.toastService.showPositiveToast('Request cancelled');
+          this.actionLoading[request.email] = false;
+        },
+        error: (err) => {
+          console.error('Error cancelling request:', err);
+          this.toastService.showNegativeToast('Error cancelling request');
+          this.actionLoading[request.email] = false;
+        },
+      });
   }
 
   removeFriend(friend: Friend, event: Event): void {
@@ -254,8 +287,12 @@ export class FriendsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.friends = this.friends.filter((f) => f.email !== friend.email);
-          this.filteredFriends = this.filteredFriends.filter((f) => f.email !== friend.email);
-          this.toastService.showPositiveToast(`Removed ${friend.displayName} from friends`);
+          this.filteredFriends = this.filteredFriends.filter(
+            (f) => f.email !== friend.email,
+          );
+          this.toastService.showPositiveToast(
+            `Removed ${friend.displayName} from friends`,
+          );
           this.actionLoading[friend.email] = false;
         },
         error: (err) => {

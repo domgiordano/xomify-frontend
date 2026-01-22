@@ -99,7 +99,7 @@
         >
           <div class="user-avatar">
             <img
-              [src]="friend.profilePic || getDefaultAvatar()"
+              [src]="friend.avatar || getDefaultAvatar()"
               [alt]="friend.displayName"
               (error)="$any($event.target).src = getDefaultAvatar()"
             />
@@ -107,8 +107,8 @@
           <div class="user-info">
             <h3 class="user-name">{{ friend.displayName }}</h3>
             <p class="user-email">{{ friend.email }}</p>
-            <p class="mutual-count" *ngIf="friend.mutualFriends">
-              {{ friend.mutualFriends }} mutual friend{{ friend.mutualFriends === 1 ? '' : 's' }}
+            <p class="mutual-count" *ngIf="friend.mutualCount">
+              {{ friend.mutualCount }} mutual friend{{ friend.mutualCount === 1 ? '' : 's' }}
             </p>
           </div>
           <button
@@ -162,7 +162,7 @@
           <div class="user-card horizontal" *ngFor="let request of incomingRequests">
             <div class="user-avatar">
               <img
-                [src]="request.profilePic || getDefaultAvatar()"
+                [src]="request.avatar || getDefaultAvatar()"
                 [alt]="request.displayName"
                 (error)="$any($event.target).src = getDefaultAvatar()"
               />
@@ -170,8 +170,8 @@
             <div class="user-info">
               <h3 class="user-name">{{ request.displayName }}</h3>
               <p class="user-email">{{ request.email }}</p>
-              <p class="mutual-count" *ngIf="request.mutualFriends">
-                {{ request.mutualFriends }} mutual friend{{ request.mutualFriends === 1 ? '' : 's' }}
+              <p class="mutual-count" *ngIf="request.mutualCount">
+                {{ request.mutualCount }} mutual friend{{ request.mutualCount === 1 ? '' : 's' }}
               </p>
             </div>
             <div class="action-buttons">
@@ -210,7 +210,7 @@
           <div class="user-card horizontal" *ngFor="let request of outgoingRequests">
             <div class="user-avatar">
               <img
-                [src]="request.profilePic || getDefaultAvatar()"
+                [src]="request.avatar || getDefaultAvatar()"
                 [alt]="request.displayName"
                 (error)="$any($event.target).src = getDefaultAvatar()"
               />
@@ -279,7 +279,7 @@
         <div class="user-card horizontal" *ngFor="let result of searchResults">
           <div class="user-avatar">
             <img
-              [src]="result.profilePic || getDefaultAvatar()"
+              [src]="result.avatar || getDefaultAvatar()"
               [alt]="result.displayName"
               (error)="$any($event.target).src = getDefaultAvatar()"
             />
@@ -287,8 +287,8 @@
           <div class="user-info">
             <h3 class="user-name">{{ result.displayName }}</h3>
             <p class="user-email">{{ result.email }}</p>
-            <p class="mutual-count" *ngIf="result.mutualFriends">
-              {{ result.mutualFriends }} mutual friend{{ result.mutualFriends === 1 ? '' : 's' }}
+            <p class="mutual-count" *ngIf="result.mutualCount">
+              {{ result.mutualCount }} mutual friend{{ result.mutualCount === 1 ? '' : 's' }}
             </p>
           </div>
           <button
