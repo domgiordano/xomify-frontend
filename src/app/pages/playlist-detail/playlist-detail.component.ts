@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PlaylistService } from 'src/app/services/playlist.service';
+import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
+import { QueueService, QueueTrack } from 'src/app/services/queue.service';
 import { take } from 'rxjs';
 
 @Component({
@@ -26,6 +28,8 @@ export class PlaylistDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private playlistService: PlaylistService,
+    private playerService: PlayerService,
+    private queueService: QueueService,
     private toastService: ToastService
   ) {}
 
@@ -128,5 +132,46 @@ export class PlaylistDetailComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/my-playlists']);
+  }
+
+  addToSpotifyQueue(track: any, event: Event): void {
+    event.stopPropagation();
+    this.playerService.addToSpotifyQueue(track.id).pipe(take(1)).subscribe({
+      next: (success) => {
+        if (success) {
+          this.toastService.showPositiveToast(`Added "${track.name}" to Spotify queue`);
+        } else {
+          this.toastService.showNegativeToast('Could not add to queue. Open Spotify on any device and try again.');
+        }
+      },
+      error: () => {
+        this.toastService.showNegativeToast('Error adding to queue. Check console for details.');
+      },
+    });
+  }
+
+  addToPlaylistBuilder(track: any, event: Event): void {
+    event.stopPropagation();
+
+    const queueTrack: QueueTrack = {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: track.album || { id: '', name: '', images: [] },
+      duration_ms: track.duration_ms,
+      external_urls: track.external_urls,
+    };
+
+    if (this.queueService.isInQueue(track.id)) {
+      this.queueService.removeFromQueue(track.id);
+      this.toastService.showPositiveToast(`Removed "${track.name}" from playlist builder`);
+    } else {
+      this.queueService.addToQueue(queueTrack);
+      this.toastService.showPositiveToast(`Added "${track.name}" to playlist builder`);
+    }
+  }
+
+  isInQueue(trackId: string): boolean {
+    return this.queueService.isInQueue(trackId);
   }
 }

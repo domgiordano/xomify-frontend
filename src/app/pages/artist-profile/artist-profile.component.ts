@@ -9,7 +9,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ArtistService } from 'src/app/services/artist.service';
 import { UserService } from 'src/app/services/user.service';
 import { ToastService } from 'src/app/services/toast.service';
-import { QueueTrack } from 'src/app/services/queue.service';
+import { PlayerService } from 'src/app/services/player.service';
+import { QueueService, QueueTrack } from 'src/app/services/queue.service';
 import { forkJoin, take, Subscription } from 'rxjs';
 
 interface Artist {
@@ -53,7 +54,9 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     private router: Router,
     private artistService: ArtistService,
     private userService: UserService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private playerService: PlayerService,
+    private queueService: QueueService
   ) {}
 
   ngOnInit(): void {
@@ -269,5 +272,39 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
       duration_ms: track.duration_ms,
       external_urls: track.external_urls,
     };
+  }
+
+  addToSpotifyQueue(track: any, event: Event): void {
+    event.stopPropagation();
+    this.playerService.addToSpotifyQueue(track.id).pipe(take(1)).subscribe({
+      next: (success) => {
+        if (success) {
+          this.toastService.showPositiveToast(`Added "${track.name}" to Spotify queue`);
+        } else {
+          this.toastService.showNegativeToast('Could not add to queue. Open Spotify on any device and try again.');
+        }
+      },
+      error: () => {
+        this.toastService.showNegativeToast('Error adding to queue. Check console for details.');
+      },
+    });
+  }
+
+  addToPlaylistBuilder(track: any, event: Event): void {
+    event.stopPropagation();
+
+    const queueTrack: QueueTrack = this.getQueueTrack(track);
+
+    if (this.queueService.isInQueue(track.id)) {
+      this.queueService.removeFromQueue(track.id);
+      this.toastService.showPositiveToast(`Removed "${track.name}" from playlist builder`);
+    } else {
+      this.queueService.addToQueue(queueTrack);
+      this.toastService.showPositiveToast(`Added "${track.name}" to playlist builder`);
+    }
+  }
+
+  isInQueue(trackId: string): boolean {
+    return this.queueService.isInQueue(trackId);
   }
 }

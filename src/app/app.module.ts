@@ -24,6 +24,8 @@ import { SwiperModule } from 'swiper/angular';
 import { FooterComponent } from './components/footer/footer.component';
 import { PlayButtonComponent } from './components/play-button/play-button.component';
 import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
+import { PlaylistDetailComponent } from './pages/playlist-detail/playlist-detail.component';
+import { MyPlaylistsComponent } from './pages/my-playlists/my-playlists.component';
 import { AddToQueueButtonComponent } from './components/add-to-queue-button/add-to-queue-button.component';
 import { WrappedComponent } from './pages/wrapped/wrapped.component';
 import { ReleaseRadarComponent } from './pages/release-radar/release-radar.component';
@@ -44,6 +46,8 @@ import { FriendProfileComponent } from './pages/friend-profile/friend-profile.co
     HomeComponent,
     ArtistProfileComponent,
     AlbumDetailComponent,
+    PlaylistDetailComponent,
+    MyPlaylistsComponent,
     FollowingComponent,
     QueueBuilderComponent,
     PlayButtonComponent,

@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError, switchMap, expand, reduce, map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { environment } from 'src/environments/environment';
+import { EMPTY } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -33,6 +34,25 @@ export class PlaylistService {
       headers: this.getHeaders(),
       params: { limit: limit.toString(), offset: offset.toString() },
     });
+  }
+
+  /**
+   * Get all user's playlists (paginated, returns all)
+   */
+  getAllUserPlaylists(): Observable<any[]> {
+    const limit = 50;
+    return this.getUserPlaylists(limit, 0).pipe(
+      expand((response) => {
+        if (response.next) {
+          const nextOffset = response.offset + limit;
+          return this.getUserPlaylists(limit, nextOffset);
+        }
+        return EMPTY;
+      }),
+      reduce((acc: any[], response) => {
+        return acc.concat(response.items || []);
+      }, [])
+    );
   }
 
   /**

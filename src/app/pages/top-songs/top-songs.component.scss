@@ -241,6 +241,12 @@
     }
   }
 
+  .song-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
   .add-queue-btn {
     display: inline-flex;
     align-items: center;

@@ -176,21 +176,26 @@ export class MyProfileComponent implements OnInit, OnDestroy {
 
           // Load ticker data after main data is loaded
           this.loadTickerData();
+
+          // Load friends count after user data is confirmed loaded
+          this.loadFriendsCount();
         },
         error: (err) => {
           console.error('Error fetching additional data', err);
           this.loading = false;
         },
       });
-
-    // Load friends count separately
-    this.loadFriendsCount();
   }
 
   private loadFriendsCount(): void {
-    if (!this.email) return;
+    // Get email directly from service to ensure we have it
+    const email = this.email || this.UserService.getEmail();
+    if (!email) {
+      console.warn('No email available for loading friends count');
+      return;
+    }
 
-    this.FriendsService.getFriendsList(this.email)
+    this.FriendsService.getFriendsList(email)
       .pipe(take(1))
       .subscribe({
         next: (response) => {

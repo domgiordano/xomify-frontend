@@ -132,11 +132,55 @@
             </span>
           </div>
 
-          <div class="track-queue">
-            <app-add-to-queue-button
-              [track]="getQueueTrack(track)"
-              size="small"
-            ></app-add-to-queue-button>
+          <div class="track-actions">
+            <button
+              class="action-btn"
+              [class.in-queue]="isInQueue(track.id)"
+              (click)="addToPlaylistBuilder(track, $event)"
+              [title]="isInQueue(track.id) ? 'Remove from Playlist Builder' : 'Add to Playlist Builder - Build custom playlists'"
+            >
+              <svg
+                *ngIf="!isInQueue(track.id)"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <svg
+                *ngIf="isInQueue(track.id)"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </button>
+            <button
+              class="action-btn"
+              (click)="addToSpotifyQueue(track, $event)"
+              title="Add to Spotify Queue - Song will play next in your Spotify app"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
+            </button>
           </div>
 
           <span class="track-duration">{{

@@ -35,6 +35,10 @@ export interface FriendProfile {
   displayName?: string;
   userId?: string;
   avatar?: string;
+  followersCount?: number;
+  followingCount?: number;
+  playlistCount?: number;
+  friendsCount?: number;
   topSongs?: {
     short_term?: any[];
     medium_term?: any[];
@@ -50,6 +54,7 @@ export interface FriendProfile {
     medium_term?: any[];
     long_term?: any[];
   };
+  playlists?: any[];
 }
 
 export interface SearchResult {
