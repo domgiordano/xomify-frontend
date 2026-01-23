@@ -287,12 +287,21 @@ export class PlayerService {
       this.getAvailableDevices().subscribe({
         next: (devicesResponse) => {
           const devices = devicesResponse.devices || [];
-          const activeDevice = devices.find((d: any) => d.is_active);
+
+          // Filter out the Xomify Web Player - we want to queue to real devices
+          const realDevices = devices.filter((d: any) => d.name !== 'Xomify Web Player');
+          const webPlayer = devices.find((d: any) => d.name === 'Xomify Web Player');
+
+          // Find active device, preferring real devices over web player
+          const activeRealDevice = realDevices.find((d: any) => d.is_active);
+          const activeWebPlayer = webPlayer?.is_active ? webPlayer : null;
 
           console.log('[Queue] Available devices:', devices.length);
-          console.log('[Queue] Active device:', activeDevice?.name || 'none');
+          console.log('[Queue] Real devices (non-web-player):', realDevices.length);
+          console.log('[Queue] Active real device:', activeRealDevice?.name || 'none');
+          console.log('[Queue] Web player active:', !!activeWebPlayer);
 
-          if (!activeDevice && devices.length === 0) {
+          if (realDevices.length === 0 && !webPlayer) {
             // No devices available at all
             console.error('[Queue] No Spotify devices available');
             observer.next(false);
@@ -300,15 +309,16 @@ export class PlayerService {
             return;
           }
 
-          if (!activeDevice && devices.length > 0) {
-            // Devices exist but none are active - activate one first
-            console.log('[Queue] No active device, activating first available...');
-            const deviceToActivate = devices[0];
-
-            this.transferPlayback(deviceToActivate.id).subscribe({
+          if (activeRealDevice) {
+            // A real device is active - use it directly
+            console.log('[Queue] Using active real device:', activeRealDevice.name);
+            this.attemptAddToQueue(trackId, observer);
+          } else if (realDevices.length > 0) {
+            // Real devices exist but none are active - activate one
+            console.log('[Queue] No active real device, activating:', realDevices[0].name);
+            this.transferPlayback(realDevices[0].id).subscribe({
               next: () => {
-                console.log('[Queue] Device activated:', deviceToActivate.name);
-                // Wait for device to be ready, then add to queue
+                console.log('[Queue] Device activated:', realDevices[0].name);
                 setTimeout(() => {
                   this.attemptAddToQueue(trackId, observer);
                 }, 1500);
@@ -319,10 +329,15 @@ export class PlayerService {
                 observer.complete();
               },
             });
-          } else {
-            // Active device exists, directly add to queue
-            console.log('[Queue] Active device found, adding to queue...');
+          } else if (activeWebPlayer) {
+            // Only web player is available and active - use it as fallback
+            console.log('[Queue] Only web player available, using it');
             this.attemptAddToQueue(trackId, observer);
+          } else {
+            // No active devices and no real devices - can't queue
+            console.error('[Queue] No usable devices available');
+            observer.next(false);
+            observer.complete();
           }
         },
         error: (err) => {
