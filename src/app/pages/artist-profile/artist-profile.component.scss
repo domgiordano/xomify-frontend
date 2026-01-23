@@ -301,10 +301,43 @@
   justify-content: center;
 }
 
-.track-queue {
+.track-actions {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(27, 220, 111, 0.1);
+    border: 1px solid rgba(27, 220, 111, 0.3);
+    border-radius: 50%;
+    color: #1bdc6f;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: #1bdc6f;
+      color: #000;
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(27, 220, 111, 0.4);
+    }
+
+    &.in-queue {
+      background: rgba(27, 220, 111, 0.2);
+      border-color: rgba(27, 220, 111, 0.5);
+
+      &:hover {
+        background: rgba(255, 71, 87, 0.15);
+        border-color: rgba(255, 71, 87, 0.4);
+        color: #ff4757;
+      }
+    }
+  }
 }
 
 .track-info {

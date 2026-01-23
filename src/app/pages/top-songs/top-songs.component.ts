@@ -50,6 +50,22 @@ export class TopSongsComponent implements OnInit, OnDestroy {
     private router: Router
   ) {}
 
+  addToSpotifyQueue(song: TopSong, event: Event): void {
+    event.stopPropagation();
+    this.playerService.addToSpotifyQueue(song.id).pipe(take(1)).subscribe({
+      next: (success) => {
+        if (success) {
+          this.toastService.showPositiveToast(`Added "${song.name}" to Spotify queue`);
+        } else {
+          this.toastService.showNegativeToast('Could not add to queue. Open Spotify on any device and try again.');
+        }
+      },
+      error: () => {
+        this.toastService.showNegativeToast('Error adding to queue. Check console for details.');
+      },
+    });
+  }
+
   ngOnInit(): void {
     this.loadTopSongs();
   }

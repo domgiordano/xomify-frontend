@@ -120,7 +120,11 @@
 
           <div class="track-info" *ngIf="item.track">
             <img
-              [src]="item.track.album?.images?.[2]?.url || item.track.album?.images?.[0]?.url || 'assets/default-album.png'"
+              [src]="
+                item.track.album?.images?.[2]?.url ||
+                item.track.album?.images?.[0]?.url ||
+                'assets/default-album.png'
+              "
               [alt]="item.track.name"
               class="track-image"
             />
@@ -147,6 +151,62 @@
           <span class="track-album" *ngIf="!item.track">—</span>
 
           <span class="track-added">{{ formatDate(item.added_at) }}</span>
+
+          <div class="track-actions" *ngIf="item.track">
+            <button
+              class="action-btn"
+              [class.in-queue]="isInQueue(item.track.id)"
+              (click)="addToPlaylistBuilder(item.track, $event)"
+              [title]="
+                isInQueue(item.track.id)
+                  ? 'Remove from Playlist Builder'
+                  : 'Add to Playlist Builder - Build custom playlists'
+              "
+            >
+              <svg
+                *ngIf="!isInQueue(item.track.id)"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <svg
+                *ngIf="isInQueue(item.track.id)"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </button>
+            <button
+              class="action-btn"
+              (click)="addToSpotifyQueue(item.track, $event)"
+              title="Add to Spotify Queue - Song will play next in your Spotify app"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
+            </button>
+          </div>
+          <div class="track-actions" *ngIf="!item.track"></div>
 
           <span class="track-duration" *ngIf="item.track">{{
             formatDuration(item.track.duration_ms)

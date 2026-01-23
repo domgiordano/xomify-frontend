@@ -35,6 +35,10 @@ export interface FriendProfile {
   displayName?: string;
   userId?: string;
   avatar?: string;
+  followersCount?: number;
+  followingCount?: number;
+  playlistCount?: number;
+  friendsCount?: number;
   topSongs?: {
     short_term?: any[];
     medium_term?: any[];
@@ -50,6 +54,7 @@ export interface FriendProfile {
     medium_term?: any[];
     long_term?: any[];
   };
+  playlists?: any[];
 }
 
 export interface SearchResult {
@@ -82,7 +87,9 @@ export class FriendsService {
   // Cache settings
   private readonly CACHE_KEY_FRIENDS = 'xomify_friends_list';
   private readonly CACHE_KEY_USERS = 'xomify_all_users';
+  private readonly CACHE_KEY_PROFILE_PREFIX = 'xomify_friend_profile_';
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  private readonly PROFILE_CACHE_TTL = 10 * 60 * 1000; // 10 minutes for profiles
 
   constructor(private http: HttpClient) {
     this.loadFromCache();
@@ -233,9 +240,63 @@ export class FriendsService {
 
   // GET /friends/profile?friendEmail={friendEmail}
   // Returns: { displayName, email, userId, topSongs, topArtists, topGenres }
-  getFriendProfile(friendEmail: string): Observable<FriendProfile> {
+  // Uses cache if available and not expired
+  getFriendProfile(friendEmail: string, forceRefresh = false): Observable<FriendProfile> {
+    const cacheKey = this.CACHE_KEY_PROFILE_PREFIX + friendEmail;
+
+    // Return cached data if available and not forcing refresh
+    if (!forceRefresh) {
+      const cached = this.getProfileCache(cacheKey);
+      if (cached) {
+        return of(cached);
+      }
+    }
+
     const url = `${this.xomifyApiUrl}/friends/profile?friendEmail=${encodeURIComponent(friendEmail)}`;
-    return this.http.get<FriendProfile>(url, { headers: this.getHeaders() });
+    return this.http.get<FriendProfile>(url, { headers: this.getHeaders() }).pipe(
+      tap((profile) => {
+        this.setProfileCache(cacheKey, profile);
+      })
+    );
+  }
+
+  private getProfileCache(key: string): FriendProfile | null {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return null;
+
+      const data = JSON.parse(cached);
+      const now = Date.now();
+
+      if (now - data.timestamp > this.PROFILE_CACHE_TTL) {
+        localStorage.removeItem(key);
+        return null;
+      }
+
+      return data.profile;
+    } catch {
+      return null;
+    }
+  }
+
+  private setProfileCache(key: string, profile: FriendProfile): void {
+    try {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          profile,
+          timestamp: Date.now(),
+        })
+      );
+    } catch {
+      console.warn(`Failed to cache friend profile`);
+    }
+  }
+
+  // Clear a specific friend's profile cache
+  clearFriendProfileCache(friendEmail: string): void {
+    const cacheKey = this.CACHE_KEY_PROFILE_PREFIX + friendEmail;
+    localStorage.removeItem(cacheKey);
   }
 
   // Helper to get cached friends list

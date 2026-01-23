@@ -153,9 +153,11 @@
         >
           <div class="user-avatar">
             <img
-              [src]="friend.avatar || getDefaultAvatar()"
+              [src]="friend.avatar || 'assets/img/default-avatar.png'"
               [alt]="friend.displayName"
-              (error)="$any($event.target).src = getDefaultAvatar()"
+              (error)="
+                $any($event.target).src = 'assets/img/default-avatar.png'
+              "
             />
           </div>
           <div class="user-info">

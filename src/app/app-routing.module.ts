@@ -13,6 +13,8 @@ import { ArtistProfileComponent } from './pages/artist-profile/artist-profile.co
 import { FollowingComponent } from './pages/following/following.component';
 import { QueueBuilderComponent } from './pages/queue-builder/queue-builder.component';
 import { AlbumDetailComponent } from './pages/album-detail/album-detail.component';
+import { PlaylistDetailComponent } from './pages/playlist-detail/playlist-detail.component';
+import { MyPlaylistsComponent } from './pages/my-playlists/my-playlists.component';
 import { WrappedComponent } from './pages/wrapped/wrapped.component';
 import { ReleaseRadarComponent } from './pages/release-radar/release-radar.component';
 import { FriendsComponent } from './pages/friends/friends.component';
@@ -64,6 +66,16 @@ const routes: Routes = [
   {
     path: 'album/:id',
     component: AlbumDetailComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'playlist/:id',
+    component: PlaylistDetailComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'my-playlists',
+    component: MyPlaylistsComponent,
     canActivate: [AuthGuard],
   },
   {

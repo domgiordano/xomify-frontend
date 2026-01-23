@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserService } from 'src/app/services/user.service';
+import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { QueueService, QueueTrack } from 'src/app/services/queue.service';
 import { AlbumService } from 'src/app/services/album.service';
@@ -73,6 +74,7 @@ export class ReleaseRadarComponent implements OnInit {
     private router: Router,
     private userService: UserService,
     private releaseRadarService: ReleaseRadarService,
+    private playerService: PlayerService,
     private toastService: ToastService,
     private queueService: QueueService,
     private albumService: AlbumService
@@ -508,7 +510,7 @@ export class ReleaseRadarComponent implements OnInit {
       event.stopPropagation();
     }
 
-    this.toastService.showPositiveToast('Adding tracks to queue...');
+    this.toastService.showPositiveToast('Adding tracks to Playlist Builder...');
 
     this.albumService
       .getAlbumTracks(release.albumId)
@@ -516,7 +518,7 @@ export class ReleaseRadarComponent implements OnInit {
         take(1),
         catchError((error) => {
           console.error('Error fetching album tracks:', error);
-          this.toastService.showNegativeToast('Failed to add tracks to queue');
+          this.toastService.showNegativeToast('Failed to add tracks to Playlist Builder');
           return of(null);
         })
       )
@@ -548,11 +550,50 @@ export class ReleaseRadarComponent implements OnInit {
 
         if (addedCount > 0) {
           this.toastService.showPositiveToast(
-            `Added ${addedCount} track${addedCount !== 1 ? 's' : ''} to queue`
+            `Added ${addedCount} track${addedCount !== 1 ? 's' : ''} to Playlist Builder`
           );
         } else {
-          this.toastService.showPositiveToast('Tracks already in queue');
+          this.toastService.showPositiveToast('Tracks already in Playlist Builder');
         }
+      });
+  }
+
+  // Add first track of album to Spotify queue
+  addAlbumToSpotifyQueue(release: ReleaseRadarRelease, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    // For albums, add the first track to Spotify queue
+    this.albumService
+      .getAlbumTracks(release.albumId)
+      .pipe(
+        take(1),
+        catchError((error) => {
+          console.error('Error fetching album tracks:', error);
+          this.toastService.showNegativeToast('Failed to add to Spotify queue');
+          return of(null);
+        })
+      )
+      .subscribe((response) => {
+        if (!response || !response.items || response.items.length === 0) {
+          this.toastService.showNegativeToast('No tracks found in album');
+          return;
+        }
+
+        const firstTrack = response.items[0];
+        this.playerService.addToSpotifyQueue(firstTrack.id).pipe(take(1)).subscribe({
+          next: (success) => {
+            if (success) {
+              this.toastService.showPositiveToast(`Added "${release.albumName}" to Spotify queue`);
+            } else {
+              this.toastService.showNegativeToast('Could not add to queue. Open Spotify on any device and try again.');
+            }
+          },
+          error: () => {
+            this.toastService.showNegativeToast('Error adding to queue. Check console for details.');
+          },
+        });
       });
   }
 }

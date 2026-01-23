@@ -8,7 +8,7 @@ import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { QueueService, QueueTrack } from 'src/app/services/queue.service';
 
-type TabType = 'songs' | 'artists' | 'genres';
+type TabType = 'songs' | 'artists' | 'genres' | 'playlists';
 type TermType = 'short_term' | 'medium_term' | 'long_term';
 
 @Component({
@@ -35,7 +35,7 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
+    public router: Router,
     private friendsService: FriendsService,
     private userService: UserService,
     private playerService: PlayerService,
@@ -75,6 +75,7 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
           console.log('Avatar URL:', profile.avatar);
           console.log('Top Genres:', profile.topGenres);
           console.log('Current Term Genres:', this.getCurrentGenres());
+          console.log('Playlists:', profile.playlists);
 
           // Check friendship status
           this.isFriend = friendsList.accepted.some((f: any) =>
@@ -135,6 +136,11 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
 
     // If it's already an array, return it
     return Array.isArray(genresData) ? genresData : [];
+  }
+
+  getPlaylists(): any[] {
+    if (!this.profile?.playlists) return [];
+    return this.profile.playlists;
   }
 
   getTermLabel(term: TermType): string {

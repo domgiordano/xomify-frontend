@@ -4,8 +4,9 @@ import { UserService } from 'src/app/services/user.service';
 import { WrappedService } from 'src/app/services/wrapped.service';
 import { SongService } from 'src/app/services/song.service';
 import { ArtistService } from 'src/app/services/artist.service';
+import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
-import { QueueTrack } from 'src/app/services/queue.service';
+import { QueueService, QueueTrack } from 'src/app/services/queue.service';
 import { forkJoin, of } from 'rxjs';
 import { take, catchError } from 'rxjs/operators';
 
@@ -72,6 +73,8 @@ export class WrappedComponent implements OnInit {
     private wrappedService: WrappedService,
     private songService: SongService,
     private artistService: ArtistService,
+    private playerService: PlayerService,
+    private queueService: QueueService,
     private toastService: ToastService
   ) {}
 
@@ -296,5 +299,46 @@ export class WrappedComponent implements OnInit {
       duration_ms: track.duration_ms,
       external_urls: undefined,
     };
+  }
+
+  addToSpotifyQueue(track: DisplayTrack, event: Event): void {
+    event.stopPropagation();
+    this.playerService.addToSpotifyQueue(track.id).pipe(take(1)).subscribe({
+      next: (success) => {
+        if (success) {
+          this.toastService.showPositiveToast(`Added "${track.name}" to Spotify queue`);
+        } else {
+          this.toastService.showNegativeToast('Could not add to queue. Open Spotify on any device and try again.');
+        }
+      },
+      error: () => {
+        this.toastService.showNegativeToast('Error adding to queue. Check console for details.');
+      },
+    });
+  }
+
+  addToPlaylistBuilder(track: DisplayTrack, event: Event): void {
+    event.stopPropagation();
+
+    const queueTrack: QueueTrack = {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: track.album || { id: '', name: '', images: [] },
+      duration_ms: track.duration_ms,
+      external_urls: undefined,
+    };
+
+    if (this.queueService.isInQueue(track.id)) {
+      this.queueService.removeFromQueue(track.id);
+      this.toastService.showPositiveToast(`Removed "${track.name}" from playlist builder`);
+    } else {
+      this.queueService.addToQueue(queueTrack);
+      this.toastService.showPositiveToast(`Added "${track.name}" to playlist builder`);
+    }
+  }
+
+  isInQueue(trackId: string): boolean {
+    return this.queueService.isInQueue(trackId);
   }
 }
