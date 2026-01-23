@@ -76,6 +76,10 @@
   font-size: 0.7rem;
   font-weight: 700;
   border-radius: 9px;
+
+  &.pending {
+    background: linear-gradient(135deg, #ffb74d 0%, #ff9800 100%);
+  }
 }
 
 .logout-btn {

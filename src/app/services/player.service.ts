@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from './auth.service';
 
+
 @Injectable({
   providedIn: 'root',
 })
@@ -275,6 +276,178 @@ export class PlayerService {
 
   get isCurrentlyPlaying(): boolean {
     return this.isPlayingSubject.getValue();
+  }
+
+  // Add track to Spotify's queue (plays on user's active session)
+  addToSpotifyQueue(trackId: string): Observable<boolean> {
+    const token = this.authService.getAccessToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+    });
+
+    const uri = `spotify:track:${trackId}`;
+    return new Observable((observer) => {
+      this.http
+        .post(
+          `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
+          null,
+          { headers, responseType: 'text' }
+        )
+        .subscribe({
+          next: () => {
+            observer.next(true);
+            observer.complete();
+          },
+          error: (err) => {
+            console.error('Error adding to Spotify queue:', err);
+
+            // Check if error is 404 (typically means no active device)
+            if (err.status === 404) {
+              console.log('No active device detected - attempting to activate one...');
+
+              // Try to activate a device and retry
+              this.activateDevice().subscribe({
+                next: (activated) => {
+                  if (activated) {
+                    console.log('Device activated, retrying queue add...');
+                    // Wait a moment for device to fully activate
+                    setTimeout(() => {
+                      this.http
+                        .post(
+                          `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
+                          null,
+                          { headers, responseType: 'text' }
+                        )
+                        .subscribe({
+                          next: () => {
+                            console.log('Successfully added to queue after activation');
+                            observer.next(true);
+                            observer.complete();
+                          },
+                          error: (retryErr) => {
+                            console.error('Error adding to queue after activation:', retryErr);
+                            observer.next(false);
+                            observer.complete();
+                          },
+                        });
+                    }, 1000);
+                  } else {
+                    console.error('Failed to activate any device');
+                    observer.next(false);
+                    observer.complete();
+                  }
+                },
+                error: () => {
+                  console.error('Error during device activation');
+                  observer.next(false);
+                  observer.complete();
+                },
+              });
+            } else {
+              observer.next(false);
+              observer.complete();
+            }
+          },
+        });
+    });
+  }
+
+  // Play next - adds to queue which effectively plays next
+  playNext(trackId: string): Observable<boolean> {
+    return this.addToSpotifyQueue(trackId);
+  }
+
+  // Get available Spotify devices
+  private getAvailableDevices(): Observable<any> {
+    const token = this.authService.getAccessToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+    });
+
+    return this.http.get('https://api.spotify.com/v1/me/player/devices', { headers });
+  }
+
+  // Transfer playback to a specific device
+  private transferPlayback(deviceId: string): Observable<any> {
+    const token = this.authService.getAccessToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    });
+
+    const body = {
+      device_ids: [deviceId],
+      play: false,
+    };
+
+    return this.http.put(
+      'https://api.spotify.com/v1/me/player',
+      body,
+      { headers, responseType: 'text' }
+    );
+  }
+
+  // Activate a device (prioritize web player, then any available device)
+  private activateDevice(): Observable<boolean> {
+    return new Observable((observer) => {
+      // First, check if our web player device is available
+      if (this.deviceId) {
+        console.log('Activating web player device:', this.deviceId);
+        this.transferPlayback(this.deviceId).subscribe({
+          next: () => {
+            console.log('Web player activated successfully');
+            observer.next(true);
+            observer.complete();
+          },
+          error: (err) => {
+            console.error('Error activating web player:', err);
+            // If web player fails, try to find any available device
+            this.tryActivateAnyDevice(observer);
+          },
+        });
+      } else {
+        // No web player, try to find any available device
+        this.tryActivateAnyDevice(observer);
+      }
+    });
+  }
+
+  // Try to activate any available device
+  private tryActivateAnyDevice(observer: any): void {
+    this.getAvailableDevices().subscribe({
+      next: (response) => {
+        const devices = response.devices || [];
+        console.log('Available devices:', devices);
+
+        if (devices.length > 0) {
+          // Find first active device, or use first device
+          const activeDevice = devices.find((d: any) => d.is_active) || devices[0];
+          console.log('Transferring playback to device:', activeDevice.name);
+
+          this.transferPlayback(activeDevice.id).subscribe({
+            next: () => {
+              console.log('Device activated successfully');
+              observer.next(true);
+              observer.complete();
+            },
+            error: (err) => {
+              console.error('Error transferring playback:', err);
+              observer.next(false);
+              observer.complete();
+            },
+          });
+        } else {
+          console.warn('No Spotify devices available');
+          observer.next(false);
+          observer.complete();
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching devices:', err);
+        observer.next(false);
+        observer.complete();
+      },
+    });
   }
 
   disconnect(): void {

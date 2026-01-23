@@ -14,7 +14,7 @@
       <div class="header-content">
         <div class="profile-image-wrapper">
           <img
-            [src]="profilePicture || 'assets/default-avatar.png'"
+            [src]="profilePicture || 'assets/img/default-avatar.png'"
             [alt]="userName"
             class="profile-image"
           />
@@ -32,14 +32,19 @@
               <span class="stat-label">Followers</span>
             </div>
             <div class="stat-divider"></div>
-            <div class="stat-item clickable" routerLink="/my-playlists">
-              <span class="stat-value">{{ playlistCount | number }}</span>
-              <span class="stat-label">Playlists</span>
-            </div>
-            <div class="stat-divider"></div>
             <div class="stat-item clickable" routerLink="/following">
               <span class="stat-value">{{ followingCount | number }}</span>
               <span class="stat-label">Following</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item clickable" routerLink="/friends">
+              <span class="stat-value">{{ friendsCount | number }}</span>
+              <span class="stat-label">Friends</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item clickable" routerLink="/my-playlists">
+              <span class="stat-value">{{ playlistCount | number }}</span>
+              <span class="stat-label">Playlists</span>
             </div>
           </div>
 

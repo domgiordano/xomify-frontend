@@ -4,6 +4,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { UserService } from 'src/app/services/user.service';
 import { SongService } from 'src/app/services/song.service';
 import { ArtistService } from 'src/app/services/artist.service';
+import { FriendsService } from 'src/app/services/friends.service';
 import { forkJoin, take, interval, Subscription } from 'rxjs';
 import { ToastService } from 'src/app/services/toast.service';
 
@@ -27,6 +28,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   email: string = '';
   followersCount: number = 0;
   followingCount: number = 0;
+  friendsCount: number = 0;
   playlistCount: number = 0;
   country: string = '';
   product: string = '';
@@ -58,6 +60,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     private UserService: UserService,
     private SongService: SongService,
     private ArtistService: ArtistService,
+    private FriendsService: FriendsService,
     private ToastService: ToastService,
     private router: Router
   ) {}
@@ -177,6 +180,25 @@ export class MyProfileComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error fetching additional data', err);
           this.loading = false;
+        },
+      });
+
+    // Load friends count separately
+    this.loadFriendsCount();
+  }
+
+  private loadFriendsCount(): void {
+    if (!this.email) return;
+
+    this.FriendsService.getFriendsList(this.email)
+      .pipe(take(1))
+      .subscribe({
+        next: (response) => {
+          this.friendsCount = response.acceptedCount || 0;
+          console.log('Friends count:', this.friendsCount);
+        },
+        error: (err) => {
+          console.error('Error fetching friends count', err);
         },
       });
   }
