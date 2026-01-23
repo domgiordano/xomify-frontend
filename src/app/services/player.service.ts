@@ -280,76 +280,88 @@ export class PlayerService {
 
   // Add track to Spotify's queue (plays on user's active session)
   addToSpotifyQueue(trackId: string): Observable<boolean> {
+    console.log('[Queue] Starting addToSpotifyQueue for track:', trackId);
+
+    return new Observable((observer) => {
+      // First, check for active devices before attempting to add to queue
+      this.getAvailableDevices().subscribe({
+        next: (devicesResponse) => {
+          const devices = devicesResponse.devices || [];
+          const activeDevice = devices.find((d: any) => d.is_active);
+
+          console.log('[Queue] Available devices:', devices.length);
+          console.log('[Queue] Active device:', activeDevice?.name || 'none');
+
+          if (!activeDevice && devices.length === 0) {
+            // No devices available at all
+            console.error('[Queue] No Spotify devices available');
+            observer.next(false);
+            observer.complete();
+            return;
+          }
+
+          if (!activeDevice && devices.length > 0) {
+            // Devices exist but none are active - activate one first
+            console.log('[Queue] No active device, activating first available...');
+            const deviceToActivate = devices[0];
+
+            this.transferPlayback(deviceToActivate.id).subscribe({
+              next: () => {
+                console.log('[Queue] Device activated:', deviceToActivate.name);
+                // Wait for device to be ready, then add to queue
+                setTimeout(() => {
+                  this.attemptAddToQueue(trackId, observer);
+                }, 1500);
+              },
+              error: (err) => {
+                console.error('[Queue] Failed to activate device:', err);
+                observer.next(false);
+                observer.complete();
+              },
+            });
+          } else {
+            // Active device exists, directly add to queue
+            console.log('[Queue] Active device found, adding to queue...');
+            this.attemptAddToQueue(trackId, observer);
+          }
+        },
+        error: (err) => {
+          console.error('[Queue] Error fetching devices:', err);
+          // Fallback: try to add to queue anyway
+          this.attemptAddToQueue(trackId, observer);
+        },
+      });
+    });
+  }
+
+  // Helper method to attempt adding track to queue
+  private attemptAddToQueue(trackId: string, observer: any): void {
     const token = this.authService.getAccessToken();
     const headers = new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
-
     const uri = `spotify:track:${trackId}`;
-    return new Observable((observer) => {
-      this.http
-        .post(
-          `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
-          null,
-          { headers, responseType: 'text' }
-        )
-        .subscribe({
-          next: () => {
-            observer.next(true);
-            observer.complete();
-          },
-          error: (err) => {
-            console.error('Error adding to Spotify queue:', err);
 
-            // Check if error is 404 (typically means no active device)
-            if (err.status === 404) {
-              console.log('No active device detected - attempting to activate one...');
-
-              // Try to activate a device and retry
-              this.activateDevice().subscribe({
-                next: (activated) => {
-                  if (activated) {
-                    console.log('Device activated, retrying queue add...');
-                    // Wait a moment for device to fully activate
-                    setTimeout(() => {
-                      this.http
-                        .post(
-                          `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
-                          null,
-                          { headers, responseType: 'text' }
-                        )
-                        .subscribe({
-                          next: () => {
-                            console.log('Successfully added to queue after activation');
-                            observer.next(true);
-                            observer.complete();
-                          },
-                          error: (retryErr) => {
-                            console.error('Error adding to queue after activation:', retryErr);
-                            observer.next(false);
-                            observer.complete();
-                          },
-                        });
-                    }, 1000);
-                  } else {
-                    console.error('Failed to activate any device');
-                    observer.next(false);
-                    observer.complete();
-                  }
-                },
-                error: () => {
-                  console.error('Error during device activation');
-                  observer.next(false);
-                  observer.complete();
-                },
-              });
-            } else {
-              observer.next(false);
-              observer.complete();
-            }
-          },
-        });
-    });
+    this.http
+      .post(
+        `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`,
+        null,
+        { headers, responseType: 'text' }
+      )
+      .subscribe({
+        next: () => {
+          console.log('[Queue] Successfully added to queue');
+          observer.next(true);
+          observer.complete();
+        },
+        error: (err) => {
+          console.error('[Queue] Failed to add to queue:', err);
+          console.error('[Queue] Error status:', err.status);
+          console.error('[Queue] Error message:', err.message);
+          observer.next(false);
+          observer.complete();
+        },
+      });
   }
 
   // Play next - adds to queue which effectively plays next

@@ -161,8 +161,11 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
         if (success) {
           this.toastService.showPositiveToast(`Added "${track.name}" to queue`);
         } else {
-          this.toastService.showNegativeToast('Could not add to queue. Is Spotify active?');
+          this.toastService.showNegativeToast('Could not add to queue. Open Spotify on any device and try again.');
         }
+      },
+      error: () => {
+        this.toastService.showNegativeToast('Error adding to queue. Check console for details.');
       },
     });
   }
