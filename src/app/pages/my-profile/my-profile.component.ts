@@ -96,12 +96,16 @@ export class MyProfileComponent implements OnInit, OnDestroy {
 
     const cachedPlaylistCount = this.UserService.getPlaylistCount();
     const cachedFollowingCount = this.UserService.getFollowingCount();
+    const cachedFriendsList = this.FriendsService.getCachedFriendsList();
 
     if (cachedPlaylistCount > 0) {
       this.playlistCount = cachedPlaylistCount;
     }
     if (cachedFollowingCount > 0) {
       this.followingCount = cachedFollowingCount;
+    }
+    if (cachedFriendsList) {
+      this.friendsCount = cachedFriendsList.acceptedCount || 0;
     }
 
     if (this.user) {
@@ -195,12 +199,20 @@ export class MyProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.FriendsService.getFriendsList(email)
+    // First, use cached data if available for instant display
+    const cached = this.FriendsService.getCachedFriendsList();
+    if (cached) {
+      this.friendsCount = cached.acceptedCount || 0;
+      console.log('Friends count (from cache):', this.friendsCount);
+    }
+
+    // Then fetch fresh data to update cache and display
+    this.FriendsService.getFriendsList(email, true) // forceRefresh to get latest
       .pipe(take(1))
       .subscribe({
         next: (response) => {
           this.friendsCount = response.acceptedCount || 0;
-          console.log('Friends count:', this.friendsCount);
+          console.log('Friends count (fresh):', this.friendsCount);
         },
         error: (err) => {
           console.error('Error fetching friends count', err);
