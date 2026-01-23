@@ -1,13 +1,15 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { FriendsService, FriendProfile } from 'src/app/services/friends.service';
+import { UserService } from 'src/app/services/user.service';
 import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { QueueService, QueueTrack } from 'src/app/services/queue.service';
 
 type TabType = 'songs' | 'artists' | 'genres';
+type TermType = 'short_term' | 'medium_term' | 'long_term';
 
 @Component({
   selector: 'app-friend-profile',
@@ -23,11 +25,19 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
   error = '';
 
   activeTab: TabType = 'songs';
+  activeTerm: TermType = 'short_term';
+
+  // Friend status
+  isFriend = false;
+  isOutgoingRequest = false;
+  isIncomingRequest = false;
+  actionLoading = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private friendsService: FriendsService,
+    private userService: UserService,
     private playerService: PlayerService,
     private queueService: QueueService,
     private toastService: ToastService
@@ -51,12 +61,32 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
 
-    this.friendsService
-      .getFriendProfile(this.friendEmail)
+    const currentEmail = this.userService.getEmail();
+
+    forkJoin({
+      profile: this.friendsService.getFriendProfile(this.friendEmail),
+      friendsList: this.friendsService.getFriendsList(currentEmail),
+    })
       .pipe(take(1))
       .subscribe({
-        next: (profile) => {
+        next: ({ profile, friendsList }) => {
           this.profile = profile;
+          console.log('Friend Profile Data:', profile);
+          console.log('Avatar URL:', profile.avatar);
+          console.log('Top Genres:', profile.topGenres);
+          console.log('Current Term Genres:', this.getCurrentGenres());
+
+          // Check friendship status
+          this.isFriend = friendsList.accepted.some((f: any) =>
+            (f.email === this.friendEmail || f.friendEmail === this.friendEmail)
+          );
+          this.isIncomingRequest = friendsList.pending.some((r: any) =>
+            (r.email === this.friendEmail || r.friendEmail === this.friendEmail)
+          );
+          this.isOutgoingRequest = friendsList.requested.some((r: any) =>
+            (r.email === this.friendEmail || r.friendEmail === this.friendEmail)
+          );
+
           this.loading = false;
         },
         error: (err) => {
@@ -70,6 +100,52 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
   switchTab(tab: TabType): void {
     if (tab === this.activeTab) return;
     this.activeTab = tab;
+  }
+
+  switchTerm(term: TermType): void {
+    if (term === this.activeTerm) return;
+    this.activeTerm = term;
+  }
+
+  // Get data for current term
+  getCurrentSongs(): any[] {
+    if (!this.profile?.topSongs) return [];
+    return this.profile.topSongs[this.activeTerm] || [];
+  }
+
+  getCurrentArtists(): any[] {
+    if (!this.profile?.topArtists) return [];
+    return this.profile.topArtists[this.activeTerm] || [];
+  }
+
+  getCurrentGenres(): any[] {
+    if (!this.profile?.topGenres) {
+      console.log('No topGenres in profile');
+      return [];
+    }
+    const genresData = this.profile.topGenres[this.activeTerm];
+    console.log(`Genres for ${this.activeTerm}:`, genresData);
+
+    // If genres is an object (like {country: 67, rap: 53}), convert to array
+    if (genresData && typeof genresData === 'object' && !Array.isArray(genresData)) {
+      return Object.entries(genresData)
+        .map(([name, count]) => ({ name, count: count as number }))
+        .sort((a, b) => b.count - a.count); // Sort by count descending
+    }
+
+    // If it's already an array, return it
+    return Array.isArray(genresData) ? genresData : [];
+  }
+
+  getTermLabel(term: TermType): string {
+    switch (term) {
+      case 'short_term':
+        return 'Last 4 Weeks';
+      case 'medium_term':
+        return 'Last 6 Months';
+      case 'long_term':
+        return 'All Time';
+    }
   }
 
   // Track actions
@@ -167,5 +243,146 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
 
   getDefaultArtist(): string {
     return 'assets/img/no-image.png';
+  }
+
+  // Genre helpers
+  getGenreName(genre: any): string {
+    if (typeof genre === 'string') {
+      return genre;
+    }
+    return genre?.name || genre?.genre || '';
+  }
+
+  getGenrePercentage(genre: any, index: number): number {
+    // If genre has percentage property, use it
+    if (genre?.percentage !== undefined) {
+      return genre.percentage;
+    }
+
+    // If genre has count, calculate percentage relative to top genre
+    if (genre?.count !== undefined) {
+      const genres = this.getCurrentGenres();
+      if (genres.length === 0) return 0;
+
+      const maxCount = Math.max(...genres.map((g: any) => g.count || 0));
+      if (maxCount === 0) return 0;
+
+      return Math.round((genre.count / maxCount) * 100);
+    }
+
+    // Fallback: Calculate percentage based on position (top genre = 100%, decreasing by 10% each)
+    return Math.max(100 - (index * 10), 10);
+  }
+
+  // Friend actions
+  sendFriendRequest(): void {
+    if (this.actionLoading) return;
+    this.actionLoading = true;
+
+    const currentEmail = this.userService.getEmail();
+    this.friendsService
+      .sendFriendRequest(currentEmail, this.friendEmail)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.isOutgoingRequest = true;
+          this.toastService.showPositiveToast(`Friend request sent to ${this.profile?.displayName}`);
+          this.actionLoading = false;
+        },
+        error: (err) => {
+          console.error('Error sending friend request:', err);
+          this.toastService.showNegativeToast('Error sending friend request');
+          this.actionLoading = false;
+        },
+      });
+  }
+
+  acceptFriendRequest(): void {
+    if (this.actionLoading) return;
+    this.actionLoading = true;
+
+    const currentEmail = this.userService.getEmail();
+    this.friendsService
+      .acceptFriendRequest(currentEmail, this.friendEmail)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.isFriend = true;
+          this.isIncomingRequest = false;
+          this.toastService.showPositiveToast(`You are now friends with ${this.profile?.displayName}`);
+          this.actionLoading = false;
+        },
+        error: (err) => {
+          console.error('Error accepting friend request:', err);
+          this.toastService.showNegativeToast('Error accepting friend request');
+          this.actionLoading = false;
+        },
+      });
+  }
+
+  rejectFriendRequest(): void {
+    if (this.actionLoading) return;
+    this.actionLoading = true;
+
+    const currentEmail = this.userService.getEmail();
+    this.friendsService
+      .rejectFriendRequest(currentEmail, this.friendEmail)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.isIncomingRequest = false;
+          this.toastService.showPositiveToast('Request rejected');
+          this.actionLoading = false;
+        },
+        error: (err) => {
+          console.error('Error rejecting request:', err);
+          this.toastService.showNegativeToast('Error rejecting request');
+          this.actionLoading = false;
+        },
+      });
+  }
+
+  cancelFriendRequest(): void {
+    if (this.actionLoading) return;
+    this.actionLoading = true;
+
+    const currentEmail = this.userService.getEmail();
+    this.friendsService
+      .rejectFriendRequest(currentEmail, this.friendEmail)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.isOutgoingRequest = false;
+          this.toastService.showPositiveToast('Request cancelled');
+          this.actionLoading = false;
+        },
+        error: (err) => {
+          console.error('Error cancelling request:', err);
+          this.toastService.showNegativeToast('Error cancelling request');
+          this.actionLoading = false;
+        },
+      });
+  }
+
+  removeFriend(): void {
+    if (this.actionLoading) return;
+    this.actionLoading = true;
+
+    const currentEmail = this.userService.getEmail();
+    this.friendsService
+      .removeFriend(currentEmail, this.friendEmail)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.isFriend = false;
+          this.toastService.showPositiveToast(`Removed ${this.profile?.displayName} from friends`);
+          this.actionLoading = false;
+        },
+        error: (err) => {
+          console.error('Error removing friend:', err);
+          this.toastService.showNegativeToast('Error removing friend');
+          this.actionLoading = false;
+        },
+      });
   }
 }

@@ -97,13 +97,16 @@
 
   .profile-details {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .profile-name {
     font-size: 2rem;
     font-weight: 700;
     color: #fff;
-    margin: 0 0 8px 0;
+    margin: 0;
     background: linear-gradient(135deg, #9c0abf 0%, #1bdc6f 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -114,6 +117,135 @@
     font-size: 1rem;
     color: #8a8a9a;
     margin: 0;
+  }
+
+  .friend-actions {
+    margin-top: 8px;
+
+    .friend-status-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+      position: relative;
+
+      .default-text {
+        display: inline;
+      }
+
+      .hover-text {
+        display: none;
+      }
+
+      &:hover {
+        .default-text {
+          display: none;
+        }
+        .hover-text {
+          display: inline;
+        }
+      }
+
+      &.is-friend {
+        background: rgba(27, 220, 111, 0.15);
+        border: 1px solid rgba(27, 220, 111, 0.3);
+        color: #1bdc6f;
+
+        &:hover {
+          background: rgba(255, 71, 87, 0.15);
+          border-color: rgba(255, 71, 87, 0.3);
+          color: #ff4757;
+        }
+      }
+
+      &.is-outgoing {
+        background: rgba(156, 10, 191, 0.15);
+        border: 1px solid rgba(156, 10, 191, 0.3);
+        color: #9c0abf;
+
+        &:hover {
+          background: rgba(255, 71, 87, 0.15);
+          border-color: rgba(255, 71, 87, 0.3);
+          color: #ff4757;
+        }
+      }
+
+      &.is-incoming {
+        background: rgba(27, 220, 111, 0.15);
+        border: 1px solid rgba(27, 220, 111, 0.3);
+        color: #1bdc6f;
+
+        &:hover {
+          background: linear-gradient(135deg, rgba(27, 220, 111, 0.3) 0%, rgba(156, 10, 191, 0.3) 100%);
+          border-color: transparent;
+        }
+      }
+
+      &.add-friend {
+        background: rgba(156, 10, 191, 0.15);
+        border: 1px solid rgba(156, 10, 191, 0.3);
+        color: #9c0abf;
+
+        &:hover {
+          background: linear-gradient(135deg, #9c0abf 0%, #1bdc6f 100%);
+          border-color: transparent;
+          color: #fff;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    .action-buttons {
+      display: inline-flex;
+      gap: 8px;
+
+      button {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+
+        &.accept {
+          background: rgba(27, 220, 111, 0.15);
+          border: 1px solid rgba(27, 220, 111, 0.3);
+          color: #1bdc6f;
+
+          &:hover {
+            background: #1bdc6f;
+            color: #0a0a14;
+          }
+        }
+
+        &.reject {
+          background: rgba(255, 71, 87, 0.15);
+          border: 1px solid rgba(255, 71, 87, 0.3);
+          color: #ff4757;
+
+          &:hover {
+            background: #ff4757;
+            color: #fff;
+          }
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
   }
 }
 
@@ -165,18 +297,24 @@
   }
 }
 
-// Time Range Selector
-.time-range-selector {
+// Time Range Selector / Term Selector
+.time-range-selector,
+.term-selector {
   display: flex;
   gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.range-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.range-btn,
+.term-btn {
+  background: transparent;
+  border: none;
   color: #8a8a9a;
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: 10px;
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -184,13 +322,11 @@
 
   &:hover {
     background: rgba(156, 10, 191, 0.1);
-    border-color: rgba(156, 10, 191, 0.3);
     color: #fff;
   }
 
   &.active {
-    background: linear-gradient(135deg, #1bdc6f 0%, #17b75b 100%);
-    border-color: transparent;
+    background: linear-gradient(135deg, rgba(156, 10, 191, 0.2) 0%, rgba(27, 220, 111, 0.2) 100%);
     color: #fff;
   }
 }

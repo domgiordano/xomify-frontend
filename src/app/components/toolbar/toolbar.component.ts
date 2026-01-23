@@ -38,23 +38,23 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Subscribe to pending requests
+    // Subscribe to incoming friend requests count
     this.subscriptions.push(
-      this.friendsService.pendingRequests$.subscribe((pending) => {
-        this.pendingFriendsCount = pending.incoming?.length || 0;
+      this.friendsService.incomingCount$.subscribe((count) => {
+        this.pendingFriendsCount = count;
       })
     );
 
-    // Load pending requests if logged in
+    // Load friends list if logged in (this also updates the pending count)
     if (this.authService.isLoggedIn()) {
-      this.loadPendingRequests();
+      this.loadFriendsData();
     }
   }
 
-  loadPendingRequests(): void {
+  loadFriendsData(): void {
     const email = this.userService.getEmail();
     if (email) {
-      this.friendsService.getPendingRequests(email).pipe(take(1)).subscribe();
+      this.friendsService.getFriendsList(email).pipe(take(1)).subscribe();
     }
   }
 

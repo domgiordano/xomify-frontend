@@ -1,25 +1,19 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { tap, map } from 'rxjs/operators';
+import { Observable, BehaviorSubject, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export interface Friend {
   email: string;
+  friendEmail?: string; // Used in pending/requested responses
   displayName?: string;
   avatar?: string;
   addedAt?: string;
+  createdAt?: string;
   status?: string;
   direction?: string;
-}
-
-export interface PendingRequest {
-  email: string;
-  displayName?: string;
-  avatar?: string;
-  requestedAt?: string;
   mutualCount?: number;
-  direction?: 'incoming' | 'outgoing';
 }
 
 // API response for GET /friends/list
@@ -27,8 +21,8 @@ export interface FriendsListResponse {
   email: string;
   totalCount: number;
   accepted: Friend[];
-  requested: Friend[];
-  pending: Friend[];
+  requested: Friend[]; // outgoing requests
+  pending: Friend[]; // incoming requests
   blocked: Friend[];
   acceptedCount: number;
   requestedCount: number;
@@ -36,35 +30,36 @@ export interface FriendsListResponse {
   blockedCount: number;
 }
 
-// API response for GET /friends/pending
-export interface PendingResponse {
-  email: string;
-  pendingCount: number;
-  pending: PendingRequest[];
-}
-
-// Internal structure for component use
-export interface PendingRequests {
-  incoming: PendingRequest[];
-  outgoing: PendingRequest[];
-}
-
 export interface FriendProfile {
   email: string;
   displayName?: string;
   userId?: string;
   avatar?: string;
-  topSongs?: any[];
-  topArtists?: any[];
-  topGenres?: any[];
+  topSongs?: {
+    short_term?: any[];
+    medium_term?: any[];
+    long_term?: any[];
+  };
+  topArtists?: {
+    short_term?: any[];
+    medium_term?: any[];
+    long_term?: any[];
+  };
+  topGenres?: {
+    short_term?: any[];
+    medium_term?: any[];
+    long_term?: any[];
+  };
 }
 
 export interface SearchResult {
   email: string;
-  displayName: string;
+  displayName?: string;
   avatar?: string;
   isFriend: boolean;
   isPending: boolean;
+  isOutgoingRequest?: boolean; // true if you sent them a request
+  isIncomingRequest?: boolean; // true if they sent you a request
   mutualCount?: number;
 }
 
@@ -76,18 +71,17 @@ export class FriendsService {
   private readonly apiAuthToken = environment.apiAuthToken;
 
   // Cache subjects
-  private friendsListSubject = new BehaviorSubject<Friend[]>([]);
-  private pendingRequestsSubject = new BehaviorSubject<PendingRequests>({
-    incoming: [],
-    outgoing: [],
-  });
+  private friendsListSubject = new BehaviorSubject<FriendsListResponse | null>(
+    null,
+  );
+  private incomingCountSubject = new BehaviorSubject<number>(0);
 
   friendsList$ = this.friendsListSubject.asObservable();
-  pendingRequests$ = this.pendingRequestsSubject.asObservable();
+  incomingCount$ = this.incomingCountSubject.asObservable();
 
   // Cache settings
-  private readonly CACHE_KEY_FRIENDS = 'xomify_friends';
-  private readonly CACHE_KEY_PENDING = 'xomify_pending_requests';
+  private readonly CACHE_KEY_FRIENDS = 'xomify_friends_list';
+  private readonly CACHE_KEY_USERS = 'xomify_all_users';
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(private http: HttpClient) {
@@ -106,11 +100,7 @@ export class FriendsService {
     const friendsCache = this.getCache(this.CACHE_KEY_FRIENDS);
     if (friendsCache) {
       this.friendsListSubject.next(friendsCache);
-    }
-
-    const pendingCache = this.getCache(this.CACHE_KEY_PENDING);
-    if (pendingCache) {
-      this.pendingRequestsSubject.next(pendingCache);
+      this.incomingCountSubject.next(friendsCache.pendingCount || 0);
     }
   }
 
@@ -149,53 +139,59 @@ export class FriendsService {
 
   clearCache(): void {
     localStorage.removeItem(this.CACHE_KEY_FRIENDS);
-    localStorage.removeItem(this.CACHE_KEY_PENDING);
+    localStorage.removeItem(this.CACHE_KEY_USERS);
+    this.friendsListSubject.next(null);
   }
 
-  // GET /friends/search?email={email}&q={query}
+  // GET /user/all?email={email}
   // Returns: [{ email, displayName, avatar, isFriend, isPending, mutualCount }]
-  searchUsers(email: string, query: string): Observable<SearchResult[]> {
-    const url = `${this.xomifyApiUrl}/friends/search?email=${encodeURIComponent(email)}&q=${encodeURIComponent(query)}`;
-    return this.http.get<SearchResult[]>(url, { headers: this.getHeaders() });
-  }
+  // Uses cache if available and not expired
+  getAllUsers(email: string, forceRefresh = false): Observable<SearchResult[]> {
+    // Return cached data if available and not forcing refresh
+    if (!forceRefresh) {
+      const cached = this.getCache(this.CACHE_KEY_USERS);
+      if (cached) {
+        return of(cached);
+      }
+    }
 
-  // GET /friends/list?email={email}
-  // Returns: { accepted, requested, pending, blocked, counts... }
-  getFriendsList(email: string): Observable<FriendsListResponse> {
-    const url = `${this.xomifyApiUrl}/friends/list?email=${encodeURIComponent(email)}`;
-    return this.http.get<FriendsListResponse>(url, { headers: this.getHeaders() }).pipe(
-      tap((response) => {
-        this.friendsListSubject.next(response.accepted || []);
-        this.setCache(this.CACHE_KEY_FRIENDS, response.accepted || []);
+    const url = `${this.xomifyApiUrl}/user/all`;
+    return this.http.get<SearchResult[]>(url, { headers: this.getHeaders() }).pipe(
+      tap((users) => {
+        this.setCache(this.CACHE_KEY_USERS, users);
       }),
     );
   }
 
-  // GET /friends/pending?email={email}
-  // Returns: { pending: [...] } where each item has direction: 'incoming' | 'outgoing'
-  getPendingRequests(email: string): Observable<PendingRequests> {
-    const url = `${this.xomifyApiUrl}/friends/pending?email=${encodeURIComponent(email)}`;
+  // GET /friends/list?email={email}
+  // Returns: { accepted, requested, pending, blocked, counts... }
+  // Uses cache if available and not expired
+  getFriendsList(email: string, forceRefresh = false): Observable<FriendsListResponse> {
+    // Return cached data if available and not forcing refresh
+    if (!forceRefresh) {
+      const cached = this.getCache(this.CACHE_KEY_FRIENDS);
+      if (cached) {
+        return of(cached);
+      }
+    }
+
+    const url = `${this.xomifyApiUrl}/friends/list?email=${encodeURIComponent(email)}`;
     return this.http
-      .get<PendingResponse>(url, { headers: this.getHeaders() })
+      .get<FriendsListResponse>(url, { headers: this.getHeaders() })
       .pipe(
-        map((response) => {
-          // Transform API response to incoming/outgoing structure
-          const incoming = (response.pending || []).filter(p => p.direction === 'incoming');
-          const outgoing = (response.pending || []).filter(p => p.direction === 'outgoing');
-          return { incoming, outgoing };
-        }),
-        tap((pending) => {
-          this.pendingRequestsSubject.next(pending);
-          this.setCache(this.CACHE_KEY_PENDING, pending);
+        tap((response) => {
+          this.friendsListSubject.next(response);
+          this.incomingCountSubject.next(response.pendingCount || 0);
+          this.setCache(this.CACHE_KEY_FRIENDS, response);
         }),
       );
   }
 
   // POST /friends/request
-  // Body: { "email": "user@email.com", "targetEmail": "friend@email.com" }
-  sendFriendRequest(email: string, targetEmail: string): Observable<any> {
+  // Body: { "email": "user@email.com", "requestEmail": "friend@email.com" }
+  sendFriendRequest(email: string, requestEmail: string): Observable<any> {
     const url = `${this.xomifyApiUrl}/friends/request`;
-    const body = { email, targetEmail };
+    const body = { email, requestEmail };
     return this.http
       .post(url, body, { headers: this.getHeaders() })
       .pipe(tap(() => this.clearCache()));
@@ -221,7 +217,7 @@ export class FriendsService {
       .pipe(tap(() => this.clearCache()));
   }
 
-  // DELETE /friends/{friendEmail}
+  // DELETE /friends/remove
   removeFriend(email: string, friendEmail: string): Observable<any> {
     const url = `${this.xomifyApiUrl}/friends/remove`;
     return this.http
@@ -243,17 +239,12 @@ export class FriendsService {
   }
 
   // Helper to get cached friends list
-  getCachedFriends(): Friend[] {
+  getCachedFriendsList(): FriendsListResponse | null {
     return this.friendsListSubject.getValue();
-  }
-
-  // Helper to get cached pending requests
-  getCachedPendingRequests(): PendingRequests {
-    return this.pendingRequestsSubject.getValue();
   }
 
   // Get incoming requests count for badge
   getIncomingCount(): number {
-    return this.pendingRequestsSubject.getValue().incoming?.length || 0;
+    return this.incomingCountSubject.getValue();
   }
 }

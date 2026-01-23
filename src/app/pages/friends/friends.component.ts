@@ -1,11 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subscription, forkJoin, debounceTime, Subject } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 import {
   FriendsService,
   Friend,
-  PendingRequest,
   SearchResult,
 } from 'src/app/services/friends.service';
 import { UserService } from 'src/app/services/user.service';
@@ -20,7 +19,6 @@ type TabType = 'friends' | 'pending' | 'search';
 })
 export class FriendsComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
-  private searchSubject = new Subject<string>();
 
   loading = true;
   currentEmail = '';
@@ -31,15 +29,16 @@ export class FriendsComponent implements OnInit, OnDestroy {
   filteredFriends: Friend[] = [];
   friendsSearchQuery = '';
 
-  // Pending requests
-  incomingRequests: PendingRequest[] = [];
-  outgoingRequests: PendingRequest[] = [];
+  // Pending requests (from getFriendsList response)
+  incomingRequests: Friend[] = [];
+  outgoingRequests: Friend[] = [];
 
-  // User search
-  searchQuery = '';
-  searchResults: SearchResult[] = [];
-  isSearching = false;
-  hasSearched = false;
+  // All users for "Add Friends" tab
+  allUsers: SearchResult[] = [];
+  filteredUsers: SearchResult[] = [];
+  userSearchQuery = '';
+  usersLoading = false;
+  usersLoaded = false;
 
   // Action loading states
   actionLoading: { [key: string]: boolean } = {};
@@ -53,14 +52,9 @@ export class FriendsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.currentEmail = this.userService.getEmail();
+    // Load users first, then friends data (so we have user info for enrichment)
+    this.loadAllUsers();
     this.loadData();
-
-    // Setup debounced search
-    this.subscriptions.push(
-      this.searchSubject.pipe(debounceTime(400)).subscribe((query) => {
-        this.performSearch(query);
-      }),
-    );
   }
 
   ngOnDestroy(): void {
@@ -71,41 +65,98 @@ export class FriendsComponent implements OnInit, OnDestroy {
     this.loading = true;
 
     if (forceRefresh) {
-      this.friendsService.clearCache();
+      this.usersLoaded = false;
     }
 
-    forkJoin({
-      friendsResponse: this.friendsService.getFriendsList(this.currentEmail).pipe(take(1)),
-      pending: this.friendsService.getPendingRequests(this.currentEmail).pipe(take(1)),
-    }).subscribe({
-      next: ({ friendsResponse, pending }) => {
-        this.friends = friendsResponse.accepted || [];
-        this.filteredFriends = [...this.friends];
+    this.friendsService
+      .getFriendsList(this.currentEmail, forceRefresh)
+      .pipe(take(1))
+      .subscribe({
+        next: (response) => {
+          // accepted friends - map friendEmail to email for display
+          this.friends = (response.accepted || []).map((f: any) => {
+            const targetEmail = f.friendEmail || f.email;
+            const userInfo = this.getUserInfo(targetEmail);
+            return {
+              ...f,
+              email: targetEmail,
+              displayName: userInfo?.displayName || targetEmail,
+              avatar: userInfo?.avatar,
+            };
+          });
+          this.filteredFriends = [...this.friends];
 
-        this.incomingRequests = pending.incoming || [];
-        this.outgoingRequests = pending.outgoing || [];
+          // pending = incoming requests (from others to you)
+          // For incoming, friendEmail is the sender, so map it to email for display
+          this.incomingRequests = (response.pending || []).map((r: any) => {
+            const targetEmail = r.friendEmail || r.email;
+            const userInfo = this.getUserInfo(targetEmail);
+            return {
+              ...r,
+              email: targetEmail,
+              displayName: userInfo?.displayName || targetEmail,
+              avatar: userInfo?.avatar,
+            };
+          });
 
-        this.loading = false;
+          // requested = outgoing requests (from you to others)
+          // For outgoing, friendEmail is the recipient, so map it to email for display
+          this.outgoingRequests = (response.requested || []).map((r: any) => {
+            const targetEmail = r.friendEmail || r.email;
+            const userInfo = this.getUserInfo(targetEmail);
+            return {
+              ...r,
+              email: targetEmail,
+              displayName: userInfo?.displayName || targetEmail,
+              avatar: userInfo?.avatar,
+            };
+          });
 
-        if (forceRefresh) {
-          this.toastService.showPositiveToast('Friends list refreshed');
-        }
-      },
-      error: (err) => {
-        console.error('Error loading friends data:', err);
-        this.toastService.showNegativeToast('Error loading friends');
-        this.loading = false;
-      },
-    });
+          this.loading = false;
+
+          // Update allUsers statuses based on friends/pending/outgoing lists
+          this.syncUserStatuses();
+
+          if (forceRefresh) {
+            this.toastService.showPositiveToast('Friends list refreshed');
+          }
+        },
+        error: (err) => {
+          console.error('Error loading friends data:', err);
+          this.toastService.showNegativeToast('Error loading friends');
+          this.loading = false;
+        },
+      });
   }
 
   // Tab switching
   switchTab(tab: TabType): void {
     this.activeTab = tab;
-    if (tab === 'search') {
-      this.searchResults = [];
-      this.hasSearched = false;
-    }
+  }
+
+  // Load all users for "Find Friends" tab (called on init, uses cache)
+  loadAllUsers(forceRefresh = false): void {
+    if (this.usersLoaded && !forceRefresh) return;
+
+    this.usersLoading = true;
+
+    this.friendsService
+      .getAllUsers(this.currentEmail, forceRefresh)
+      .pipe(take(1))
+      .subscribe({
+        next: (users) => {
+          // Filter out current user
+          this.allUsers = users.filter((u) => u.email !== this.currentEmail);
+          // Show up to 10 recommended users by default
+          this.filteredUsers = this.allUsers.slice(0, 10);
+          this.usersLoading = false;
+          this.usersLoaded = true;
+        },
+        error: (err) => {
+          console.error('Error loading users:', err);
+          this.usersLoading = false;
+        },
+      });
   }
 
   // Friends list filtering
@@ -127,44 +178,26 @@ export class FriendsComponent implements OnInit, OnDestroy {
     this.filterFriends();
   }
 
-  // User search
-  onSearchInput(): void {
-    this.searchSubject.next(this.searchQuery);
-  }
-
-  performSearch(query: string): void {
-    if (!query || query.trim().length < 2) {
-      this.searchResults = [];
-      this.hasSearched = false;
-      return;
+  // User search filtering (client-side autocomplete)
+  filterUsers(): void {
+    const query = this.userSearchQuery.toLowerCase().trim();
+    if (!query) {
+      // Show up to 10 recommended users when no query
+      this.filteredUsers = this.allUsers.slice(0, 10);
+    } else {
+      // Filter all users based on query
+      this.filteredUsers = this.allUsers.filter(
+        (u) =>
+          u.displayName?.toLowerCase().includes(query) ||
+          u.email?.toLowerCase().includes(query),
+      );
     }
-
-    this.isSearching = true;
-    this.hasSearched = true;
-
-    this.friendsService
-      .searchUsers(this.currentEmail, query.trim())
-      .pipe(take(1))
-      .subscribe({
-        next: (results) => {
-          // Filter out current user
-          this.searchResults = results.filter(
-            (r) => r.email !== this.currentEmail,
-          );
-          this.isSearching = false;
-        },
-        error: (err) => {
-          console.error('Error searching users:', err);
-          this.toastService.showNegativeToast('Error searching users');
-          this.isSearching = false;
-        },
-      });
   }
 
-  clearSearch(): void {
-    this.searchQuery = '';
-    this.searchResults = [];
-    this.hasSearched = false;
+  clearUserSearch(): void {
+    this.userSearchQuery = '';
+    // Reset to recommended users
+    this.filteredUsers = this.allUsers.slice(0, 10);
   }
 
   // Friend actions
@@ -178,7 +211,25 @@ export class FriendsComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: () => {
+          // Update the user's status in allUsers
           result.isPending = true;
+          result.isOutgoingRequest = true;
+          const userInList = this.allUsers.find((u) => u.email === result.email);
+          if (userInList) {
+            userInList.isPending = true;
+            userInList.isOutgoingRequest = true;
+          }
+
+          // Add to outgoing requests for immediate UI update
+          this.outgoingRequests.push({
+            email: result.email,
+            displayName: result.displayName,
+            avatar: result.avatar,
+            direction: 'outgoing',
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+          });
+
           this.toastService.showPositiveToast(
             `Friend request sent to ${result.displayName}`,
           );
@@ -192,7 +243,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
       });
   }
 
-  acceptRequest(request: PendingRequest): void {
+  acceptRequest(request: Friend): void {
     if (this.actionLoading[request.email]) return;
 
     this.actionLoading[request.email] = true;
@@ -213,6 +264,15 @@ export class FriendsComponent implements OnInit, OnDestroy {
           });
           this.filteredFriends = [...this.friends];
 
+          // Update user status in allUsers
+          const userInList = this.allUsers.find((u) => u.email === request.email);
+          if (userInList) {
+            userInList.isFriend = true;
+            userInList.isPending = false;
+            userInList.isIncomingRequest = false;
+            userInList.isOutgoingRequest = false;
+          }
+
           this.toastService.showPositiveToast(
             `You are now friends with ${request.displayName}`,
           );
@@ -226,7 +286,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
       });
   }
 
-  rejectRequest(request: PendingRequest): void {
+  rejectRequest(request: Friend): void {
     if (this.actionLoading[request.email]) return;
 
     this.actionLoading[request.email] = true;
@@ -239,6 +299,14 @@ export class FriendsComponent implements OnInit, OnDestroy {
           this.incomingRequests = this.incomingRequests.filter(
             (r) => r.email !== request.email,
           );
+
+          // Update user status in allUsers
+          const userInList = this.allUsers.find((u) => u.email === request.email);
+          if (userInList) {
+            userInList.isPending = false;
+            userInList.isIncomingRequest = false;
+          }
+
           this.toastService.showPositiveToast('Request rejected');
           this.actionLoading[request.email] = false;
         },
@@ -250,7 +318,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
       });
   }
 
-  cancelRequest(request: PendingRequest): void {
+  cancelRequest(request: Friend): void {
     if (this.actionLoading[request.email]) return;
 
     this.actionLoading[request.email] = true;
@@ -263,6 +331,14 @@ export class FriendsComponent implements OnInit, OnDestroy {
           this.outgoingRequests = this.outgoingRequests.filter(
             (r) => r.email !== request.email,
           );
+
+          // Update user status in allUsers
+          const userInList = this.allUsers.find((u) => u.email === request.email);
+          if (userInList) {
+            userInList.isPending = false;
+            userInList.isOutgoingRequest = false;
+          }
+
           this.toastService.showPositiveToast('Request cancelled');
           this.actionLoading[request.email] = false;
         },
@@ -290,6 +366,13 @@ export class FriendsComponent implements OnInit, OnDestroy {
           this.filteredFriends = this.filteredFriends.filter(
             (f) => f.email !== friend.email,
           );
+
+          // Update user status in allUsers
+          const userInList = this.allUsers.find((u) => u.email === friend.email);
+          if (userInList) {
+            userInList.isFriend = false;
+          }
+
           this.toastService.showPositiveToast(
             `Removed ${friend.displayName} from friends`,
           );
@@ -317,7 +400,36 @@ export class FriendsComponent implements OnInit, OnDestroy {
     return 'assets/img/no-image.png';
   }
 
+  getUserInfo(email: string): { displayName?: string; avatar?: string } | null {
+    const user = this.allUsers.find((u) => u.email === email);
+    return user ? { displayName: user.displayName, avatar: user.avatar } : null;
+  }
+
+  // Sync user statuses in allUsers based on friends/pending/outgoing lists
+  syncUserStatuses(): void {
+    if (this.allUsers.length === 0) return;
+
+    const friendEmails = new Set(this.friends.map((f) => f.email));
+    const incomingEmails = new Set(this.incomingRequests.map((r) => r.email));
+    const outgoingEmails = new Set(this.outgoingRequests.map((r) => r.email));
+
+    this.allUsers.forEach((user) => {
+      user.isFriend = friendEmails.has(user.email);
+      user.isIncomingRequest = incomingEmails.has(user.email);
+      user.isOutgoingRequest = outgoingEmails.has(user.email);
+      user.isPending = user.isIncomingRequest || user.isOutgoingRequest;
+    });
+
+    // Update filtered users if needed
+    if (this.userSearchQuery) {
+      this.filterUsers();
+    } else {
+      this.filteredUsers = this.allUsers.slice(0, 10);
+    }
+  }
+
   refresh(): void {
     this.loadData(true);
+    this.loadAllUsers(true);
   }
 }

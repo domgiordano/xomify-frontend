@@ -10,9 +10,18 @@
           <p class="page-subtitle">Connect with other Xomify users</p>
         </div>
         <button class="refresh-btn" (click)="refresh()" title="Refresh">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <path d="M23 4v6h-6M1 20v-6h6" />
-            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+            <path
+              d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"
+            />
           </svg>
         </button>
       </div>
@@ -24,33 +33,58 @@
           [class.active]="activeTab === 'friends'"
           (click)="switchTab('friends')"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
             <circle cx="9" cy="7" r="4" />
             <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
           Friends
-          <span class="badge" *ngIf="friends.length > 0">{{ friends.length }}</span>
+          <span class="badge" *ngIf="friends.length > 0">{{
+            friends.length
+          }}</span>
         </button>
         <button
           class="tab-btn"
           [class.active]="activeTab === 'pending'"
           (click)="switchTab('pending')"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
           Pending
-          <span class="badge pending" *ngIf="getPendingCount() > 0">{{ getPendingCount() }}</span>
+          <span class="badge pending" *ngIf="getPendingCount() > 0">{{
+            getPendingCount()
+          }}</span>
         </button>
         <button
           class="tab-btn"
           [class.active]="activeTab === 'search'"
           (click)="switchTab('search')"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.35-4.35" />
           </svg>
@@ -63,7 +97,14 @@
     <div class="tab-content" *ngIf="activeTab === 'friends'">
       <!-- Search friends -->
       <div class="search-box" *ngIf="friends.length > 0">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <circle cx="11" cy="11" r="8" />
           <path d="m21 21-4.35-4.35" />
         </svg>
@@ -73,8 +114,19 @@
           [(ngModel)]="friendsSearchQuery"
           (input)="filterFriends()"
         />
-        <button class="clear-btn" *ngIf="friendsSearchQuery" (click)="clearFriendsSearch()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button
+          class="clear-btn"
+          *ngIf="friendsSearchQuery"
+          (click)="clearFriendsSearch()"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -85,8 +137,10 @@
       <div class="stats-bar" *ngIf="friends.length > 0">
         <span class="count">
           <strong>{{ filteredFriends.length }}</strong>
-          {{ filteredFriends.length === 1 ? 'friend' : 'friends' }}
-          <span *ngIf="friendsSearchQuery"> matching "{{ friendsSearchQuery }}"</span>
+          {{ filteredFriends.length === 1 ? "friend" : "friends" }}
+          <span *ngIf="friendsSearchQuery">
+            matching "{{ friendsSearchQuery }}"</span
+          >
         </span>
       </div>
 
@@ -108,7 +162,9 @@
             <h3 class="user-name">{{ friend.displayName }}</h3>
             <p class="user-email">{{ friend.email }}</p>
             <p class="mutual-count" *ngIf="friend.mutualCount">
-              {{ friend.mutualCount }} mutual friend{{ friend.mutualCount === 1 ? '' : 's' }}
+              {{ friend.mutualCount }} mutual friend{{
+                friend.mutualCount === 1 ? "" : "s"
+              }}
             </p>
           </div>
           <button
@@ -126,7 +182,14 @@
       <!-- Empty State -->
       <div class="empty-state" *ngIf="friends.length === 0">
         <div class="empty-icon">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg
+            width="64"
+            height="64"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
             <circle cx="9" cy="7" r="4" />
             <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -135,11 +198,16 @@
         </div>
         <h3>No friends yet</h3>
         <p>Find and add friends to see their music taste!</p>
-        <button class="btn-primary" (click)="switchTab('search')">Find Friends</button>
+        <button class="btn-primary" (click)="switchTab('search')">
+          Find Friends
+        </button>
       </div>
 
       <!-- No results -->
-      <div class="empty-state" *ngIf="friends.length > 0 && filteredFriends.length === 0">
+      <div
+        class="empty-state"
+        *ngIf="friends.length > 0 && filteredFriends.length === 0"
+      >
         <h3>No friends found</h3>
         <p>Try a different search term</p>
       </div>
@@ -150,7 +218,14 @@
       <!-- Incoming Requests -->
       <section class="requests-section" *ngIf="incomingRequests.length > 0">
         <h2 class="section-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
             <circle cx="8.5" cy="7" r="4" />
             <polyline points="17 11 19 13 23 9" />
@@ -159,19 +234,26 @@
           <span class="badge">{{ incomingRequests.length }}</span>
         </h2>
         <div class="users-list">
-          <div class="user-card horizontal" *ngFor="let request of incomingRequests">
-            <div class="user-avatar">
+          <div
+            class="user-card horizontal"
+            *ngFor="let request of incomingRequests"
+          >
+            <div class="user-avatar" (click)="goToProfile(request)">
               <img
-                [src]="request.avatar || getDefaultAvatar()"
+                [src]="request.avatar || 'assets/img/default-avatar.png'"
                 [alt]="request.displayName"
-                (error)="$any($event.target).src = getDefaultAvatar()"
+                (error)="
+                  $any($event.target).src = 'assets/img/default-avatar.png'
+                "
               />
             </div>
-            <div class="user-info">
+            <div class="user-info" (click)="goToProfile(request)">
               <h3 class="user-name">{{ request.displayName }}</h3>
               <p class="user-email">{{ request.email }}</p>
               <p class="mutual-count" *ngIf="request.mutualCount">
-                {{ request.mutualCount }} mutual friend{{ request.mutualCount === 1 ? '' : 's' }}
+                {{ request.mutualCount }} mutual friend{{
+                  request.mutualCount === 1 ? "" : "s"
+                }}
               </p>
             </div>
             <div class="action-buttons">
@@ -180,14 +262,14 @@
                 (click)="acceptRequest(request)"
                 [class.loading]="actionLoading[request.email]"
               >
-                {{ actionLoading[request.email] ? '...' : 'Accept' }}
+                {{ actionLoading[request.email] ? "..." : "Accept" }}
               </button>
               <button
                 class="action-btn reject"
                 (click)="rejectRequest(request)"
                 [class.loading]="actionLoading[request.email]"
               >
-                {{ actionLoading[request.email] ? '...' : 'Reject' }}
+                {{ actionLoading[request.email] ? "..." : "Reject" }}
               </button>
             </div>
           </div>
@@ -197,7 +279,14 @@
       <!-- Outgoing Requests -->
       <section class="requests-section" *ngIf="outgoingRequests.length > 0">
         <h2 class="section-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
             <circle cx="8.5" cy="7" r="4" />
             <line x1="20" y1="8" x2="20" y2="14" />
@@ -207,15 +296,20 @@
           <span class="badge muted">{{ outgoingRequests.length }}</span>
         </h2>
         <div class="users-list">
-          <div class="user-card horizontal" *ngFor="let request of outgoingRequests">
-            <div class="user-avatar">
+          <div
+            class="user-card horizontal"
+            *ngFor="let request of outgoingRequests"
+          >
+            <div class="user-avatar" (click)="goToProfile(request)">
               <img
-                [src]="request.avatar || getDefaultAvatar()"
+                [src]="request.avatar || 'assets/img/default-avatar.png'"
                 [alt]="request.displayName"
-                (error)="$any($event.target).src = getDefaultAvatar()"
+                (error)="
+                  $any($event.target).src = 'assets/img/default-avatar.png'
+                "
               />
             </div>
-            <div class="user-info">
+            <div class="user-info" (click)="goToProfile(request)">
               <h3 class="user-name">{{ request.displayName }}</h3>
               <p class="user-email">{{ request.email }}</p>
             </div>
@@ -224,16 +318,26 @@
               (click)="cancelRequest(request)"
               [class.loading]="actionLoading[request.email]"
             >
-              {{ actionLoading[request.email] ? '...' : 'Cancel' }}
+              {{ actionLoading[request.email] ? "..." : "Cancel" }}
             </button>
           </div>
         </div>
       </section>
 
       <!-- Empty State -->
-      <div class="empty-state" *ngIf="incomingRequests.length === 0 && outgoingRequests.length === 0">
+      <div
+        class="empty-state"
+        *ngIf="incomingRequests.length === 0 && outgoingRequests.length === 0"
+      >
         <div class="empty-icon">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg
+            width="64"
+            height="64"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
@@ -245,94 +349,181 @@
 
     <!-- Find Friends Tab -->
     <div class="tab-content" *ngIf="activeTab === 'search'">
-      <!-- Search Input -->
-      <div class="search-box large">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
-        <input
-          type="text"
-          placeholder="Search by name or email..."
-          [(ngModel)]="searchQuery"
-          (input)="onSearchInput()"
-          autofocus
-        />
-        <button class="clear-btn" *ngIf="searchQuery" (click)="clearSearch()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
-
-      <p class="search-hint">Search for other Xomify users to add them as friends</p>
-
       <!-- Loading State -->
-      <div class="search-loading" *ngIf="isSearching">
+      <div class="search-loading" *ngIf="usersLoading">
         <div class="spinner"></div>
-        <span>Searching...</span>
+        <span>Loading users...</span>
       </div>
 
-      <!-- Search Results -->
-      <div class="users-list" *ngIf="searchResults.length > 0 && !isSearching">
-        <div class="user-card horizontal" *ngFor="let result of searchResults">
-          <div class="user-avatar">
-            <img
-              [src]="result.avatar || getDefaultAvatar()"
-              [alt]="result.displayName"
-              (error)="$any($event.target).src = getDefaultAvatar()"
-            />
-          </div>
-          <div class="user-info">
-            <h3 class="user-name">{{ result.displayName }}</h3>
-            <p class="user-email">{{ result.email }}</p>
-            <p class="mutual-count" *ngIf="result.mutualCount">
-              {{ result.mutualCount }} mutual friend{{ result.mutualCount === 1 ? '' : 's' }}
-            </p>
-          </div>
-          <button
-            class="action-btn"
-            [class.friend]="result.isFriend"
-            [class.pending]="result.isPending && !result.isFriend"
-            [class.add]="!result.isFriend && !result.isPending"
-            [class.loading]="actionLoading[result.email]"
-            (click)="!result.isFriend && !result.isPending && sendRequest(result)"
-            [disabled]="result.isFriend || result.isPending"
+      <ng-container *ngIf="usersLoaded && !usersLoading">
+        <!-- Search Input -->
+        <div class="search-box large">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
           >
-            <span *ngIf="result.isFriend">Friends</span>
-            <span *ngIf="result.isPending && !result.isFriend">Pending</span>
-            <span *ngIf="!result.isFriend && !result.isPending && !actionLoading[result.email]">Add Friend</span>
-            <span *ngIf="actionLoading[result.email]">...</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- No Results -->
-      <div class="empty-state" *ngIf="hasSearched && searchResults.length === 0 && !isSearching">
-        <div class="empty-icon">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.35-4.35" />
           </svg>
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            [(ngModel)]="userSearchQuery"
+            (input)="filterUsers()"
+            autofocus
+          />
+          <button
+            class="clear-btn"
+            *ngIf="userSearchQuery"
+            (click)="clearUserSearch()"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
-        <h3>No users found</h3>
-        <p>Try searching with a different name or email</p>
-      </div>
 
-      <!-- Initial State -->
-      <div class="empty-state subtle" *ngIf="!hasSearched && !isSearching">
-        <div class="empty-icon">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="8.5" cy="7" r="4" />
-            <line x1="20" y1="8" x2="20" y2="14" />
-            <line x1="23" y1="11" x2="17" y2="11" />
-          </svg>
+        <!-- Stats -->
+        <div class="stats-bar" *ngIf="filteredUsers.length > 0">
+          <span class="count" *ngIf="userSearchQuery">
+            <strong>{{ filteredUsers.length }}</strong>
+            {{ filteredUsers.length === 1 ? "user" : "users" }} matching "{{
+              userSearchQuery
+            }}"
+          </span>
+          <span class="count" *ngIf="!userSearchQuery">
+            <strong>Recommended</strong> users
+          </span>
         </div>
-        <h3>Find friends on Xomify</h3>
-        <p>Search by their name or email address</p>
-      </div>
+
+        <!-- Users List -->
+        <div class="users-list" *ngIf="filteredUsers.length > 0">
+          <div class="user-card horizontal" *ngFor="let user of filteredUsers">
+            <div class="user-avatar" (click)="goToProfile(user)">
+              <img
+                [src]="user.avatar || 'assets/img/default-avatar.png'"
+                [alt]="user.displayName"
+                (error)="
+                  $any($event.target).src = 'assets/img/default-avatar.png'
+                "
+              />
+            </div>
+            <div class="user-info" (click)="goToProfile(user)">
+              <h3 class="user-name">{{ user.displayName }}</h3>
+              <p class="user-email">{{ user.email }}</p>
+              <p class="mutual-count" *ngIf="user.mutualCount">
+                {{ user.mutualCount }} mutual friend{{
+                  user.mutualCount === 1 ? "" : "s"
+                }}
+              </p>
+            </div>
+            <!-- Friend status button -->
+            <button *ngIf="user.isFriend" class="action-btn friend" disabled>
+              <span>Friends</span>
+            </button>
+
+            <!-- Outgoing request - show Cancel -->
+            <button
+              *ngIf="!user.isFriend && user.isOutgoingRequest"
+              class="action-btn cancel"
+              [class.loading]="actionLoading[user.email]"
+              (click)="cancelRequest(user)"
+              [disabled]="actionLoading[user.email]"
+            >
+              <span *ngIf="!actionLoading[user.email]">Cancel</span>
+              <span *ngIf="actionLoading[user.email]">...</span>
+            </button>
+
+            <!-- Incoming request - show Accept/Reject -->
+            <div
+              *ngIf="!user.isFriend && user.isIncomingRequest"
+              class="action-buttons"
+            >
+              <button
+                class="action-btn accept"
+                [class.loading]="actionLoading[user.email]"
+                (click)="acceptRequest(user)"
+                [disabled]="actionLoading[user.email]"
+              >
+                <span>Accept</span>
+              </button>
+              <button
+                class="action-btn reject"
+                [class.loading]="actionLoading[user.email]"
+                (click)="rejectRequest(user)"
+                [disabled]="actionLoading[user.email]"
+              >
+                <span>Reject</span>
+              </button>
+            </div>
+
+            <!-- No relationship - show Add Friend -->
+            <button
+              *ngIf="!user.isFriend && !user.isPending"
+              class="action-btn add"
+              [class.loading]="actionLoading[user.email]"
+              (click)="sendRequest(user)"
+              [disabled]="actionLoading[user.email]"
+            >
+              <span *ngIf="!actionLoading[user.email]">Add Friend</span>
+              <span *ngIf="actionLoading[user.email]">...</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- No Results -->
+        <div
+          class="empty-state"
+          *ngIf="userSearchQuery && filteredUsers.length === 0"
+        >
+          <div class="empty-icon">
+            <svg
+              width="64"
+              height="64"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+          </div>
+          <h3>No users found</h3>
+          <p>Try searching with a different name or email</p>
+        </div>
+
+        <!-- Empty State - No Users in system -->
+        <div class="empty-state" *ngIf="allUsers.length === 0">
+          <div class="empty-icon">
+            <svg
+              width="64"
+              height="64"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+            </svg>
+          </div>
+          <h3>No other users yet</h3>
+          <p>Be the first to invite your friends to Xomify!</p>
+        </div>
+      </ng-container>
     </div>
   </div>
 </div>

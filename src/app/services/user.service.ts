@@ -23,7 +23,10 @@ export class UserService implements OnInit {
   private xomifyApiUrl: string = `https://${environment.apiId}.execute-api.us-east-1.amazonaws.com/dev`;
   private readonly apiAuthToken = environment.apiAuthToken;
 
-  constructor(private http: HttpClient, private AuthService: AuthService) {}
+  constructor(
+    private http: HttpClient,
+    private AuthService: AuthService,
+  ) {}
 
   ngOnInit() {
     this.accessToken = this.AuthService.getAccessToken();
@@ -149,6 +152,7 @@ export class UserService implements OnInit {
       userId: this.id,
       displayName: this.user.display_name || this.user.email,
       refreshToken: this.refreshToken,
+      avatar: this.getProfilePic(),
     };
     const headers = new HttpHeaders({
       Authorization: `Bearer ${this.apiAuthToken}`,
@@ -159,7 +163,7 @@ export class UserService implements OnInit {
 
   updateUserTableEnrollments(
     wrappedEnrolled: boolean,
-    releaseRadarEnrolled: boolean
+    releaseRadarEnrolled: boolean,
   ): Observable<any> {
     this.refreshToken = this.AuthService.getRefreshToken();
     const url = `${this.xomifyApiUrl}/user/user-table`;
