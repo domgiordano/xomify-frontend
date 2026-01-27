@@ -7,8 +7,10 @@ import { UserService } from 'src/app/services/user.service';
 import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { QueueService, QueueTrack } from 'src/app/services/queue.service';
+import { SongService } from 'src/app/services/song.service';
+import { ArtistService } from 'src/app/services/artist.service';
 
-type TabType = 'songs' | 'artists' | 'genres' | 'playlists';
+type TabType = 'songs' | 'artists' | 'genres' | 'playlists' | 'compatibility';
 type TermType = 'short_term' | 'medium_term' | 'long_term';
 
 @Component({
@@ -33,6 +35,20 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
   isIncomingRequest = false;
   actionLoading = false;
 
+  // Compatibility data
+  compatibilityScore = 0;
+  sharedArtists: any[] = [];
+  sharedSongs: any[] = [];
+  sharedGenres: string[] = [];
+  compatibilityCalculated = false;
+
+  // Friend stats (fetched from Spotify)
+  followersCount = 0;
+  followingCount = 0;
+  playlistCount = 0;
+  friendsCount = 0;
+  statsLoaded = false;
+
   constructor(
     private route: ActivatedRoute,
     public router: Router,
@@ -40,7 +56,9 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
     private userService: UserService,
     private playerService: PlayerService,
     private queueService: QueueService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private songService: SongService,
+    private artistService: ArtistService
   ) {}
 
   ngOnInit(): void {
@@ -88,6 +106,12 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
             (r.email === this.friendEmail || r.friendEmail === this.friendEmail)
           );
 
+          // Calculate compatibility
+          this.calculateCompatibility();
+
+          // Load Spotify stats for this friend
+          this.loadFriendStats();
+
           this.loading = false;
         },
         error: (err) => {
@@ -96,6 +120,102 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
           this.loading = false;
         },
       });
+  }
+
+  loadFriendStats(): void {
+    // Check cache first
+    const cacheKey = `xomify_friend_stats_${this.friendEmail}`;
+    const cached = this.getStatsCache(cacheKey);
+    if (cached) {
+      this.followersCount = cached.followersCount;
+      this.followingCount = cached.followingCount;
+      this.playlistCount = cached.playlistCount;
+      this.friendsCount = cached.friendsCount;
+      this.statsLoaded = true;
+      return;
+    }
+
+    // Build the requests - always get friends count from our API
+    const requests: any = {
+      friendsList: this.friendsService.getFriendsList(this.friendEmail, true),
+    };
+
+    // Only fetch Spotify stats if we have a userId
+    if (this.profile?.userId) {
+      requests.spotifyProfile = this.userService.getUserProfile(this.profile.userId);
+      requests.playlists = this.userService.getUserPublicPlaylists(this.profile.userId, 1);
+    }
+
+    forkJoin(requests)
+      .pipe(take(1))
+      .subscribe({
+        next: (data: any) => {
+          // Friends count from our API
+          this.friendsCount = data.friendsList?.acceptedCount || data.friendsList?.accepted?.length || 0;
+
+          // Spotify stats (if available)
+          if (data.spotifyProfile) {
+            this.followersCount = data.spotifyProfile?.followers?.total || 0;
+          }
+          if (data.playlists) {
+            this.playlistCount = data.playlists?.total || 0;
+          }
+
+          this.statsLoaded = true;
+
+          // Cache the stats
+          this.setStatsCache(cacheKey, {
+            followersCount: this.followersCount,
+            followingCount: this.followingCount,
+            playlistCount: this.playlistCount,
+            friendsCount: this.friendsCount,
+          });
+
+          console.log('Friend stats loaded:', {
+            followers: this.followersCount,
+            playlists: this.playlistCount,
+            friends: this.friendsCount,
+          });
+        },
+        error: (err) => {
+          console.error('Error loading friend stats:', err);
+          this.statsLoaded = true;
+        },
+      });
+  }
+
+  private getStatsCache(key: string): any | null {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return null;
+
+      const data = JSON.parse(cached);
+      const now = Date.now();
+      const STATS_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+      if (now - data.timestamp > STATS_CACHE_TTL) {
+        localStorage.removeItem(key);
+        return null;
+      }
+
+      return data.stats;
+    } catch {
+      return null;
+    }
+  }
+
+  private setStatsCache(key: string, stats: any): void {
+    try {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          stats,
+          timestamp: Date.now(),
+        })
+      );
+    } catch {
+      console.warn('Failed to cache friend stats');
+    }
   }
 
   switchTab(tab: TabType): void {
@@ -393,5 +513,94 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
           this.actionLoading = false;
         },
       });
+  }
+
+  // Compatibility calculation
+  calculateCompatibility(): void {
+    if (!this.profile || this.compatibilityCalculated) return;
+
+    // Get current user's data
+    const myArtists = this.artistService.getShortTermTopArtists();
+    const mySongs = this.songService.getShortTermTopTracks();
+    const myGenres = this.extractGenresFromArtists(myArtists);
+
+    // Get friend's data (use short_term for comparison)
+    const friendArtists = this.profile.topArtists?.short_term || [];
+    const friendSongs = this.profile.topSongs?.short_term || [];
+    const friendGenresRaw = this.profile.topGenres?.short_term;
+
+    // Extract friend's genres
+    let friendGenres: string[] = [];
+    if (friendGenresRaw && typeof friendGenresRaw === 'object' && !Array.isArray(friendGenresRaw)) {
+      friendGenres = Object.keys(friendGenresRaw);
+    } else if (Array.isArray(friendGenresRaw)) {
+      friendGenres = friendGenresRaw.map((g: any) => g.name || g.genre || g);
+    }
+
+    // Find shared artists (by ID)
+    const myArtistIds = new Set(myArtists.map((a: any) => a.id));
+    this.sharedArtists = friendArtists.filter((a: any) => myArtistIds.has(a.id));
+
+    // Find shared songs (by ID)
+    const mySongIds = new Set(mySongs.map((s: any) => s.id));
+    this.sharedSongs = friendSongs.filter((s: any) => mySongIds.has(s.id));
+
+    // Find shared genres (by name, case-insensitive)
+    const myGenresLower = new Set(myGenres.map((g: string) => g.toLowerCase()));
+    this.sharedGenres = friendGenres.filter((g: string) =>
+      myGenresLower.has(g.toLowerCase())
+    );
+
+    // Calculate compatibility score
+    // Weights: Artists 40%, Genres 35%, Songs 25%
+    const maxArtists = Math.min(myArtists.length, friendArtists.length) || 1;
+    const maxGenres = Math.min(myGenres.length, friendGenres.length) || 1;
+    const maxSongs = Math.min(mySongs.length, friendSongs.length) || 1;
+
+    const artistScore = (this.sharedArtists.length / maxArtists) * 100;
+    const genreScore = (this.sharedGenres.length / maxGenres) * 100;
+    const songScore = (this.sharedSongs.length / maxSongs) * 100;
+
+    this.compatibilityScore = Math.round(
+      (artistScore * 0.4) + (genreScore * 0.35) + (songScore * 0.25)
+    );
+
+    // Cap at 100%
+    this.compatibilityScore = Math.min(this.compatibilityScore, 100);
+
+    this.compatibilityCalculated = true;
+
+    console.log('Compatibility calculated:', {
+      score: this.compatibilityScore,
+      sharedArtists: this.sharedArtists.length,
+      sharedGenres: this.sharedGenres.length,
+      sharedSongs: this.sharedSongs.length,
+    });
+  }
+
+  private extractGenresFromArtists(artists: any[]): string[] {
+    const genreSet = new Set<string>();
+    artists.forEach((artist: any) => {
+      if (artist.genres && Array.isArray(artist.genres)) {
+        artist.genres.forEach((genre: string) => genreSet.add(genre));
+      }
+    });
+    return Array.from(genreSet);
+  }
+
+  getCompatibilityLabel(): string {
+    if (this.compatibilityScore >= 80) return 'Excellent Match!';
+    if (this.compatibilityScore >= 60) return 'Great Match';
+    if (this.compatibilityScore >= 40) return 'Good Match';
+    if (this.compatibilityScore >= 20) return 'Some Overlap';
+    return 'Different Tastes';
+  }
+
+  getCompatibilityColor(): string {
+    if (this.compatibilityScore >= 80) return '#1bdc6f';
+    if (this.compatibilityScore >= 60) return '#7dd87d';
+    if (this.compatibilityScore >= 40) return '#f1c40f';
+    if (this.compatibilityScore >= 20) return '#e67e22';
+    return '#e74c3c';
   }
 }

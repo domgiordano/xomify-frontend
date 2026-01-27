@@ -251,6 +251,7 @@
   .profile-stats {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 16px;
     margin-top: 16px;
 
@@ -819,5 +820,312 @@
 
   .artist-card {
     padding: 12px;
+  }
+}
+
+// Playlists Grid
+.playlists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.playlist-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: rgba(156, 10, 191, 0.4);
+    transform: translateY(-4px);
+  }
+
+  .playlist-image {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 12px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .playlist-info {
+    .playlist-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      margin: 0 0 4px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .playlist-meta {
+      font-size: 0.8rem;
+      color: #8a8a9a;
+      margin: 0;
+    }
+  }
+}
+
+// Compatibility Tab Styles
+.compatibility-header {
+  margin-bottom: 32px;
+}
+
+.compatibility-score-display {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.score-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 4px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
+
+  .score-value {
+    font-size: 2rem;
+    font-weight: 700;
+  }
+}
+
+.score-info {
+  flex: 1;
+
+  .score-label {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+  }
+
+  .score-description {
+    font-size: 1rem;
+    color: #8a8a9a;
+    margin: 0;
+  }
+}
+
+.compatibility-section {
+  margin-bottom: 32px;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 16px 0;
+
+    svg {
+      color: #9c0abf;
+    }
+  }
+}
+
+// Shared Items Grid (for artists)
+.shared-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 16px;
+}
+
+.shared-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+  }
+
+  img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(156, 10, 191, 0.3);
+  }
+
+  .shared-item-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+}
+
+// Shared Songs List
+.shared-songs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shared-song-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: rgba(156, 10, 191, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  img {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .shared-song-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .shared-song-name {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .shared-song-artist {
+      font-size: 0.8rem;
+      color: #8a8a9a;
+    }
+  }
+
+  .shared-song-actions {
+    flex-shrink: 0;
+
+    .action-btn {
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: #8a8a9a;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(27, 220, 111, 0.15);
+        border-color: rgba(27, 220, 111, 0.3);
+        color: #1bdc6f;
+      }
+    }
+  }
+}
+
+// Shared Genres List
+.shared-genres-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.shared-genre-tag {
+  background: linear-gradient(135deg, rgba(156, 10, 191, 0.15) 0%, rgba(27, 220, 111, 0.15) 100%);
+  border: 1px solid rgba(156, 10, 191, 0.2);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: rgba(156, 10, 191, 0.4);
+    background: linear-gradient(135deg, rgba(156, 10, 191, 0.25) 0%, rgba(27, 220, 111, 0.25) 100%);
+  }
+}
+
+// Compatibility stat in header
+.compatibility-stat {
+  .stat-value {
+    -webkit-text-fill-color: unset !important;
+    background: none !important;
+  }
+}
+
+// Mobile responsive for compatibility
+@media (max-width: 768px) {
+  .compatibility-score-display {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .score-info {
+    .score-label {
+      font-size: 1.3rem;
+    }
+  }
+
+  .shared-items-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .shared-item {
+    img {
+      width: 60px;
+      height: 60px;
+    }
+
+    .shared-item-name {
+      font-size: 0.75rem;
+    }
+  }
+
+  .shared-genres-list {
+    gap: 8px;
+  }
+
+  .shared-genre-tag {
+    padding: 6px 12px;
+    font-size: 0.8rem;
   }
 }

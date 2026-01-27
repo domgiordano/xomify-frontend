@@ -105,24 +105,24 @@
           </div>
 
           <!-- Stats -->
-          <div class="profile-stats" *ngIf="profile.followersCount !== undefined || profile.followingCount !== undefined || profile.playlistCount !== undefined || profile.friendsCount !== undefined">
-            <div class="stat-item" *ngIf="profile.friendsCount !== undefined">
-              <span class="stat-value">{{ profile.friendsCount | number }}</span>
+          <div class="profile-stats">
+            <div class="stat-item clickable compatibility-stat" (click)="switchTab('compatibility')" *ngIf="compatibilityCalculated">
+              <span class="stat-value" [style.color]="getCompatibilityColor()">{{ compatibilityScore }}%</span>
+              <span class="stat-label">Match</span>
+            </div>
+            <div class="stat-divider" *ngIf="compatibilityCalculated"></div>
+            <div class="stat-item">
+              <span class="stat-value">{{ friendsCount | number }}</span>
               <span class="stat-label">Friends</span>
             </div>
-            <div class="stat-divider" *ngIf="profile.friendsCount !== undefined && profile.followersCount !== undefined"></div>
-            <div class="stat-item" *ngIf="profile.followersCount !== undefined">
-              <span class="stat-value">{{ profile.followersCount | number }}</span>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-value">{{ followersCount | number }}</span>
               <span class="stat-label">Followers</span>
             </div>
-            <div class="stat-divider" *ngIf="profile.followersCount !== undefined && profile.followingCount !== undefined"></div>
-            <div class="stat-item" *ngIf="profile.followingCount !== undefined">
-              <span class="stat-value">{{ profile.followingCount | number }}</span>
-              <span class="stat-label">Following</span>
-            </div>
-            <div class="stat-divider" *ngIf="profile.followingCount !== undefined && profile.playlistCount !== undefined"></div>
-            <div class="stat-item clickable" *ngIf="profile.playlistCount !== undefined" (click)="switchTab('playlists')">
-              <span class="stat-value">{{ profile.playlistCount | number }}</span>
+            <div class="stat-divider"></div>
+            <div class="stat-item clickable" (click)="switchTab('playlists')">
+              <span class="stat-value">{{ playlistCount | number }}</span>
               <span class="stat-label">Playlists</span>
             </div>
           </div>
@@ -207,10 +207,28 @@
           </svg>
           Playlists
         </button>
+        <button
+          class="tab-btn"
+          [class.active]="activeTab === 'compatibility'"
+          (click)="switchTab('compatibility')"
+          *ngIf="compatibilityCalculated"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+          Compatibility
+        </button>
       </div>
 
-      <!-- Term Selector (hide for playlists) -->
-      <div class="term-selector" *ngIf="activeTab !== 'playlists'">
+      <!-- Term Selector (hide for playlists and compatibility) -->
+      <div class="term-selector" *ngIf="activeTab !== 'playlists' && activeTab !== 'compatibility'">
         <button
           class="term-btn"
           [class.active]="activeTerm === 'short_term'"
@@ -542,6 +560,112 @@
         <h3>No Public Playlists</h3>
         <p>
           {{ profile.displayName }} doesn't have any public playlists or hasn't shared them.
+        </p>
+      </div>
+    </div>
+
+    <!-- Compatibility Tab -->
+    <div class="tab-content" *ngIf="activeTab === 'compatibility'">
+      <!-- Compatibility Score Header -->
+      <div class="compatibility-header">
+        <div class="compatibility-score-display">
+          <div class="score-circle" [style.border-color]="getCompatibilityColor()">
+            <span class="score-value" [style.color]="getCompatibilityColor()">{{ compatibilityScore }}%</span>
+          </div>
+          <div class="score-info">
+            <h2 class="score-label" [style.color]="getCompatibilityColor()">{{ getCompatibilityLabel() }}</h2>
+            <p class="score-description">
+              Your music compatibility with {{ profile.displayName }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shared Artists -->
+      <div class="compatibility-section" *ngIf="sharedArtists.length > 0">
+        <h3 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          Shared Artists ({{ sharedArtists.length }})
+        </h3>
+        <div class="shared-items-grid">
+          <div class="shared-item" *ngFor="let artist of sharedArtists.slice(0, 10)" (click)="goToArtist(artist.id)">
+            <img
+              [src]="artist.images?.[0]?.url || artist.imageUrl || getDefaultArtist()"
+              [alt]="artist.name"
+              (error)="$any($event.target).src = getDefaultArtist()"
+            />
+            <span class="shared-item-name">{{ artist.name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shared Songs -->
+      <div class="compatibility-section" *ngIf="sharedSongs.length > 0">
+        <h3 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
+          </svg>
+          Shared Songs ({{ sharedSongs.length }})
+        </h3>
+        <div class="shared-songs-list">
+          <div class="shared-song-item" *ngFor="let track of sharedSongs.slice(0, 10)">
+            <img
+              [src]="track.album?.images?.[0]?.url || track.imageUrl || getDefaultArtist()"
+              [alt]="track.name"
+              (error)="$any($event.target).src = getDefaultArtist()"
+            />
+            <div class="shared-song-info">
+              <span class="shared-song-name">{{ track.name }}</span>
+              <span class="shared-song-artist">
+                <ng-container *ngIf="track.artists?.length; else artistName">
+                  {{ track.artists[0].name }}
+                </ng-container>
+                <ng-template #artistName>{{ track.artistName || '' }}</ng-template>
+              </span>
+            </div>
+            <div class="shared-song-actions">
+              <button class="action-btn" (click)="playSong(track, $event)" title="Play">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shared Genres -->
+      <div class="compatibility-section" *ngIf="sharedGenres.length > 0">
+        <h3 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2" />
+            <polyline points="2 17 12 22 22 17" />
+            <polyline points="2 12 12 17 22 12" />
+          </svg>
+          Shared Genres ({{ sharedGenres.length }})
+        </h3>
+        <div class="shared-genres-list">
+          <span class="shared-genre-tag" *ngFor="let genre of sharedGenres.slice(0, 15)">
+            {{ genre }}
+          </span>
+        </div>
+      </div>
+
+      <!-- No Matches State -->
+      <div class="empty-state" *ngIf="sharedArtists.length === 0 && sharedSongs.length === 0 && sharedGenres.length === 0">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+        </div>
+        <h3>No Matches Yet</h3>
+        <p>
+          You and {{ profile.displayName }} don't share any top artists, songs, or genres at the moment.
         </p>
       </div>
     </div>
