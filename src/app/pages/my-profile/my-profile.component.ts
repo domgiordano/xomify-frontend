@@ -54,6 +54,7 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   private topArtists: any[] = [];
   private topGenres: { name: string; count: number }[] = [];
   private tickerRotationSub?: Subscription;
+  private friendsListSub?: Subscription;
 
   constructor(
     private AuthService: AuthService,
@@ -69,6 +70,19 @@ export class MyProfileComponent implements OnInit, OnDestroy {
     this.accessToken = this.AuthService.getAccessToken();
     this.userName = this.UserService.getUserName();
 
+    // Subscribe to friends list updates for real-time count
+    this.friendsListSub = this.FriendsService.friendsList$.subscribe((friendsList) => {
+      if (friendsList) {
+        this.friendsCount = friendsList.acceptedCount || 0;
+      }
+    });
+
+    // Set current user email to load cached friends data
+    const email = this.UserService.getEmail();
+    if (email) {
+      this.FriendsService.setCurrentUserEmail(email);
+    }
+
     if (this.userName.length === 0) {
       console.log('Need User.');
       this.loadUser();
@@ -82,6 +96,9 @@ export class MyProfileComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.tickerRotationSub) {
       this.tickerRotationSub.unsubscribe();
+    }
+    if (this.friendsListSub) {
+      this.friendsListSub.unsubscribe();
     }
   }
 
@@ -126,6 +143,12 @@ export class MyProfileComponent implements OnInit, OnDestroy {
           console.log('USER------', data);
           this.UserService.setUser(data);
           this.populateUserData();
+
+          // Set current user email to load cached friends data
+          if (data.email) {
+            this.FriendsService.setCurrentUserEmail(data.email);
+          }
+
           this.loadAdditionalData();
           this.updateUserTable();
 
