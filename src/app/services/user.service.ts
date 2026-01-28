@@ -144,9 +144,19 @@ export class UserService implements OnInit {
     });
   }
 
+  // Get another user's public playlists
+  getUserPublicPlaylists(userId: string, limit: number = 1): Observable<any> {
+    return this.http.get(`${this.baseUrl}/users/${userId}/playlists`, {
+      headers: this.getAuthHeaders(),
+      params: {
+        limit: limit.toString(),
+      },
+    });
+  }
+
   updateUserTableRefreshToken(): Observable<any> {
     this.refreshToken = this.AuthService.getRefreshToken();
-    const url = `${this.xomifyApiUrl}/user/user-table`;
+    const url = `${this.xomifyApiUrl}/user/update`;
     const body = {
       email: this.user.email,
       userId: this.id,
@@ -166,7 +176,7 @@ export class UserService implements OnInit {
     releaseRadarEnrolled: boolean,
   ): Observable<any> {
     this.refreshToken = this.AuthService.getRefreshToken();
-    const url = `${this.xomifyApiUrl}/user/user-table`;
+    const url = `${this.xomifyApiUrl}/user/update`;
     const body = {
       email: this.user.email,
       wrappedEnrolled: wrappedEnrolled,
@@ -182,7 +192,7 @@ export class UserService implements OnInit {
   getUserTableData(email: string): Observable<any> {
     const url = `${
       this.xomifyApiUrl
-    }/user/user-table?email=${encodeURIComponent(email)}`;
+    }/user/data?email=${encodeURIComponent(email)}`;
     const headers = new HttpHeaders({
       Authorization: `Bearer ${this.apiAuthToken}`,
       'Content-Type': 'application/json',

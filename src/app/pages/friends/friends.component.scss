@@ -17,7 +17,27 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .user-profile-mini {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+
+    img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(156, 10, 191, 0.3);
+    }
   }
 
   .page-title {
@@ -35,6 +55,47 @@
     font-size: 1.1rem;
     color: #8a8a9a;
     margin: 0;
+  }
+}
+
+// User Stats Bar
+.user-stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 60px;
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #9c0abf 0%, #1bdc6f 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: #8a8a9a;
+      font-weight: 500;
+    }
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -508,16 +569,49 @@
 
   .page-header {
     .header-top {
-      flex-direction: column;
-      gap: 16px;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-left {
+      flex: 1;
+      gap: 12px;
+    }
+
+    .user-profile-mini {
+      width: 48px;
+      height: 48px;
     }
 
     .page-title {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
     }
 
-    .refresh-btn {
-      align-self: flex-end;
+    .page-subtitle {
+      font-size: 0.9rem;
+    }
+  }
+
+  .user-stats-bar {
+    padding: 12px 16px;
+    gap: 12px;
+    justify-content: space-between;
+
+    .stat-item {
+      min-width: auto;
+
+      .stat-value {
+        font-size: 1.1rem;
+      }
+
+      .stat-label {
+        font-size: 0.7rem;
+      }
+    }
+
+    .stat-divider {
+      height: 24px;
     }
   }
 

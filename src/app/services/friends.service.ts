@@ -85,14 +85,17 @@ export class FriendsService {
   incomingCount$ = this.incomingCountSubject.asObservable();
 
   // Cache settings
-  private readonly CACHE_KEY_FRIENDS = 'xomify_friends_list';
+  private readonly CACHE_KEY_FRIENDS_PREFIX = 'xomify_friends_list_'; // Now includes email
   private readonly CACHE_KEY_USERS = 'xomify_all_users';
   private readonly CACHE_KEY_PROFILE_PREFIX = 'xomify_friend_profile_';
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly PROFILE_CACHE_TTL = 10 * 60 * 1000; // 10 minutes for profiles
 
+  // Track the current user's email for cache management
+  private currentUserEmail: string | null = null;
+
   constructor(private http: HttpClient) {
-    this.loadFromCache();
+    // Don't auto-load cache - wait until we know which user
   }
 
   private getHeaders(): HttpHeaders {
@@ -102,9 +105,10 @@ export class FriendsService {
     });
   }
 
-  // Load cached data on service init
-  private loadFromCache(): void {
-    const friendsCache = this.getCache(this.CACHE_KEY_FRIENDS);
+  // Load cached data for a specific user
+  private loadFromCache(email: string): void {
+    const cacheKey = this.CACHE_KEY_FRIENDS_PREFIX + email;
+    const friendsCache = this.getCache(cacheKey);
     if (friendsCache) {
       this.friendsListSubject.next(friendsCache);
       this.incomingCountSubject.next(friendsCache.pendingCount || 0);
@@ -144,8 +148,15 @@ export class FriendsService {
     }
   }
 
-  clearCache(): void {
-    localStorage.removeItem(this.CACHE_KEY_FRIENDS);
+  clearCache(email?: string): void {
+    // Clear specific user's friends cache if email provided
+    if (email) {
+      localStorage.removeItem(this.CACHE_KEY_FRIENDS_PREFIX + email);
+    }
+    // Also clear current user's cache if we know who they are
+    if (this.currentUserEmail) {
+      localStorage.removeItem(this.CACHE_KEY_FRIENDS_PREFIX + this.currentUserEmail);
+    }
     localStorage.removeItem(this.CACHE_KEY_USERS);
     this.friendsListSubject.next(null);
   }
@@ -173,11 +184,19 @@ export class FriendsService {
   // GET /friends/list?email={email}
   // Returns: { accepted, requested, pending, blocked, counts... }
   // Uses cache if available and not expired
+  // IMPORTANT: Cache is now per-email to avoid mixing user data
   getFriendsList(email: string, forceRefresh = false): Observable<FriendsListResponse> {
+    const cacheKey = this.CACHE_KEY_FRIENDS_PREFIX + email;
+
     // Return cached data if available and not forcing refresh
     if (!forceRefresh) {
-      const cached = this.getCache(this.CACHE_KEY_FRIENDS);
+      const cached = this.getCache(cacheKey);
       if (cached) {
+        // Only update subjects if this is the current user's data
+        if (email === this.currentUserEmail) {
+          this.friendsListSubject.next(cached);
+          this.incomingCountSubject.next(cached.pendingCount || 0);
+        }
         return of(cached);
       }
     }
@@ -187,11 +206,20 @@ export class FriendsService {
       .get<FriendsListResponse>(url, { headers: this.getHeaders() })
       .pipe(
         tap((response) => {
-          this.friendsListSubject.next(response);
-          this.incomingCountSubject.next(response.pendingCount || 0);
-          this.setCache(this.CACHE_KEY_FRIENDS, response);
+          // Only update subjects if this is the current user's data
+          if (email === this.currentUserEmail || !this.currentUserEmail) {
+            this.friendsListSubject.next(response);
+            this.incomingCountSubject.next(response.pendingCount || 0);
+          }
+          this.setCache(cacheKey, response);
         }),
       );
+  }
+
+  // Set the current user email (call this on app init/login)
+  setCurrentUserEmail(email: string): void {
+    this.currentUserEmail = email;
+    this.loadFromCache(email);
   }
 
   // POST /friends/request
