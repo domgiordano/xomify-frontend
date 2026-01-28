@@ -1,0 +1,39 @@
+<div
+  class="star-rating"
+  [class.readonly]="readonly"
+  [class.size-small]="size === 'small'"
+  [class.size-medium]="size === 'medium'"
+  [class.size-large]="size === 'large'"
+  (mouseleave)="onMouseLeave()"
+>
+  <div
+    *ngFor="let star of stars"
+    class="star-container"
+    [class.full]="getStarClass(star) === 'full'"
+    [class.half]="getStarClass(star) === 'half'"
+    [class.empty]="getStarClass(star) === 'empty'"
+    (click)="onStarClick(star, $event)"
+    (mousemove)="onStarHover(star, $event)"
+  >
+    <!-- Empty star (background) -->
+    <svg class="star star-empty" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>
+    <!-- Full star (overlay) -->
+    <svg class="star star-full" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>
+    <!-- Half star (overlay) -->
+    <svg class="star star-half" viewBox="0 0 24 24">
+      <defs>
+        <clipPath [attr.id]="'half-star-clip-' + star">
+          <rect x="0" y="0" width="12" height="24"/>
+        </clipPath>
+      </defs>
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+            fill="currentColor"
+            [attr.clip-path]="'url(#half-star-clip-' + star + ')'"/>
+    </svg>
+  </div>
+  <span class="rating-text" *ngIf="rating > 0">{{ rating }}</span>
+</div>

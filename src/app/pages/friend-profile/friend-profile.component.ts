@@ -135,20 +135,17 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Build the requests for Spotify stats only
+    // Build the requests
     const requests: any = {};
 
     // Only fetch Spotify stats if we have a userId
     if (this.profile?.userId) {
       requests.spotifyProfile = this.userService.getUserProfile(this.profile.userId);
-      requests.playlists = this.userService.getUserPublicPlaylists(this.profile.userId, 1);
+      requests.playlists = this.userService.getUserPublicPlaylists(this.profile.userId, 50);
     }
 
-    // If no requests to make, just mark as loaded
-    if (Object.keys(requests).length === 0) {
-      this.statsLoaded = true;
-      return;
-    }
+    // Fetch friend's friends count
+    requests.friendsList = this.friendsService.getFriendsList(this.friendEmail);
 
     forkJoin(requests)
       .pipe(take(1))
@@ -160,6 +157,15 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
           }
           if (data.playlists) {
             this.playlistCount = data.playlists?.total || 0;
+            // Store playlists if profile doesn't have them
+            if ((!this.profile.playlists || this.profile.playlists.length === 0) && data.playlists?.items) {
+              this.profile.playlists = data.playlists.items;
+            }
+          }
+
+          // Friend's friends count
+          if (data.friendsList) {
+            this.friendsCount = data.friendsList.acceptedCount || 0;
           }
 
           this.statsLoaded = true;

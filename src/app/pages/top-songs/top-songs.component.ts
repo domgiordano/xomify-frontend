@@ -1,9 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { SongService } from 'src/app/services/song.service';
 import { PlayerService } from 'src/app/services/player.service';
 import { QueueService, QueueTrack } from 'src/app/services/queue.service';
 import { ToastService } from 'src/app/services/toast.service';
+import { RatingsService } from 'src/app/services/ratings.service';
+import {
+  SongDetailModalComponent,
+  SongDetailTrack,
+} from 'src/app/components/song-detail-modal/song-detail-modal.component';
 import { take } from 'rxjs';
 
 interface TopSong {
@@ -30,6 +35,8 @@ interface TopSong {
   styleUrls: ['./top-songs.component.scss'],
 })
 export class TopSongsComponent implements OnInit, OnDestroy {
+  @ViewChild('songDetailModal') songDetailModal!: SongDetailModalComponent;
+
   topSongs: TopSong[] = [];
   loading: boolean = true;
   error: string = '';
@@ -47,6 +54,7 @@ export class TopSongsComponent implements OnInit, OnDestroy {
     private playerService: PlayerService,
     private queueService: QueueService,
     private toastService: ToastService,
+    private ratingsService: RatingsService,
     private router: Router
   ) {}
 
@@ -236,7 +244,7 @@ export class TopSongsComponent implements OnInit, OnDestroy {
     event.preventDefault();
 
     const track = this.getQueueTrack(song);
-    
+
     if (this.isInQueue(song.id)) {
       this.queueService.removeFromQueue(song.id);
       this.toastService.showPositiveToast(`Removed "${song.name}" from queue`);
@@ -244,5 +252,28 @@ export class TopSongsComponent implements OnInit, OnDestroy {
       this.queueService.addToQueue(track);
       this.toastService.showPositiveToast(`Added "${song.name}" to queue`);
     }
+  }
+
+  openSongDetail(song: TopSong, event: Event): void {
+    event.stopPropagation();
+    const track: SongDetailTrack = {
+      id: song.id,
+      name: song.name,
+      artists: song.artists,
+      album: song.album,
+      duration_ms: song.duration_ms,
+      popularity: song.popularity,
+      explicit: song.explicit,
+      external_urls: song.external_urls,
+    };
+    this.songDetailModal.open(track);
+  }
+
+  getRating(songId: string): number {
+    return this.ratingsService.getCachedRating(songId);
+  }
+
+  isRated(songId: string): boolean {
+    return this.ratingsService.isRated(songId);
   }
 }

@@ -1,0 +1,148 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+      My Ratings
+    </h1>
+    <p class="page-subtitle">Track your music ratings</p>
+    <button class="refresh-btn" (click)="refresh()" [disabled]="loading">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 4v6h-6"/>
+        <path d="M1 20v-6h6"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Stats Section -->
+  <div class="stats-section" *ngIf="!loading && ratings.length > 0">
+    <div class="stat-card">
+      <span class="stat-value">{{ totalRatings }}</span>
+      <span class="stat-label">Total Ratings</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ averageRating }}</span>
+      <span class="stat-label">Average Rating</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ fiveStarCount }}</span>
+      <span class="stat-label">5-Star Songs</span>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section" *ngIf="!loading && ratings.length > 0">
+    <!-- Search -->
+    <div class="search-container">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search rated songs..."
+        [(ngModel)]="searchQuery"
+        (input)="onSearchChange()"
+      />
+      <button class="clear-btn" *ngIf="searchQuery" (click)="clearSearch()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Filter controls -->
+    <div class="filter-controls">
+      <!-- Sort dropdown -->
+      <div class="filter-group">
+        <label class="filter-label">Sort by</label>
+        <select class="filter-select" [(ngModel)]="sortBy" (change)="onSortChange(sortBy)">
+          <option *ngFor="let opt of sortOptions" [value]="opt.value">{{ opt.label }}</option>
+        </select>
+      </div>
+
+      <!-- Rating filter -->
+      <div class="filter-group">
+        <label class="filter-label">Rating</label>
+        <select class="filter-select" [(ngModel)]="minRating" (change)="onRatingFilterChange(minRating)">
+          <option *ngFor="let filter of ratingFilters" [value]="filter.value">{{ filter.label }}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <div class="loader">
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+    <p class="loading-text">Loading your ratings...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && ratings.length === 0">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#8a8a9a" stroke-width="1.5">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>
+    <h3>No Ratings Yet</h3>
+    <p>Start rating songs by clicking on any track throughout the app!</p>
+  </div>
+
+  <!-- No Results -->
+  <div class="no-results" *ngIf="!loading && ratings.length > 0 && filteredRatings.length === 0">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8a8a9a" stroke-width="1.5">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <p>No ratings match your filters</p>
+    <button class="clear-filters-btn" (click)="searchQuery = ''; minRating = 0; applyFilters()">
+      Clear Filters
+    </button>
+  </div>
+
+  <!-- Ratings List -->
+  <div class="ratings-list" *ngIf="!loading && filteredRatings.length > 0">
+    <div
+      class="rating-card"
+      *ngFor="let rating of filteredRatings"
+      (click)="openTrackDetail(rating)"
+    >
+      <div class="album-art" (click)="goToAlbum(rating.albumId, $event)">
+        <img [src]="rating.albumArt || getDefaultAlbumArt()" [alt]="rating.trackName" />
+        <button class="play-btn" (click)="playTrack(rating, $event)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="track-info">
+        <h4 class="track-name">{{ rating.trackName }}</h4>
+        <p class="artist-name">{{ rating.artistName }}</p>
+        <span class="rated-at">Rated {{ formatDate(rating.ratedAt) }}</span>
+      </div>
+
+      <div class="rating-display">
+        <app-star-rating [rating]="rating.rating" [readonly]="true" size="small"></app-star-rating>
+      </div>
+
+      <button class="remove-btn" (click)="removeRating(rating, $event)" title="Remove rating">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 6h18"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Song Detail Modal -->
+<app-song-detail-modal #songDetailModal></app-song-detail-modal>

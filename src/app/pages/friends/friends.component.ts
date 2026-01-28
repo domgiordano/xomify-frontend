@@ -43,6 +43,9 @@ export class FriendsComponent implements OnInit, OnDestroy {
   // Action loading states
   actionLoading: { [key: string]: boolean } = {};
 
+  // Store raw response for re-enrichment after users load
+  private rawFriendsResponse: any = null;
+
   constructor(
     private friendsService: FriendsService,
     private userService: UserService,
@@ -75,44 +78,9 @@ export class FriendsComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: (response) => {
-          // accepted friends - map friendEmail to email for display
-          this.friends = (response.accepted || []).map((f: any) => {
-            const targetEmail = f.friendEmail || f.email;
-            const userInfo = this.getUserInfo(targetEmail);
-            return {
-              ...f,
-              email: targetEmail,
-              displayName: userInfo?.displayName || targetEmail,
-              avatar: userInfo?.avatar,
-            };
-          });
-          this.filteredFriends = [...this.friends];
-
-          // pending = incoming requests (from others to you)
-          // For incoming, friendEmail is the sender, so map it to email for display
-          this.incomingRequests = (response.pending || []).map((r: any) => {
-            const targetEmail = r.friendEmail || r.email;
-            const userInfo = this.getUserInfo(targetEmail);
-            return {
-              ...r,
-              email: targetEmail,
-              displayName: userInfo?.displayName || targetEmail,
-              avatar: userInfo?.avatar,
-            };
-          });
-
-          // requested = outgoing requests (from you to others)
-          // For outgoing, friendEmail is the recipient, so map it to email for display
-          this.outgoingRequests = (response.requested || []).map((r: any) => {
-            const targetEmail = r.friendEmail || r.email;
-            const userInfo = this.getUserInfo(targetEmail);
-            return {
-              ...r,
-              email: targetEmail,
-              displayName: userInfo?.displayName || targetEmail,
-              avatar: userInfo?.avatar,
-            };
-          });
+          // Store raw response for re-enrichment after users load
+          this.rawFriendsResponse = response;
+          this.enrichFriendsData();
 
           this.loading = false;
 
@@ -129,6 +97,50 @@ export class FriendsComponent implements OnInit, OnDestroy {
           this.loading = false;
         },
       });
+  }
+
+  // Enrich friends data with user info (avatar, displayName)
+  private enrichFriendsData(): void {
+    if (!this.rawFriendsResponse) return;
+
+    const response = this.rawFriendsResponse;
+
+    // accepted friends - map friendEmail to email for display
+    this.friends = (response.accepted || []).map((f: any) => {
+      const targetEmail = f.friendEmail || f.email;
+      const userInfo = this.getUserInfo(targetEmail);
+      return {
+        ...f,
+        email: targetEmail,
+        displayName: userInfo?.displayName || f.displayName || targetEmail,
+        avatar: userInfo?.avatar || f.avatar,
+      };
+    });
+    this.filteredFriends = [...this.friends];
+
+    // pending = incoming requests (from others to you)
+    this.incomingRequests = (response.pending || []).map((r: any) => {
+      const targetEmail = r.friendEmail || r.email;
+      const userInfo = this.getUserInfo(targetEmail);
+      return {
+        ...r,
+        email: targetEmail,
+        displayName: userInfo?.displayName || r.displayName || targetEmail,
+        avatar: userInfo?.avatar || r.avatar,
+      };
+    });
+
+    // requested = outgoing requests (from you to others)
+    this.outgoingRequests = (response.requested || []).map((r: any) => {
+      const targetEmail = r.friendEmail || r.email;
+      const userInfo = this.getUserInfo(targetEmail);
+      return {
+        ...r,
+        email: targetEmail,
+        displayName: userInfo?.displayName || r.displayName || targetEmail,
+        avatar: userInfo?.avatar || r.avatar,
+      };
+    });
   }
 
   // Tab switching
@@ -153,6 +165,11 @@ export class FriendsComponent implements OnInit, OnDestroy {
           this.filteredUsers = this.allUsers.slice(0, 10);
           this.usersLoading = false;
           this.usersLoaded = true;
+
+          // Re-enrich friends data now that we have user info for avatars
+          if (this.rawFriendsResponse) {
+            this.enrichFriendsData();
+          }
         },
         error: (err) => {
           console.error('Error loading users:', err);

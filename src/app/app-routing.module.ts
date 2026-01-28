@@ -19,6 +19,7 @@ import { WrappedComponent } from './pages/wrapped/wrapped.component';
 import { ReleaseRadarComponent } from './pages/release-radar/release-radar.component';
 import { FriendsComponent } from './pages/friends/friends.component';
 import { FriendProfileComponent } from './pages/friend-profile/friend-profile.component';
+import { RatingsComponent } from './pages/ratings/ratings.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -91,6 +92,11 @@ const routes: Routes = [
   {
     path: 'friend/:email',
     component: FriendProfileComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'ratings',
+    component: RatingsComponent,
     canActivate: [AuthGuard],
   },
   // Catch-all redirect

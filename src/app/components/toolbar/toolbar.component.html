@@ -59,6 +59,13 @@
         Wrapped
       </a>
       <a
+        routerLink="/ratings"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/ratings') }"
+      >
+        Ratings
+      </a>
+      <a
         routerLink="/friends"
         routerLinkActive="active"
         [ngClass]="{ selected: isSelected('/friends') }"
@@ -128,6 +135,12 @@
       routerLinkActive="active"
       (click)="selectItem('/wrapped')"
       >Wrapped</a
+    >
+    <a
+      routerLink="/ratings"
+      routerLinkActive="active"
+      (click)="selectItem('/ratings')"
+      >Ratings</a
     >
     <a
       routerLink="/friends"
