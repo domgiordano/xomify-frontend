@@ -25,6 +25,10 @@
   <div class="profile-content" *ngIf="profile && !loading && !error">
     <!-- Header -->
     <header class="profile-header">
+      <div class="header-banner">
+        <div class="banner-gradient"></div>
+      </div>
+
       <button class="back-btn" (click)="goBack()">
         <svg
           width="20"
@@ -36,20 +40,46 @@
         >
           <path d="M15 18l-6-6 6-6" />
         </svg>
-        Back to Friends
+        Back
       </button>
 
-      <div class="profile-info">
-        <div class="profile-avatar">
+      <div class="header-content">
+        <div class="profile-image-wrapper">
           <img
             [src]="profile.avatar || 'assets/img/default-avatar.png'"
             [alt]="profile.displayName"
+            class="profile-image"
             (error)="$any($event.target).src = 'assets/img/default-avatar.png'"
           />
+          <div class="image-glow"></div>
         </div>
+
         <div class="profile-details">
-          <h1 class="profile-name">{{ profile.displayName }}</h1>
-          <p class="profile-email">{{ profile.email }}</p>
+          <h1 class="user-name">{{ profile.displayName }}</h1>
+          <p class="user-email">{{ profile.email }}</p>
+
+          <!-- Stats -->
+          <div class="profile-stats">
+            <div class="stat-item clickable compatibility-stat" (click)="switchTab('compatibility')" *ngIf="compatibilityCalculated">
+              <span class="stat-value" [style.color]="getCompatibilityColor()">{{ compatibilityScore }}%</span>
+              <span class="stat-label">Match</span>
+            </div>
+            <div class="stat-divider" *ngIf="compatibilityCalculated"></div>
+            <div class="stat-item">
+              <span class="stat-value">{{ friendsCount | number }}</span>
+              <span class="stat-label">Friends</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-value">{{ followersCount | number }}</span>
+              <span class="stat-label">Followers</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item clickable" (click)="switchTab('playlists')">
+              <span class="stat-value">{{ playlistCount | number }}</span>
+              <span class="stat-label">Playlists</span>
+            </div>
+          </div>
 
           <!-- Friend Status Actions -->
           <div class="friend-actions">
@@ -60,7 +90,7 @@
               (click)="removeFriend()"
               [disabled]="actionLoading"
             >
-              <span class="default-text">✓ Friends</span>
+              <span class="default-text">Friends</span>
               <span class="hover-text">Remove Friend</span>
             </button>
 
@@ -102,29 +132,6 @@
             >
               Add Friend
             </button>
-          </div>
-
-          <!-- Stats -->
-          <div class="profile-stats">
-            <div class="stat-item clickable compatibility-stat" (click)="switchTab('compatibility')" *ngIf="compatibilityCalculated">
-              <span class="stat-value" [style.color]="getCompatibilityColor()">{{ compatibilityScore }}%</span>
-              <span class="stat-label">Match</span>
-            </div>
-            <div class="stat-divider" *ngIf="compatibilityCalculated"></div>
-            <div class="stat-item">
-              <span class="stat-value">{{ friendsCount | number }}</span>
-              <span class="stat-label">Friends</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-              <span class="stat-value">{{ followersCount | number }}</span>
-              <span class="stat-label">Followers</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item clickable" (click)="switchTab('playlists')">
-              <span class="stat-value">{{ playlistCount | number }}</span>
-              <span class="stat-label">Playlists</span>
-            </div>
           </div>
         </div>
       </div>

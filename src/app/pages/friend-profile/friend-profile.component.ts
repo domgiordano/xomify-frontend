@@ -135,10 +135,8 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Build the requests - always get friends count from our API
-    const requests: any = {
-      friendsList: this.friendsService.getFriendsList(this.friendEmail, true),
-    };
+    // Build the requests for Spotify stats only
+    const requests: any = {};
 
     // Only fetch Spotify stats if we have a userId
     if (this.profile?.userId) {
@@ -146,13 +144,16 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
       requests.playlists = this.userService.getUserPublicPlaylists(this.profile.userId, 1);
     }
 
+    // If no requests to make, just mark as loaded
+    if (Object.keys(requests).length === 0) {
+      this.statsLoaded = true;
+      return;
+    }
+
     forkJoin(requests)
       .pipe(take(1))
       .subscribe({
         next: (data: any) => {
-          // Friends count from our API
-          this.friendsCount = data.friendsList?.acceptedCount || data.friendsList?.accepted?.length || 0;
-
           // Spotify stats (if available)
           if (data.spotifyProfile) {
             this.followersCount = data.spotifyProfile?.followers?.total || 0;
@@ -169,12 +170,6 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
             followingCount: this.followingCount,
             playlistCount: this.playlistCount,
             friendsCount: this.friendsCount,
-          });
-
-          console.log('Friend stats loaded:', {
-            followers: this.followersCount,
-            playlists: this.playlistCount,
-            friends: this.friendsCount,
           });
         },
         error: (err) => {
@@ -519,54 +514,102 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
   calculateCompatibility(): void {
     if (!this.profile || this.compatibilityCalculated) return;
 
-    // Get current user's data
-    const myArtists = this.artistService.getShortTermTopArtists();
-    const mySongs = this.songService.getShortTermTopTracks();
-    const myGenres = this.extractGenresFromArtists(myArtists);
+    // Collect data from ALL time periods for a more comprehensive comparison
+    const myArtistsShort = this.artistService.getShortTermTopArtists() || [];
+    const myArtistsMedium = this.artistService.getMedTermTopArtists() || [];
+    const myArtistsLong = this.artistService.getLongTermTopArtists() || [];
+    const mySongsShort = this.songService.getShortTermTopTracks() || [];
+    const mySongsMedium = this.songService.getMediumTermTopTracks() || [];
+    const mySongsLong = this.songService.getLongTermTopTracks() || [];
 
-    // Get friend's data (use short_term for comparison)
-    const friendArtists = this.profile.topArtists?.short_term || [];
-    const friendSongs = this.profile.topSongs?.short_term || [];
-    const friendGenresRaw = this.profile.topGenres?.short_term;
+    // Combine all my artists and songs (deduplicated by ID)
+    const myArtistIds = new Set<string>();
+    [...myArtistsShort, ...myArtistsMedium, ...myArtistsLong].forEach((a: any) => {
+      if (a?.id) myArtistIds.add(a.id);
+    });
 
-    // Extract friend's genres
-    let friendGenres: string[] = [];
-    if (friendGenresRaw && typeof friendGenresRaw === 'object' && !Array.isArray(friendGenresRaw)) {
-      friendGenres = Object.keys(friendGenresRaw);
-    } else if (Array.isArray(friendGenresRaw)) {
-      friendGenres = friendGenresRaw.map((g: any) => g.name || g.genre || g);
-    }
+    const mySongIds = new Set<string>();
+    [...mySongsShort, ...mySongsMedium, ...mySongsLong].forEach((s: any) => {
+      if (s?.id) mySongIds.add(s.id);
+    });
 
-    // Find shared artists (by ID)
-    const myArtistIds = new Set(myArtists.map((a: any) => a.id));
-    this.sharedArtists = friendArtists.filter((a: any) => myArtistIds.has(a.id));
+    // Extract my genres from all artists
+    const myGenres = new Set<string>();
+    [...myArtistsShort, ...myArtistsMedium, ...myArtistsLong].forEach((artist: any) => {
+      if (artist?.genres && Array.isArray(artist.genres)) {
+        artist.genres.forEach((genre: string) => myGenres.add(genre.toLowerCase()));
+      }
+    });
 
-    // Find shared songs (by ID)
-    const mySongIds = new Set(mySongs.map((s: any) => s.id));
-    this.sharedSongs = friendSongs.filter((s: any) => mySongIds.has(s.id));
+    // Get friend's data from ALL time periods
+    const friendArtistsAll: any[] = [];
+    const friendSongsAll: any[] = [];
+    const friendGenresAll = new Set<string>();
 
-    // Find shared genres (by name, case-insensitive)
-    const myGenresLower = new Set(myGenres.map((g: string) => g.toLowerCase()));
-    this.sharedGenres = friendGenres.filter((g: string) =>
-      myGenresLower.has(g.toLowerCase())
-    );
+    ['short_term', 'medium_term', 'long_term'].forEach((term) => {
+      const artists = this.profile?.topArtists?.[term as keyof typeof this.profile.topArtists] || [];
+      const songs = this.profile?.topSongs?.[term as keyof typeof this.profile.topSongs] || [];
+      const genresRaw = this.profile?.topGenres?.[term as keyof typeof this.profile.topGenres];
 
-    // Calculate compatibility score
-    // Weights: Artists 40%, Genres 35%, Songs 25%
-    const maxArtists = Math.min(myArtists.length, friendArtists.length) || 1;
-    const maxGenres = Math.min(myGenres.length, friendGenres.length) || 1;
-    const maxSongs = Math.min(mySongs.length, friendSongs.length) || 1;
+      friendArtistsAll.push(...artists);
+      friendSongsAll.push(...songs);
 
-    const artistScore = (this.sharedArtists.length / maxArtists) * 100;
-    const genreScore = (this.sharedGenres.length / maxGenres) * 100;
-    const songScore = (this.sharedSongs.length / maxSongs) * 100;
+      // Extract genres
+      if (genresRaw && typeof genresRaw === 'object' && !Array.isArray(genresRaw)) {
+        Object.keys(genresRaw).forEach((g) => friendGenresAll.add(g.toLowerCase()));
+      } else if (Array.isArray(genresRaw)) {
+        genresRaw.forEach((g: any) => {
+          const name = g?.name || g?.genre || (typeof g === 'string' ? g : '');
+          if (name) friendGenresAll.add(name.toLowerCase());
+        });
+      }
+    });
 
-    this.compatibilityScore = Math.round(
-      (artistScore * 0.4) + (genreScore * 0.35) + (songScore * 0.25)
-    );
+    // Deduplicate friend's data
+    const friendArtistIds = new Set<string>();
+    const uniqueFriendArtists: any[] = [];
+    friendArtistsAll.forEach((a: any) => {
+      if (a?.id && !friendArtistIds.has(a.id)) {
+        friendArtistIds.add(a.id);
+        uniqueFriendArtists.push(a);
+      }
+    });
 
-    // Cap at 100%
-    this.compatibilityScore = Math.min(this.compatibilityScore, 100);
+    const friendSongIds = new Set<string>();
+    const uniqueFriendSongs: any[] = [];
+    friendSongsAll.forEach((s: any) => {
+      if (s?.id && !friendSongIds.has(s.id)) {
+        friendSongIds.add(s.id);
+        uniqueFriendSongs.push(s);
+      }
+    });
+
+    // Find shared items
+    this.sharedArtists = uniqueFriendArtists.filter((a: any) => myArtistIds.has(a.id));
+    this.sharedSongs = uniqueFriendSongs.filter((s: any) => mySongIds.has(s.id));
+    this.sharedGenres = Array.from(friendGenresAll).filter((g) => myGenres.has(g));
+
+    // Calculate compatibility score using a more generous algorithm
+    // Points-based system that rewards shared items
+    let score = 0;
+
+    // Artists: Each shared artist is worth points (max 40 points)
+    // 1 shared = 15, 2 = 25, 3 = 32, 5+ = 40
+    const artistPoints = Math.min(40, this.sharedArtists.length * 8 + (this.sharedArtists.length > 0 ? 7 : 0));
+    score += artistPoints;
+
+    // Genres: Each shared genre is worth points (max 35 points)
+    // Genres are broader so we expect more overlap
+    const genrePoints = Math.min(35, this.sharedGenres.length * 3 + (this.sharedGenres.length > 0 ? 5 : 0));
+    score += genrePoints;
+
+    // Songs: Shared songs are rare and special (max 25 points)
+    // 1 shared = 15, 2 = 20, 3+ = 25
+    const songPoints = Math.min(25, this.sharedSongs.length * 7 + (this.sharedSongs.length > 0 ? 8 : 0));
+    score += songPoints;
+
+    // Ensure score is between 0 and 100
+    this.compatibilityScore = Math.min(100, Math.max(0, score));
 
     this.compatibilityCalculated = true;
 
@@ -575,6 +618,7 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
       sharedArtists: this.sharedArtists.length,
       sharedGenres: this.sharedGenres.length,
       sharedSongs: this.sharedSongs.length,
+      breakdown: { artistPoints, genrePoints, songPoints },
     });
   }
 

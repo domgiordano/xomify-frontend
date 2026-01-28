@@ -156,7 +156,7 @@ export class UserService implements OnInit {
 
   updateUserTableRefreshToken(): Observable<any> {
     this.refreshToken = this.AuthService.getRefreshToken();
-    const url = `${this.xomifyApiUrl}/user/user-table`;
+    const url = `${this.xomifyApiUrl}/user/update`;
     const body = {
       email: this.user.email,
       userId: this.id,
@@ -176,7 +176,7 @@ export class UserService implements OnInit {
     releaseRadarEnrolled: boolean,
   ): Observable<any> {
     this.refreshToken = this.AuthService.getRefreshToken();
-    const url = `${this.xomifyApiUrl}/user/user-table`;
+    const url = `${this.xomifyApiUrl}/user/update`;
     const body = {
       email: this.user.email,
       wrappedEnrolled: wrappedEnrolled,
@@ -192,7 +192,7 @@ export class UserService implements OnInit {
   getUserTableData(email: string): Observable<any> {
     const url = `${
       this.xomifyApiUrl
-    }/user/user-table?email=${encodeURIComponent(email)}`;
+    }/user/data?email=${encodeURIComponent(email)}`;
     const headers = new HttpHeaders({
       Authorization: `Bearer ${this.apiAuthToken}`,
       'Content-Type': 'application/json',

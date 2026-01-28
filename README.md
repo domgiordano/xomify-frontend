@@ -111,9 +111,9 @@ src/app/
 
 This frontend requires a backend API with the following endpoints:
 
-- `GET /wrapped/data` - User's wrapped history
-- `POST /user/user-table` - Update user enrollments
-- `GET /user/user-table` - Get user data
+- `GET /wrapped/all` - User's wrapped history
+- `POST /user/update` - Update user enrollments
+- `GET /user/data` - Get user data
 
 See the backend README for API documentation.
 
@@ -122,6 +122,7 @@ See the backend README for API documentation.
 ### Version Management
 
 We follow [Semantic Versioning](https://semver.org/):
+
 - **MAJOR** (X.0.0): Breaking changes or major feature overhauls
 - **MINOR** (0.X.0): New features (backward-compatible)
 - **PATCH** (0.0.X): Bug fixes (backward-compatible)
@@ -142,12 +143,14 @@ npm run version:major   # 2.1.0 -> 3.0.0
 ```
 
 This will:
+
 1. Update `package.json` version
 2. Update `CHANGELOG.md` with new version section
 3. Create a git commit
 4. Create a git tag
 
 After running the script:
+
 1. Update the `[Unreleased]` section in CHANGELOG.md with your changes
 2. Commit any additional CHANGELOG updates
 3. Push changes to master to trigger deployment
@@ -179,6 +182,7 @@ The app automatically deploys to production when code is pushed to the `master` 
 ### Manual Deployment
 
 Trigger a manual deployment from GitHub Actions:
+
 1. Go to Actions tab
 2. Select "Deploy Xomify Frontend" workflow
 3. Click "Run workflow"
@@ -198,6 +202,7 @@ Before deploying to production:
 ### Environment Variables
 
 The deployment workflow automatically injects these from AWS SSM:
+
 - `SPOTIFY_CLIENT_ID`
 - `SPOTIFY_CLIENT_SECRET`
 - `API_AUTH_TOKEN`
@@ -214,6 +219,7 @@ The deployment workflow automatically injects these from AWS SSM:
 ### Creating a New Release
 
 1. **Update Code & CHANGELOG**
+
    ```bash
    # Make your changes
    git add .
@@ -224,12 +230,14 @@ The deployment workflow automatically injects these from AWS SSM:
    ```
 
 2. **Bump Version**
+
    ```bash
    # Choose appropriate version bump
    npm run version:minor
    ```
 
 3. **Push to Master**
+
    ```bash
    git push origin master
    git push origin v2.2.0  # Push the tag
@@ -243,6 +251,7 @@ The deployment workflow automatically injects these from AWS SSM:
 ### Release Notes
 
 Release notes are automatically generated from:
+
 - Version tag
 - CHANGELOG.md content
 - Commit SHA and deployment info

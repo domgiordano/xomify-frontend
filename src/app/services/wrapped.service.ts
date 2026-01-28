@@ -52,8 +52,8 @@ export class WrappedService {
    * Returns wraps sorted newest first.
    */
   getUserWrappedData(email: string): Observable<WrappedDataResponse> {
-    const url = `${this.xomifyApiUrl}/wrapped/data?email=${encodeURIComponent(
-      email
+    const url = `${this.xomifyApiUrl}/wrapped/all?email=${encodeURIComponent(
+      email,
     )}`;
     return this.http
       .get<WrappedDataResponse>(url, { headers: this.getHeaders() })
@@ -73,7 +73,7 @@ export class WrappedService {
             activeReleaseRadar: false,
             wraps: [],
           });
-        })
+        }),
       );
   }
 
@@ -82,16 +82,16 @@ export class WrappedService {
    */
   getWrappedMonth(
     email: string,
-    monthKey: string
+    monthKey: string,
   ): Observable<MonthlyWrap | null> {
     const url = `${this.xomifyApiUrl}/wrapped/month?email=${encodeURIComponent(
-      email
+      email,
     )}&monthKey=${encodeURIComponent(monthKey)}`;
     return this.http.get<MonthlyWrap>(url, { headers: this.getHeaders() }).pipe(
       catchError((error) => {
         console.error(`Error fetching wrapped for ${monthKey}:`, error);
         return of(null);
-      })
+      }),
     );
   }
 
@@ -100,7 +100,7 @@ export class WrappedService {
    */
   getWrappedYear(email: string, year: string): Observable<MonthlyWrap[]> {
     const url = `${this.xomifyApiUrl}/wrapped/year?email=${encodeURIComponent(
-      email
+      email,
     )}&year=${encodeURIComponent(year)}`;
     return this.http
       .get<MonthlyWrap[]>(url, { headers: this.getHeaders() })
@@ -108,7 +108,7 @@ export class WrappedService {
         catchError((error) => {
           console.error(`Error fetching wrapped for year ${year}:`, error);
           return of([]);
-        })
+        }),
       );
   }
 
@@ -119,9 +119,9 @@ export class WrappedService {
     email: string,
     userId: string,
     refreshToken: string,
-    optIn: boolean
+    optIn: boolean,
   ): Observable<any> {
-    const url = `${this.xomifyApiUrl}/wrapped/data`;
+    const url = `${this.xomifyApiUrl}/wrapped/all`;
     const body = {
       email: email,
       userId: userId,

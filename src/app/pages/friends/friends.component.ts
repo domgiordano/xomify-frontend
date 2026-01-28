@@ -52,6 +52,8 @@ export class FriendsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.currentEmail = this.userService.getEmail();
+    // Set the current user email so the service knows whose data to track
+    this.friendsService.setCurrentUserEmail(this.currentEmail);
     // Load users first, then friends data (so we have user info for enrichment)
     this.loadAllUsers();
     this.loadData();
