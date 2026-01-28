@@ -1,0 +1,117 @@
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+
+  &.readonly {
+    pointer-events: none;
+  }
+
+  // Size variants
+  &.size-small {
+    .star-container {
+      width: 16px;
+      height: 16px;
+    }
+    .rating-text {
+      font-size: 12px;
+      margin-left: 4px;
+    }
+  }
+
+  &.size-medium {
+    .star-container {
+      width: 24px;
+      height: 24px;
+    }
+    .rating-text {
+      font-size: 14px;
+      margin-left: 6px;
+    }
+  }
+
+  &.size-large {
+    .star-container {
+      width: 32px;
+      height: 32px;
+    }
+    .rating-text {
+      font-size: 16px;
+      margin-left: 8px;
+    }
+  }
+}
+
+.star-container {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  .star {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.15s ease;
+  }
+
+  .star-empty {
+    color: #3a3a4a;
+    opacity: 1;
+  }
+
+  .star-full,
+  .star-half {
+    color: #1db954;
+    opacity: 0;
+  }
+
+  // Full star state
+  &.full {
+    .star-full {
+      opacity: 1;
+    }
+    .star-half {
+      opacity: 0;
+    }
+  }
+
+  // Half star state
+  &.half {
+    .star-full {
+      opacity: 0;
+    }
+    .star-half {
+      opacity: 1;
+    }
+  }
+
+  // Empty star state
+  &.empty {
+    .star-full,
+    .star-half {
+      opacity: 0;
+    }
+  }
+}
+
+.rating-text {
+  color: #b3b3b3;
+  font-weight: 500;
+}
+
+// Readonly mode styling
+.star-rating.readonly {
+  .star-container {
+    cursor: default;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}

@@ -31,6 +31,9 @@ import { WrappedComponent } from './pages/wrapped/wrapped.component';
 import { ReleaseRadarComponent } from './pages/release-radar/release-radar.component';
 import { FriendsComponent } from './pages/friends/friends.component';
 import { FriendProfileComponent } from './pages/friend-profile/friend-profile.component';
+import { RatingsComponent } from './pages/ratings/ratings.component';
+import { StarRatingComponent } from './components/star-rating/star-rating.component';
+import { SongDetailModalComponent } from './components/song-detail-modal/song-detail-modal.component';
 
 @NgModule({
   declarations: [
@@ -57,6 +60,9 @@ import { FriendProfileComponent } from './pages/friend-profile/friend-profile.co
     ReleaseRadarComponent,
     FriendsComponent,
     FriendProfileComponent,
+    RatingsComponent,
+    StarRatingComponent,
+    SongDetailModalComponent,
   ],
   imports: [
     BrowserModule,
