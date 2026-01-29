@@ -455,6 +455,33 @@
         color: #ff4757;
       }
     }
+
+    &.rate-btn {
+      background: rgba(156, 10, 191, 0.1);
+      border-color: rgba(156, 10, 191, 0.3);
+      color: #9c0abf;
+      gap: 2px;
+
+      &:hover {
+        background: #9c0abf;
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(156, 10, 191, 0.4);
+      }
+
+      &.rated {
+        background: rgba(156, 10, 191, 0.25);
+        border-color: rgba(156, 10, 191, 0.5);
+        color: #c77ddb;
+        width: auto;
+        padding: 0 10px;
+        border-radius: 16px;
+
+        .rating-value {
+          font-size: 0.7rem;
+          font-weight: 600;
+        }
+      }
+    }
   }
 
   .spotify-btn {

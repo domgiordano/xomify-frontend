@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, forkJoin } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -9,6 +9,11 @@ import { ToastService } from 'src/app/services/toast.service';
 import { QueueService, QueueTrack } from 'src/app/services/queue.service';
 import { SongService } from 'src/app/services/song.service';
 import { ArtistService } from 'src/app/services/artist.service';
+import { RatingsService } from 'src/app/services/ratings.service';
+import {
+  SongDetailModalComponent,
+  SongDetailTrack,
+} from 'src/app/components/song-detail-modal/song-detail-modal.component';
 
 type TabType = 'songs' | 'artists' | 'genres' | 'playlists' | 'compatibility';
 type TermType = 'short_term' | 'medium_term' | 'long_term';
@@ -19,6 +24,8 @@ type TermType = 'short_term' | 'medium_term' | 'long_term';
   styleUrls: ['./friend-profile.component.scss'],
 })
 export class FriendProfileComponent implements OnInit, OnDestroy {
+  @ViewChild('songDetailModal') songDetailModal!: SongDetailModalComponent;
+
   private subscriptions: Subscription[] = [];
 
   friendEmail = '';
@@ -58,7 +65,8 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
     private queueService: QueueService,
     private toastService: ToastService,
     private songService: SongService,
-    private artistService: ArtistService
+    private artistService: ArtistService,
+    private ratingsService: RatingsService
   ) {}
 
   ngOnInit(): void {
@@ -333,6 +341,13 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
   goToArtist(artistId: string, event?: Event): void {
     if (event) event.stopPropagation();
     this.router.navigate(['/artist-profile', artistId]);
+  }
+
+  // Playlist navigation with friend context
+  goToPlaylist(playlistId: string): void {
+    this.router.navigate(['/playlist', playlistId], {
+      queryParams: { fromFriend: this.friendEmail }
+    });
   }
 
   // Navigation
@@ -652,5 +667,29 @@ export class FriendProfileComponent implements OnInit, OnDestroy {
     if (this.compatibilityScore >= 40) return '#f1c40f';
     if (this.compatibilityScore >= 20) return '#e67e22';
     return '#e74c3c';
+  }
+
+  // Rating methods
+  openSongDetail(track: any, event: Event): void {
+    event.stopPropagation();
+    const detailTrack: SongDetailTrack = {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: track.album || { id: '', name: '', images: [] },
+      duration_ms: track.duration_ms,
+      popularity: track.popularity,
+      explicit: track.explicit,
+      external_urls: track.external_urls,
+    };
+    this.songDetailModal.open(detailTrack);
+  }
+
+  getRating(trackId: string): number {
+    return this.ratingsService.getCachedRating(trackId);
+  }
+
+  isRated(trackId: string): boolean {
+    return this.ratingsService.isRated(trackId);
   }
 }

@@ -164,6 +164,17 @@
           <span class="track-duration">{{ formatDuration(track.duration_ms) }}</span>
           <div class="track-actions">
             <button
+              class="action-btn rate-btn"
+              [class.rated]="isRated(track.id)"
+              (click)="openSongDetail(track, $event)"
+              title="Rate this song"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <span class="rating-value" *ngIf="isRated(track.id)">{{ getRating(track.id) }}</span>
+            </button>
+            <button
               class="action-btn"
               [class.in-queue]="isInQueue(track.id)"
               (click)="addToPlaylistBuilder(track, $event)"
@@ -268,3 +279,6 @@
     </div>
   </div>
 </div>
+
+<!-- Song Detail Modal -->
+<app-song-detail-modal #songDetailModal></app-song-detail-modal>
