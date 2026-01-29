@@ -11,6 +11,11 @@ import { UserService } from 'src/app/services/user.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { PlayerService } from 'src/app/services/player.service';
 import { QueueService, QueueTrack } from 'src/app/services/queue.service';
+import { RatingsService } from 'src/app/services/ratings.service';
+import {
+  SongDetailModalComponent,
+  SongDetailTrack,
+} from 'src/app/components/song-detail-modal/song-detail-modal.component';
 import { forkJoin, take, Subscription } from 'rxjs';
 
 interface Artist {
@@ -31,6 +36,7 @@ interface Artist {
 })
 export class ArtistProfileComponent implements OnInit, OnDestroy {
   @ViewChild('carouselTrack') carouselTrack!: ElementRef<HTMLDivElement>;
+  @ViewChild('songDetailModal') songDetailModal!: SongDetailModalComponent;
 
   artist: Artist | null = null;
   topTracks: any[] = [];
@@ -56,7 +62,8 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
     private userService: UserService,
     private toastService: ToastService,
     private playerService: PlayerService,
-    private queueService: QueueService
+    private queueService: QueueService,
+    private ratingsService: RatingsService
   ) {}
 
   ngOnInit(): void {
@@ -306,5 +313,29 @@ export class ArtistProfileComponent implements OnInit, OnDestroy {
 
   isInQueue(trackId: string): boolean {
     return this.queueService.isInQueue(trackId);
+  }
+
+  // Rating methods
+  openSongDetail(track: any, event: Event): void {
+    event.stopPropagation();
+    const detailTrack: SongDetailTrack = {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: track.album || { id: '', name: '', images: [] },
+      duration_ms: track.duration_ms,
+      popularity: track.popularity,
+      explicit: track.explicit,
+      external_urls: track.external_urls,
+    };
+    this.songDetailModal.open(detailTrack);
+  }
+
+  getRating(trackId: string): number {
+    return this.ratingsService.getCachedRating(trackId);
+  }
+
+  isRated(trackId: string): boolean {
+    return this.ratingsService.isRated(trackId);
   }
 }

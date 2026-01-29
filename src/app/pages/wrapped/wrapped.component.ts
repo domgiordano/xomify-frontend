@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserService } from 'src/app/services/user.service';
 import { WrappedService } from 'src/app/services/wrapped.service';
@@ -7,6 +7,11 @@ import { ArtistService } from 'src/app/services/artist.service';
 import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { QueueService, QueueTrack } from 'src/app/services/queue.service';
+import { RatingsService } from 'src/app/services/ratings.service';
+import {
+  SongDetailModalComponent,
+  SongDetailTrack,
+} from 'src/app/components/song-detail-modal/song-detail-modal.component';
 import { forkJoin, of } from 'rxjs';
 import { take, catchError } from 'rxjs/operators';
 
@@ -44,6 +49,8 @@ interface DisplayArtist {
   styleUrls: ['./wrapped.component.scss']
 })
 export class WrappedComponent implements OnInit {
+  @ViewChild('songDetailModal') songDetailModal!: SongDetailModalComponent;
+
   loading = true;
   loadingDetails = false;
   error: string | null = null;
@@ -75,7 +82,8 @@ export class WrappedComponent implements OnInit {
     private artistService: ArtistService,
     private playerService: PlayerService,
     private queueService: QueueService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private ratingsService: RatingsService
   ) {}
 
   ngOnInit(): void {
@@ -340,5 +348,29 @@ export class WrappedComponent implements OnInit {
 
   isInQueue(trackId: string): boolean {
     return this.queueService.isInQueue(trackId);
+  }
+
+  // ============================================
+  // Rating Methods
+  // ============================================
+
+  openSongDetail(track: DisplayTrack, event: Event): void {
+    event.stopPropagation();
+    const detailTrack: SongDetailTrack = {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: track.album || { id: '', name: '', images: [] },
+      duration_ms: track.duration_ms,
+    };
+    this.songDetailModal.open(detailTrack);
+  }
+
+  getRating(trackId: string): number {
+    return this.ratingsService.getCachedRating(trackId);
+  }
+
+  isRated(trackId: string): boolean {
+    return this.ratingsService.isRated(trackId);
   }
 }

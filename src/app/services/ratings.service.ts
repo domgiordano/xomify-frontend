@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export interface TrackRating {
@@ -80,6 +80,21 @@ export class RatingsService {
     }
   }
 
+  // Map API response to TrackRating interface (handles snake_case to camelCase)
+  private mapRatingResponse(item: any): TrackRating {
+    return {
+      email: item.email || '',
+      trackId: item.trackId || item.track_id || '',
+      rating: item.rating || 0,
+      ratedAt: item.ratedAt || item.rated_at || '',
+      trackName: item.trackName || item.track_name || '',
+      artistName: item.artistName || item.artist_name || '',
+      albumArt: item.albumArt || item.album_art || '',
+      albumId: item.albumId || item.album_id || '',
+      context: item.context || '',
+    };
+  }
+
   // GET all ratings for a user
   getAllRatings(
     email: string,
@@ -93,18 +108,23 @@ export class RatingsService {
       }
     }
 
-    const url = `${this.xomifyApiUrl}/ratings?email=${encodeURIComponent(email)}`;
+    const url = `${this.xomifyApiUrl}/ratings/all?email=${encodeURIComponent(email)}`;
     return this.http
-      .get<TrackRating[]>(url, { headers: this.getHeaders() })
+      .get<any>(url, { headers: this.getHeaders() })
       .pipe(
-        tap((ratings) => {
+        tap((response) => {
+          // Handle both array and object responses
+          const rawRatings = Array.isArray(response) ? response : (response?.ratings || []);
+          // Map fields to expected interface (handles snake_case from API)
+          const ratings = rawRatings.map((item: any) => this.mapRatingResponse(item));
           this.ratingsSubject.next(ratings);
           this.saveToLocalStorage(ratings);
         }),
         catchError((error) => {
           console.error('Error fetching ratings:', error);
           // Return cached data on error
-          return of(this.ratingsSubject.getValue());
+          const cached = this.ratingsSubject.getValue();
+          return of(Array.isArray(cached) ? cached : []);
         }),
       );
   }
@@ -116,15 +136,18 @@ export class RatingsService {
   ): Observable<TrackRating | null> {
     // Check local cache first
     const cached = this.ratingsSubject.getValue();
-    const existing = cached.find((r) => r.trackId === trackId);
+    const existing = Array.isArray(cached) ? cached.find((r) => r.trackId === trackId) : null;
     if (existing) {
       return of(existing);
     }
 
     const url = `${this.xomifyApiUrl}/ratings/track/?trackId=${trackId}&email=${encodeURIComponent(email)}`;
     return this.http
-      .get<TrackRating>(url, { headers: this.getHeaders() })
-      .pipe(catchError(() => of(null)));
+      .get<any>(url, { headers: this.getHeaders() })
+      .pipe(
+        map((response) => response ? this.mapRatingResponse(response) : null),
+        catchError(() => of(null))
+      );
   }
 
   // POST/PUT rating
@@ -138,7 +161,7 @@ export class RatingsService {
     albumId?: string,
     context?: string,
   ): Observable<TrackRating> {
-    const url = `${this.xomifyApiUrl}/ratings`;
+    const url = `${this.xomifyApiUrl}/ratings/publish`;
     const body = {
       email,
       trackId,
@@ -151,21 +174,37 @@ export class RatingsService {
     };
 
     return this.http
-      .post<TrackRating>(url, body, { headers: this.getHeaders() })
+      .post<any>(url, body, { headers: this.getHeaders() })
       .pipe(
-        tap((newRating) => {
+        map((response) => {
+          // Construct the rating with our known data (API may return incomplete/snake_case fields)
+          const mappedRating: TrackRating = {
+            email,
+            trackId,
+            rating,
+            trackName,
+            artistName,
+            albumArt,
+            albumId,
+            context,
+            ratedAt: response?.ratedAt || response?.rated_at || new Date().toISOString(),
+          };
+
           // Update local cache
           const current = this.ratingsSubject.getValue();
-          const existingIndex = current.findIndex((r) => r.trackId === trackId);
+          const ratings = Array.isArray(current) ? current : [];
+          const existingIndex = ratings.findIndex((r) => r.trackId === trackId);
 
           if (existingIndex >= 0) {
-            current[existingIndex] = newRating;
+            ratings[existingIndex] = mappedRating;
           } else {
-            current.push(newRating);
+            ratings.push(mappedRating);
           }
 
-          this.ratingsSubject.next([...current]);
-          this.saveToLocalStorage(current);
+          this.ratingsSubject.next([...ratings]);
+          this.saveToLocalStorage(ratings);
+
+          return mappedRating;
         }),
         catchError((error) => {
           console.error('Error saving rating:', error);
@@ -194,7 +233,8 @@ export class RatingsService {
       tap(() => {
         // Remove from local cache
         const current = this.ratingsSubject.getValue();
-        const filtered = current.filter((r) => r.trackId !== trackId);
+        const ratings = Array.isArray(current) ? current : [];
+        const filtered = ratings.filter((r) => r.trackId !== trackId);
         this.ratingsSubject.next(filtered);
         this.saveToLocalStorage(filtered);
       }),
@@ -202,7 +242,8 @@ export class RatingsService {
         console.error('Error deleting rating:', error);
         // Remove locally even if API fails
         const current = this.ratingsSubject.getValue();
-        const filtered = current.filter((r) => r.trackId !== trackId);
+        const ratings = Array.isArray(current) ? current : [];
+        const filtered = ratings.filter((r) => r.trackId !== trackId);
         this.ratingsSubject.next(filtered);
         this.saveToLocalStorage(filtered);
         return of(void 0);
@@ -224,23 +265,25 @@ export class RatingsService {
   // Helper: Update local rating cache
   private updateLocalRating(rating: TrackRating): void {
     const current = this.ratingsSubject.getValue();
-    const existingIndex = current.findIndex(
+    const ratings = Array.isArray(current) ? current : [];
+    const existingIndex = ratings.findIndex(
       (r) => r.trackId === rating.trackId,
     );
 
     if (existingIndex >= 0) {
-      current[existingIndex] = rating;
+      ratings[existingIndex] = rating;
     } else {
-      current.push(rating);
+      ratings.push(rating);
     }
 
-    this.ratingsSubject.next([...current]);
-    this.saveToLocalStorage(current);
+    this.ratingsSubject.next([...ratings]);
+    this.saveToLocalStorage(ratings);
   }
 
   // Helper: Get rating for a track from cache
   getCachedRating(trackId: string): number {
     const ratings = this.ratingsSubject.getValue();
+    if (!Array.isArray(ratings)) return 0;
     const rating = ratings.find((r) => r.trackId === trackId);
     return rating?.rating || 0;
   }
@@ -248,6 +291,7 @@ export class RatingsService {
   // Helper: Check if track has been rated
   isRated(trackId: string): boolean {
     const ratings = this.ratingsSubject.getValue();
+    if (!Array.isArray(ratings)) return false;
     return ratings.some((r) => r.trackId === trackId);
   }
 

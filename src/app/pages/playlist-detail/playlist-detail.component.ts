@@ -1,9 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PlaylistService } from 'src/app/services/playlist.service';
 import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { QueueService, QueueTrack } from 'src/app/services/queue.service';
+import { RatingsService } from 'src/app/services/ratings.service';
+import {
+  SongDetailModalComponent,
+  SongDetailTrack,
+} from 'src/app/components/song-detail-modal/song-detail-modal.component';
 import { take } from 'rxjs';
 
 @Component({
@@ -12,6 +17,8 @@ import { take } from 'rxjs';
   styleUrls: ['./playlist-detail.component.scss'],
 })
 export class PlaylistDetailComponent implements OnInit {
+  @ViewChild('songDetailModal') songDetailModal!: SongDetailModalComponent;
+
   playlist: any = null;
   tracks: any[] = [];
   loading = true;
@@ -23,6 +30,7 @@ export class PlaylistDetailComponent implements OnInit {
   private playlistId: string = '';
   private nextOffset: number = 0;
   private limit: number = 50;
+  private fromFriend: string | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -30,10 +38,16 @@ export class PlaylistDetailComponent implements OnInit {
     private playlistService: PlaylistService,
     private playerService: PlayerService,
     private queueService: QueueService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private ratingsService: RatingsService
   ) {}
 
   ngOnInit(): void {
+    // Read query params for navigation context
+    this.route.queryParams.pipe(take(1)).subscribe((queryParams) => {
+      this.fromFriend = queryParams['fromFriend'] || null;
+    });
+
     this.route.params.subscribe((params) => {
       this.playlistId = params['id'];
       if (this.playlistId) {
@@ -131,7 +145,12 @@ export class PlaylistDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/my-playlists']);
+    if (this.fromFriend) {
+      // Navigate back to friend's profile with playlists tab active
+      this.router.navigate(['/friend', this.fromFriend]);
+    } else {
+      this.router.navigate(['/my-playlists']);
+    }
   }
 
   addToSpotifyQueue(track: any, event: Event): void {
@@ -173,5 +192,29 @@ export class PlaylistDetailComponent implements OnInit {
 
   isInQueue(trackId: string): boolean {
     return this.queueService.isInQueue(trackId);
+  }
+
+  // Rating methods
+  openSongDetail(track: any, event: Event): void {
+    event.stopPropagation();
+    const detailTrack: SongDetailTrack = {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: track.album || { id: '', name: '', images: [] },
+      duration_ms: track.duration_ms,
+      popularity: track.popularity,
+      explicit: track.explicit,
+      external_urls: track.external_urls,
+    };
+    this.songDetailModal.open(detailTrack);
+  }
+
+  getRating(trackId: string): number {
+    return this.ratingsService.getCachedRating(trackId);
+  }
+
+  isRated(trackId: string): boolean {
+    return this.ratingsService.isRated(trackId);
   }
 }

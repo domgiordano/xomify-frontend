@@ -1,10 +1,15 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { AlbumService } from 'src/app/services/album.service';
 import { PlayerService } from 'src/app/services/player.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { QueueService, QueueTrack } from 'src/app/services/queue.service';
+import { RatingsService } from 'src/app/services/ratings.service';
+import {
+  SongDetailModalComponent,
+  SongDetailTrack,
+} from 'src/app/components/song-detail-modal/song-detail-modal.component';
 import { take, Subscription } from 'rxjs';
 
 @Component({
@@ -13,6 +18,8 @@ import { take, Subscription } from 'rxjs';
   styleUrls: ['./album-detail.component.scss'],
 })
 export class AlbumDetailComponent implements OnInit, OnDestroy {
+  @ViewChild('songDetailModal') songDetailModal!: SongDetailModalComponent;
+
   album: any = null;
   tracks: any[] = [];
   loading = true;
@@ -29,7 +36,8 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
     private albumService: AlbumService,
     private playerService: PlayerService,
     private queueService: QueueService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private ratingsService: RatingsService
   ) {}
 
   ngOnInit(): void {
@@ -194,5 +202,34 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
 
   isInQueue(trackId: string): boolean {
     return this.queueService.isInQueue(trackId);
+  }
+
+  // Rating methods
+  openSongDetail(track: any, event: Event): void {
+    event.stopPropagation();
+    const detailTrack: SongDetailTrack = {
+      id: track.id,
+      name: track.name,
+      artists: track.artists || [],
+      album: {
+        id: this.album?.id || '',
+        name: this.album?.name || '',
+        images: this.album?.images || [],
+        release_date: this.album?.release_date,
+      },
+      duration_ms: track.duration_ms,
+      popularity: track.popularity,
+      explicit: track.explicit,
+      external_urls: track.external_urls,
+    };
+    this.songDetailModal.open(detailTrack);
+  }
+
+  getRating(trackId: string): number {
+    return this.ratingsService.getCachedRating(trackId);
+  }
+
+  isRated(trackId: string): boolean {
+    return this.ratingsService.isRated(trackId);
   }
 }
