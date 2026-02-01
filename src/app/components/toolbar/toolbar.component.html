@@ -71,7 +71,16 @@
         [ngClass]="{ selected: isSelected('/friends') }"
       >
         Friends
-        <span class="queue-badge pending" *ngIf="pendingFriendsCount > 0">{{ pendingFriendsCount }}</span>
+        <span class="queue-badge pending" *ngIf="pendingFriendsCount > 0">{{
+          pendingFriendsCount
+        }}</span>
+      </a>
+      <a
+        routerLink="/groups"
+        routerLinkActive="active"
+        [ngClass]="{ selected: isSelected('/groups') }"
+      >
+        Groups
       </a>
       <a
         routerLink="/playlist-builder"
@@ -148,7 +157,16 @@
       (click)="selectItem('/friends')"
     >
       Friends
-      <span class="queue-badge pending" *ngIf="pendingFriendsCount > 0">{{ pendingFriendsCount }}</span>
+      <span class="queue-badge pending" *ngIf="pendingFriendsCount > 0">{{
+        pendingFriendsCount
+      }}</span>
+    </a>
+    <a
+      routerLink="/groups"
+      routerLinkActive="active"
+      (click)="selectItem('/groups')"
+    >
+      Groups
     </a>
     <a
       routerLink="/playlist-builder"

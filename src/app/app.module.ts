@@ -34,6 +34,10 @@ import { FriendProfileComponent } from './pages/friend-profile/friend-profile.co
 import { RatingsComponent } from './pages/ratings/ratings.component';
 import { StarRatingComponent } from './components/star-rating/star-rating.component';
 import { SongDetailModalComponent } from './components/song-detail-modal/song-detail-modal.component';
+import { GroupsComponent } from './pages/groups/groups.component';
+import { GroupDetailComponent } from './pages/group-detail/group-detail.component';
+import { AddSongModalComponent } from './components/add-song-modal/add-song-modal.component';
+import { AddMemberModalComponent } from './components/add-member-modal/add-member-modal.component';
 
 @NgModule({
   declarations: [
@@ -63,6 +67,10 @@ import { SongDetailModalComponent } from './components/song-detail-modal/song-de
     RatingsComponent,
     StarRatingComponent,
     SongDetailModalComponent,
+    GroupsComponent,
+    GroupDetailComponent,
+    AddSongModalComponent,
+    AddMemberModalComponent,
   ],
   imports: [
     BrowserModule,

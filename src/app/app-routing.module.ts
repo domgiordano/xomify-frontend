@@ -20,6 +20,8 @@ import { ReleaseRadarComponent } from './pages/release-radar/release-radar.compo
 import { FriendsComponent } from './pages/friends/friends.component';
 import { FriendProfileComponent } from './pages/friend-profile/friend-profile.component';
 import { RatingsComponent } from './pages/ratings/ratings.component';
+import { GroupsComponent } from './pages/groups/groups.component';
+import { GroupDetailComponent } from './pages/group-detail/group-detail.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -97,6 +99,16 @@ const routes: Routes = [
   {
     path: 'ratings',
     component: RatingsComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'groups',
+    component: GroupsComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'group/:id',
+    component: GroupDetailComponent,
     canActivate: [AuthGuard],
   },
   // Catch-all redirect

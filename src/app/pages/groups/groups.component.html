@@ -1,0 +1,247 @@
+<div class="page-container">
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <div class="loader">
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+    <p class="loading-text">Loading groups...</p>
+  </div>
+
+  <div class="groups-content" *ngIf="!loading">
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="header-top">
+        <div>
+          <h1 class="page-title">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91zM4 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58A2.01 2.01 0 0 0 0 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29zM20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm4 3.43c0-.81-.48-1.53-1.22-1.85A6.95 6.95 0 0 0 20 14c-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24v-1.57zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
+            </svg>
+            Groups
+          </h1>
+          <p class="page-subtitle">Share music with your friends</p>
+        </div>
+        <button class="refresh-btn" (click)="refresh()" [disabled]="loading">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6"/>
+            <path d="M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="tabs-nav">
+        <button
+          class="tab-btn"
+          [class.active]="activeTab === 'my-groups'"
+          (click)="switchTab('my-groups')"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
+          </svg>
+          My Groups
+          <span class="badge" *ngIf="groups.length > 0">{{ groups.length }}</span>
+        </button>
+        <button
+          class="tab-btn"
+          [class.active]="activeTab === 'create'"
+          (click)="switchTab('create')"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Create Group
+        </button>
+      </div>
+    </header>
+
+    <!-- My Groups Tab -->
+    <div class="tab-content" *ngIf="activeTab === 'my-groups'">
+      <!-- Stats -->
+      <div class="stats-section" *ngIf="groups.length > 0">
+        <div class="stat-card">
+          <span class="stat-value">{{ groups.length }}</span>
+          <span class="stat-label">Groups</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value">{{ getTotalUnlistened() }}</span>
+          <span class="stat-label">Unlistened</span>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="search-container" *ngIf="groups.length > 0">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search groups..."
+          [(ngModel)]="searchQuery"
+          (input)="onSearchChange()"
+        />
+        <button class="clear-btn" *ngIf="searchQuery" (click)="clearSearch()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Groups Grid -->
+      <div class="groups-grid" *ngIf="filteredGroups.length > 0">
+        <div
+          class="group-card"
+          *ngFor="let group of filteredGroups"
+          (click)="goToGroup(group)"
+        >
+          <div class="group-image">
+            <img [src]="group.imageUrl || getDefaultGroupImage()" [alt]="group.name" />
+            <span class="unlistened-badge" *ngIf="group.unlistenedCount">
+              {{ group.unlistenedCount }}
+            </span>
+          </div>
+          <div class="group-info">
+            <h3 class="group-name">{{ group.name }}</h3>
+            <p class="group-description" *ngIf="group.description">{{ group.description }}</p>
+            <div class="group-meta">
+              <span class="meta-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                {{ group.memberCount }} members
+              </span>
+              <span class="meta-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                </svg>
+                {{ group.songCount }} songs
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="groups.length === 0">
+        <div class="empty-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91zM4 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58A2.01 2.01 0 0 0 0 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29zM20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm4 3.43c0-.81-.48-1.53-1.22-1.85A6.95 6.95 0 0 0 20 14c-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24v-1.57zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
+          </svg>
+        </div>
+        <h3>No Groups Yet</h3>
+        <p>Create a group to start sharing music with your friends!</p>
+        <button class="create-btn" (click)="switchTab('create')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Create Group
+        </button>
+      </div>
+
+      <!-- No Results -->
+      <div class="no-results" *ngIf="groups.length > 0 && filteredGroups.length === 0">
+        <p>No groups match "{{ searchQuery }}"</p>
+        <button class="clear-filters-btn" (click)="clearSearch()">Clear Search</button>
+      </div>
+    </div>
+
+    <!-- Create Group Tab -->
+    <div class="tab-content" *ngIf="activeTab === 'create'">
+      <div class="create-form">
+        <div class="form-section">
+          <h3 class="section-title">Group Details</h3>
+
+          <div class="form-group">
+            <label class="form-label">Group Name *</label>
+            <input
+              type="text"
+              class="form-input"
+              placeholder="Enter group name..."
+              [(ngModel)]="newGroupName"
+              maxlength="50"
+            />
+            <span class="char-count">{{ newGroupName.length }}/50</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea
+              class="form-textarea"
+              placeholder="What's this group about? (optional)"
+              [(ngModel)]="newGroupDescription"
+              maxlength="200"
+              rows="3"
+            ></textarea>
+            <span class="char-count">{{ newGroupDescription.length }}/200</span>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="section-title">
+            Add Friends
+            <span class="optional">(optional)</span>
+          </h3>
+          <p class="section-description">Select friends to invite to this group</p>
+
+          <!-- Friends Loading -->
+          <div class="friends-loading" *ngIf="friendsLoading">
+            <div class="mini-loader"></div>
+            <span>Loading friends...</span>
+          </div>
+
+          <!-- Friends List -->
+          <div class="friends-list" *ngIf="!friendsLoading && friends.length > 0">
+            <div
+              class="friend-item"
+              *ngFor="let friend of friends"
+              [class.selected]="isFriendSelected(friend)"
+              (click)="toggleFriendSelection(friend)"
+            >
+              <div class="friend-avatar">
+                <img [src]="friend.avatar || getDefaultGroupImage()" [alt]="friend.displayName || friend.email" />
+              </div>
+              <div class="friend-info">
+                <span class="friend-name">{{ friend.displayName || friend.email }}</span>
+                <span class="friend-email" *ngIf="friend.displayName">{{ friend.email }}</span>
+              </div>
+              <div class="selection-indicator">
+                <svg *ngIf="isFriendSelected(friend)" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- No Friends -->
+          <div class="no-friends" *ngIf="!friendsLoading && friends.length === 0">
+            <p>No friends to add. Add some friends first!</p>
+          </div>
+
+          <!-- Selected Count -->
+          <div class="selected-count" *ngIf="selectedFriends.length > 0">
+            {{ selectedFriends.length }} friend{{ selectedFriends.length > 1 ? 's' : '' }} selected
+          </div>
+        </div>
+
+        <!-- Create Button -->
+        <button
+          class="submit-btn"
+          [disabled]="!canCreateGroup()"
+          (click)="createGroup()"
+        >
+          <span *ngIf="!creatingGroup">Create Group</span>
+          <div class="spinner" *ngIf="creatingGroup"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
