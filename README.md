@@ -172,12 +172,12 @@ The app automatically deploys to production when code is pushed to the `master` 
 1. GitHub Actions workflow triggers on push to `master`
 2. Builds the Angular app with production configuration
 3. Retrieves Spotify credentials from AWS SSM Parameter Store
-4. Deploys to S3 bucket (s3://xomify.com)
+4. Deploys to S3 bucket (s3://xomify.xomware.com)
 5. Sets cache headers (index.html is non-cacheable)
 6. Creates GitHub release with version tag
 7. Generates deployment summary
 
-**Deployment URL:** https://xomify.com
+**Deployment URL:** https://xomify.xomware.com
 
 ### Manual Deployment
 
@@ -211,8 +211,8 @@ The deployment workflow automatically injects these from AWS SSM:
 ### Monitoring Deployments
 
 - **GitHub Actions**: View deployment logs in the Actions tab
-- **S3 Bucket**: Check s3://xomify.com for deployed files
-- **Live Site**: Verify at https://xomify.com
+- **S3 Bucket**: Check s3://xomify.xomware.com for deployed files
+- **Live Site**: Verify at https://xomify.xomware.com
 
 ## Release Process
 

@@ -170,6 +170,9 @@ export class FriendsComponent implements OnInit, OnDestroy {
           if (this.rawFriendsResponse) {
             this.enrichFriendsData();
           }
+
+          // Sync user statuses after users load (in case friends loaded first)
+          this.syncUserStatuses();
         },
         error: (err) => {
           console.error('Error loading users:', err);

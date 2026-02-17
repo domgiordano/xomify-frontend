@@ -1,0 +1,90 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  <div class="modal-content">
+    <!-- Close Button -->
+    <button class="close-btn" (click)="close()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <!-- Title -->
+    <h2 class="modal-title">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+      </svg>
+      Add Member
+    </h2>
+
+    <!-- Search Input -->
+    <div class="search-container">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search friends..."
+        [(ngModel)]="searchQuery"
+        (input)="onSearchChange()"
+      />
+      <button class="clear-btn" *ngIf="searchQuery" (click)="clearSearch()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="friendsLoading">
+      <div class="mini-loader"></div>
+      <span>Loading friends...</span>
+    </div>
+
+    <!-- Friends List -->
+    <div class="friends-list" *ngIf="!friendsLoading && filteredFriends.length > 0">
+      <div class="friend-item" *ngFor="let friend of filteredFriends">
+        <div class="friend-avatar">
+          <img [src]="friend.avatar || getDefaultAvatar()" [alt]="friend.displayName || friend.email" />
+        </div>
+        <div class="friend-info">
+          <span class="friend-name">{{ friend.displayName || friend.email }}</span>
+          <span class="friend-email" *ngIf="friend.displayName">{{ friend.email }}</span>
+        </div>
+        <button
+          class="add-btn"
+          [disabled]="addingMember[friend.email]"
+          (click)="addMember(friend)"
+        >
+          <span *ngIf="!addingMember[friend.email]">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add
+          </span>
+          <div class="spinner" *ngIf="addingMember[friend.email]"></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- No Friends Available -->
+    <div class="empty-state" *ngIf="!friendsLoading && friends.length === 0">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <p>All your friends are already in this group!</p>
+    </div>
+
+    <!-- No Results -->
+    <div class="empty-state" *ngIf="!friendsLoading && friends.length > 0 && filteredFriends.length === 0">
+      <p>No friends found matching "{{ searchQuery }}"</p>
+      <button class="clear-search-btn" (click)="clearSearch()">Clear Search</button>
+    </div>
+  </div>
+</div>
