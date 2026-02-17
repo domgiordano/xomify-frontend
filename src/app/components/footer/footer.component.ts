@@ -23,7 +23,7 @@ export class FooterComponent implements OnInit {
     private SongService: SongService,
     private PlaylistService: PlaylistService,
     private UserService: UserService,
-    private ToastService: ToastService
+    private ToastService: ToastService,
   ) {}
 
   ngOnInit() {
@@ -45,14 +45,14 @@ export class FooterComponent implements OnInit {
 
   private uploadImage$(
     playlistId: string,
-    base64Image: string
+    base64Image: string,
   ): Observable<any> {
     return new Observable((observer) => {
       const base64String = base64Image.replace(/\n/g, '');
 
       this.PlaylistService.uploadPlaylistImage(
         playlistId,
-        base64String
+        base64String,
       ).subscribe({
         next: (data) => {
           observer.next(data);
@@ -76,7 +76,7 @@ export class FooterComponent implements OnInit {
       const formattedDate = today.toISOString().split('T')[0];
       let currentTopSongs = [];
       let playlistName = '';
-      let playlistDesc = 'Top songs created by https://xomify.com';
+      let playlistDesc = 'Top songs created by https://xomify.xomware.com';
 
       if (currentTerm == 'short_term') {
         currentTopSongs = this.SongService.getShortTermTopTracks();
@@ -90,20 +90,20 @@ export class FooterComponent implements OnInit {
       }
 
       let currentTopSongsUriList: string[] = currentTopSongs.map(
-        (track) => track.uri
+        (track) => track.uri,
       );
       this.userId = this.UserService.getUserId();
       this.PlaylistService.createPlaylist(
         this.userId,
         playlistName,
-        playlistDesc
+        playlistDesc,
       )
         .pipe(take(1))
         .subscribe({
           next: (playlist) => {
             this.PlaylistService.addPlaylistSongs(
               playlist,
-              currentTopSongsUriList
+              currentTopSongsUriList,
             )
               .pipe(take(1))
               .subscribe({
@@ -111,7 +111,7 @@ export class FooterComponent implements OnInit {
                   console.log(data);
                   this.uploadImage$(
                     playlist.id,
-                    environment.logoBase64
+                    environment.logoBase64,
                   ).subscribe({
                     next: (imageData) => {
                       console.log('Image uploaded successfully:', imageData);
@@ -119,7 +119,7 @@ export class FooterComponent implements OnInit {
                     error: (err) => {
                       console.error('Error uploading image:', err);
                       this.ToastService.showNegativeToast(
-                        'Error uploading playlist image'
+                        'Error uploading playlist image',
                       );
                     },
                     complete: () => {
@@ -130,13 +130,13 @@ export class FooterComponent implements OnInit {
                 error: (err) => {
                   console.error('Error Adding Items to Playlist', err);
                   this.ToastService.showNegativeToast(
-                    'Error adding songs to playlist'
+                    'Error adding songs to playlist',
                   );
                 },
                 complete: () => {
                   console.log('Adding Items to Playlist Complete.');
                   this.ToastService.showPositiveToast(
-                    'Playlist successfully added to your Spotify account!'
+                    'Playlist successfully added to your Spotify account!',
                   );
                 },
               });

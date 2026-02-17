@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       skip_cache_invalidation:
-        description: 'Skip CloudFront cache invalidation'
+        description: "Skip CloudFront cache invalidation"
         required: false
-        default: 'false'
+        default: "false"
 
 jobs:
   build-and-deploy:
@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
-          cache: 'npm'
+          cache: "npm"
 
       - name: Get version from package.json
         id: package-version
@@ -70,7 +70,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: "us-east-1"
         run: |
-          aws s3 sync ./dist/xomify s3://xomify.com --delete
+          aws s3 sync ./dist/xomify s3://xomify.xomware.com --delete
 
       - name: Make index.html non-cacheable
         env:
@@ -78,7 +78,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: "us-east-1"
         run: |
-          aws s3 cp ./dist/xomify/index.html s3://xomify.com/index.html \
+          aws s3 cp ./dist/xomify/index.html s3://xomify.xomware.com/index.html \
             --cache-control "no-cache, no-store, must-revalidate"
 
       - name: Create GitHub Release
@@ -112,5 +112,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** v${{ steps.package-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**S3 Bucket:** s3://xomify.com" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** https://xomify.com" >> $GITHUB_STEP_SUMMARY
+          echo "**S3 Bucket:** s3://xomify.xomware.com" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://xomify.xomware.com" >> $GITHUB_STEP_SUMMARY
