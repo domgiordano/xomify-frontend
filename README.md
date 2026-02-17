@@ -2,6 +2,15 @@
 
 A Spotify-powered music analytics and discovery application built with Angular.
 
+## Xomware Ecosystem
+
+| App | URL | Frontend | Backend | Infrastructure |
+|-----|-----|----------|---------|----------------|
+| **Xomware** (Hub) | [xomware.com](https://xomware.com) | [xomware-frontend](https://github.com/domgiordano/xomware-frontend) | - | [xomware-infrastructure](https://github.com/domgiordano/xomware-infrastructure) |
+| **Xomify** | [xomify.xomware.com](https://xomify.xomware.com) | [xomify-frontend](https://github.com/domgiordano/xomify-frontend) | [xomify-backend](https://github.com/domgiordano/xomify-backend) | [xomify-infrastructure](https://github.com/domgiordano/xomify-infrastructure) |
+| **Xomcloud** | [xomcloud.xomware.com](https://xomcloud.xomware.com) | [xomcloud-frontend](https://github.com/domgiordano/xomcloud-frontend) | [xomcloud-backend](https://github.com/domgiordano/xomcloud-backend) | [xomcloud-infrastructure](https://github.com/domgiordano/xomcloud-infrastructure) |
+| **Xomper** | [xomper.xomware.com](https://xomper.xomware.com) | [xomper-front-end](https://github.com/domgiordano/xomper-front-end) | [xomper-back-end](https://github.com/domgiordano/xomper-back-end) | [xomper-infrastructure](https://github.com/domgiordano/xomper-infrastructure) |
+
 ## Features
 
 ### 🎵 Music Analytics
@@ -40,7 +49,7 @@ A Spotify-powered music analytics and discovery application built with Angular.
 
 ## Tech Stack
 
-- **Framework**: Angular 15+
+- **Framework**: Angular 16
 - **Styling**: SCSS with custom theming
 - **API Integration**: Spotify Web API
 - **Playback**: Spotify Web Playback SDK
