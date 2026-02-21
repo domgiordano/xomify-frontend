@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -39,49 +39,42 @@ import { GroupDetailComponent } from './pages/group-detail/group-detail.componen
 import { AddSongModalComponent } from './components/add-song-modal/add-song-modal.component';
 import { AddMemberModalComponent } from './components/add-member-modal/add-member-modal.component';
 
-@NgModule({
-  declarations: [
-    AppComponent,
-    ToolbarComponent,
-    MyProfileComponent,
-    TopSongsComponent,
-    TopArtistsComponent,
-    TopGenresComponent,
-    LoaderComponent,
-    ToastComponent,
-    CallbackComponent,
-    HomeComponent,
-    ArtistProfileComponent,
-    AlbumDetailComponent,
-    PlaylistDetailComponent,
-    MyPlaylistsComponent,
-    FollowingComponent,
-    QueueBuilderComponent,
-    PlayButtonComponent,
-    AddToQueueButtonComponent,
-    FooterComponent,
-    WrappedComponent,
-    ReleaseRadarComponent,
-    FriendsComponent,
-    FriendProfileComponent,
-    RatingsComponent,
-    StarRatingComponent,
-    SongDetailModalComponent,
-    GroupsComponent,
-    GroupDetailComponent,
-    AddSongModalComponent,
-    AddMemberModalComponent,
-  ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    FormsModule,
-    HttpClientModule,
-    DragDropModule,
-    SwiperModule,
-    BrowserAnimationsModule,
-  ],
-  providers: [AuthService],
-  bootstrap: [AppComponent],
-})
+@NgModule({ declarations: [
+        AppComponent,
+        ToolbarComponent,
+        MyProfileComponent,
+        TopSongsComponent,
+        TopArtistsComponent,
+        TopGenresComponent,
+        LoaderComponent,
+        ToastComponent,
+        CallbackComponent,
+        HomeComponent,
+        ArtistProfileComponent,
+        AlbumDetailComponent,
+        PlaylistDetailComponent,
+        MyPlaylistsComponent,
+        FollowingComponent,
+        QueueBuilderComponent,
+        PlayButtonComponent,
+        AddToQueueButtonComponent,
+        FooterComponent,
+        WrappedComponent,
+        ReleaseRadarComponent,
+        FriendsComponent,
+        FriendProfileComponent,
+        RatingsComponent,
+        StarRatingComponent,
+        SongDetailModalComponent,
+        GroupsComponent,
+        GroupDetailComponent,
+        AddSongModalComponent,
+        AddMemberModalComponent,
+    ],
+    bootstrap: [AppComponent], imports: [BrowserModule,
+        AppRoutingModule,
+        FormsModule,
+        DragDropModule,
+        SwiperModule,
+        BrowserAnimationsModule], providers: [AuthService, provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule {}
